@@ -8,46 +8,93 @@
 import SwiftUI
 
 struct GameView: View {
-    @State private var showScanner = false
+    var currentTime: String = "08.00"
+    var onOpenCamera: () -> Void = {}
+    var onNextHour: () -> Void = {}
+    
+    var dummy: AirlineCardModel = AirlineCardModel(
+        id: "1",
+        maxCapacityKg: 20,
+        maxCarryOnKg: 7,
+        departureTime: "15.00"
+    )
+    
+    @State private var currentEvent: RandomEventModel? = nil // for DEBUG AlertView (reminder untuk dihapus)
     
     var body: some View {
-        HStack{
-            AirlineCard()
-            Spacer()
-            VStack(spacing: 12){
-                Spacer()
-                Text("TIME: 08.00")
-                
+        ZStack{
+            Color(uiColor: .systemGroupedBackground)
+                .ignoresSafeArea()
+            HStack {
+                AirlineCard(data: dummy)
                 Spacer()
                 
-                Button("Open Camera") {
+                VStack(spacing: 12) {
+                    Spacer()
+                    Text("TIME: \(currentTime)")
+                        .font(.title2.bold())
                     
-                }
-                .padding()
-                .background(.blue)
-                .foregroundStyle(.white)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                
-                Button("Next Hour") {
+                    Spacer()
                     
+                    Button("SCAN QR", action: onOpenCamera)
+                        .buttonStyle(PrimaryButtonStyle())
+                    
+                    Button("Next Hour", action: onNextHour)
+                        .buttonStyle(PrimaryButtonStyle())
+                    
+                    // TODO: Temporary Button - Hapus sebelum rilis
+                    Button("TEST EVENT") {
+                        currentEvent = RandomEventModel(
+                            title: "Toko Buku Tutup!",
+                            message: "Toko Buku sedang istirahat. Tidak ada item yang bisa diambil di jam ini."
+                        )
+                    }
+                    .font(.caption2)
+                    .foregroundStyle(.gray)
+                    
+                    Spacer()
+                    
+                    Text("TIME: \(currentTime)")
+                        .font(.title2.bold())
+                        .rotationEffect(.degrees(180))
+                    
+                    Spacer()
                 }
-                .padding()
-                .background(.blue)
-                .foregroundStyle(.white)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
                 
                 Spacer()
-                
+                AirlineCard(data: dummy)
+                    .rotationEffect(.degrees(180))
             }
-            Spacer()
-            AirlineCard()
-                .rotationEffect(.degrees(180))
-            
+            .padding(.horizontal, 24)
+            .navigationBarBackButtonHidden(true)
+        
+            if let event = currentEvent {
+                // Backdrop redup
+                Color.black.opacity(0.4)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        currentEvent = nil
+                    }
+     
+                EventAlertView(event: event) {
+                    withAnimation {
+                        currentEvent = nil
+                    }
+                }
+                .transition(.scale.combined(with: .opacity))
+            }
         }
+        .animation(.easeInOut(duration: 0.2), value: currentEvent != nil)
         .navigationBarBackButtonHidden(true)
     }
 }
 
-#Preview(traits: .landscapeRight) {
+#Preview("Light", traits: .landscapeRight) {
     GameView()
+        .preferredColorScheme(.light)
+}
+
+#Preview("Dark", traits: .landscapeRight) {
+    GameView()
+        .preferredColorScheme(.dark)
 }
