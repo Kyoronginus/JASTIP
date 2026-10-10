@@ -11,13 +11,8 @@ struct StartView: View {
                 
                 Spacer()
                 
-                NavigationLink(destination: GameView()) {
-                    Text("START")
-                        .padding()
-                        .background(.blue)
-                        .foregroundStyle(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
-                }
+                NavigationLink("START", destination: GameView())
+                    .buttonStyle(PrimaryButtonStyle())
                 
                 Spacer()
             }
@@ -25,7 +20,13 @@ struct StartView: View {
     }
 }
 
-#Preview(traits: .landscapeRight) {
+#Preview("Light", traits: .landscapeRight) {
     StartView()
+        .preferredColorScheme(.light)
+}
+
+#Preview("Dark", traits: .landscapeRight) {
+    StartView()
+        .preferredColorScheme(.dark)
 }
 
