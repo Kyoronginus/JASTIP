@@ -8,20 +8,17 @@
 import SwiftUI
 
 struct GameView: View {
-    @State private var showScanner = false
-    
     var body: some View {
-        HStack{
+        HStack {
             AirlineCard()
             Spacer()
-            VStack(spacing: 12){
+            VStack(spacing: 12) {
                 Spacer()
                 Text("TIME: 08.00")
                 
                 Spacer()
                 
                 Button("Open Camera") {
-                    
                 }
                 .padding()
                 .background(.blue)

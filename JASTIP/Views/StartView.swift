@@ -11,7 +11,6 @@ struct StartView: View {
                 
                 Spacer()
                 
-                // Standalone links inside VStacks never show a chevron by default
                 NavigationLink(destination: GameView()) {
                     Text("START")
                         .padding()
