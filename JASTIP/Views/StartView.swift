@@ -1,17 +1,14 @@
 import SwiftUI
 import Playgrounds
 
-struct ContentView: View {
+struct StartView: View {
     var body: some View {
         Text("Hello, world!")
             .padding()
     }
 }
 
-#Preview {
-    ContentView()
+#Preview(traits: .landscapeRight) {
+    StartView()
 }
 
-#Playground {
-    _ = 1 + 2
-}
