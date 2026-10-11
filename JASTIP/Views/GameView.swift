@@ -11,6 +11,7 @@ struct GameView: View {
     var currentTime: String = "08.00"
     var onOpenCamera: () -> Void = {}
     var onNextHour: () -> Void = {}
+    @State private var isShowingRevealedSheet: Bool = false
     
     var dummy: AirlineCardModel = AirlineCardModel(
         id: "1",
@@ -52,6 +53,12 @@ struct GameView: View {
                     .font(.caption2)
                     .foregroundStyle(.gray)
                     
+                    Button("OPEN SHAPES") {
+                        isShowingRevealedSheet = true
+                    }
+                    .font(.caption2.bold())
+                    .buttonStyle(PrimaryButtonStyle())
+                    
                     Spacer()
                     
                     Text("TIME: \(currentTime)")
@@ -67,7 +74,7 @@ struct GameView: View {
             }
             .padding(.horizontal, 24)
             .navigationBarBackButtonHidden(true)
-        
+            
             if let event = currentEvent {
                 // Backdrop redup
                 Color.black.opacity(0.4)
@@ -75,7 +82,7 @@ struct GameView: View {
                     .onTapGesture {
                         currentEvent = nil
                     }
-     
+                
                 EventAlertView(event: event) {
                     withAnimation {
                         currentEvent = nil
@@ -86,6 +93,10 @@ struct GameView: View {
         }
         .animation(.easeInOut(duration: 0.2), value: currentEvent != nil)
         .navigationBarBackButtonHidden(true)
+        .sheet(isPresented: $isShowingRevealedSheet) {
+               RevealedSheetsView()
+                   .presentationDetents([.medium, .large])
+           }
     }
 }
 
