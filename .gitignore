@@ -65,3 +65,7 @@ fastlane/test_output
 .DS_Store
 
 JASTIP/QR_Codes/*
+
+project.local.yml
+
+QR_Codes/*
