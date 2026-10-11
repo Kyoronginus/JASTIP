@@ -12,6 +12,8 @@ struct GameView: View {
     var onOpenCamera: () -> Void = {}
     var onNextHour: () -> Void = {}
     
+    var session: GameSessionViewModel = GameSessionViewModel()
+    
     var dummy: AirlineCardModel = AirlineCardModel(
         id: "1",
         maxCapacityKg: 20,
@@ -93,10 +95,11 @@ struct GameView: View {
         .animation(.easeInOut(duration: 0.2), value: currentEvent != nil)
         .navigationBarBackButtonHidden(true)
         .fullScreenCover(isPresented: $isShowingScanner) {
-            QRScannerView { piece, code, weight in
+            QRScannerView(session: session) { piece, code, weight in
                 lastScannedPiece = piece
             }
         }
+
     }
 }
 

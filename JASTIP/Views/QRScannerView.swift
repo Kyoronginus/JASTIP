@@ -15,6 +15,8 @@ struct QRScannerView: View {
     @State private var detectedPiece: PieceModel? = nil
     @State private var confirmedWeight: Int? = nil
     
+    var session: GameSessionViewModel
+    
     var onScanned: ((PieceModel?, String, Int?) -> Void)? = nil
     
     var body: some View {
@@ -137,7 +139,7 @@ struct QRScannerView: View {
                                 Button("Konfirmasi") {
                                     withAnimation {
                                         // Generate bobot saat user menekan konfirmasi
-                                        confirmedWeight = Int.random(in: 2...6)
+                                        confirmedWeight = session.weight(for: code)
                                     }
                                 }
                                 .buttonStyle(.borderedProminent)
@@ -190,5 +192,5 @@ struct QRScannerView: View {
 }
 
 #Preview("Landscape", traits: .landscapeRight) {
-    QRScannerView()
+    QRScannerView(session: GameSessionViewModel())
 }

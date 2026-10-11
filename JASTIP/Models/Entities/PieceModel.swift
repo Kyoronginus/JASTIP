@@ -7,6 +7,18 @@
 
 import Foundation
 
+enum PieceShape: String {
+    case single = "Single"
+    case domino = "Domino"
+    case smallL = "Small L"
+    case triominoI = "Triomino I"
+    case tetrominoL = "Tetromino L"
+    case tetrominoT = "Tetromino T"
+    case tetrominoI = "Tetromino I"
+    case square = "Square"
+    case unique = "Unique"
+}
+
 enum PieceColor: Int {
     case red = 1
     case yellow = 2
@@ -21,3 +33,4 @@ struct PieceModel: Identifiable {
     let gridCount: Int
     let isAnomaly: Bool
 }
+
