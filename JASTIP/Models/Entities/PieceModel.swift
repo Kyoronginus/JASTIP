@@ -19,12 +19,12 @@ enum PieceShape: String {
     case unique = "Unique"
 }
 
-enum PieceColor: Int {
-    case red = 1
-    case yellow = 2
-    case green = 3
-    case blue = 4
-    case pink = 5
+enum PieceColor: String {
+    case red = "Red"
+    case yellow = "Yellow"
+    case green = "Green"
+    case blue = "Blue"
+    case pink = "Pink"
 }
 
 struct PieceModel: Identifiable {
@@ -35,3 +35,13 @@ struct PieceModel: Identifiable {
     let isAnomaly: Bool
 }
 
+struct RevealedPiece: Identifiable {
+    let piece: PieceModel
+    let weight: Int
+    
+    var id: String { piece.id }
+    
+    var displayText: String {
+        "\(piece.color.rawValue)-\(piece.shape.rawValue) = \(weight) kg"
+    }
+}

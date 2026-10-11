@@ -25,147 +25,102 @@ struct QRScannerView: View {
             CameraPreviewView(session: scanner.session)
                 .ignoresSafeArea()
             
-            // 2. Viewfinder Target Overlay
+            // 2. Viewfinder Target & Header Bar (Hanya saat mencari QR)
             VStack {
-                // Header Bar dengan tombol tutup
                 HStack {
                     Button(action: {
                         dismiss()
                     }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.title2)
-                            Text("Tutup")
-                                .fontWeight(.semibold)
-                        }
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .background(Color.black.opacity(0.6))
-                        .clipShape(Capsule())
+                        Image(systemName: "xmark.circle.fill")
                     }
                     
                     Spacer()
                     
-                    Text("Pindai QR Piece")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(Color.black.opacity(0.6))
-                        .clipShape(Capsule())
-                    
-                    Spacer()
-                    
-                    // Spacer penyeimbang tombol kiri
                     Color.clear
-                        .frame(width: 80, height: 36)
+                        .frame(width: 80, height: 32)
                 }
                 .padding(.top, 16)
                 .padding(.horizontal, 20)
                 
                 Spacer()
                 
-                // Kotak target viewfinder
-                ZStack {
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(scannedCode != nil ? Color.green : Color.yellow, lineWidth: 3)
-                        .frame(width: 200, height: 200)
-                        .background(Color.black.opacity(0.15))
-                    
-                    if scannedCode == nil {
-                        Text("Arahkan ke QR")
+                if scannedCode == nil {
+                    VStack(spacing: 8) {
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.yellow, lineWidth: 3)
+                            .frame(width: 180, height: 180)
+                            .background(Color.black.opacity(0.15))
+                        
+                        Text("Arahkan ke QR...")
                             .font(.subheadline)
-                            .foregroundColor(.white.opacity(0.8))
+                            .foregroundColor(.white)
                     }
                 }
                 
                 Spacer()
+            }
+            
+            // 3. Popup Konfirmasi (Tampil di tengah saat QR terdeteksi)
+            if let code = scannedCode {
+                Color.black.opacity(0.4)
+                    .ignoresSafeArea()
                 
-                // 3. Bottom Card Hasil Scan
                 VStack(spacing: 12) {
-                    if let code = scannedCode {
-                        Text(confirmedWeight != nil ? "PIECE TERKONFIRMASI" : "QR TERDETEKSI")
-                            .font(.caption)
-                            .fontWeight(.bold)
-                            .foregroundColor(.secondary)
-                        
-                        Text(code)
-                            .font(.title3)
-                            .fontWeight(.bold)
-                            .foregroundColor(.primary)
-                        
-                        if let piece = detectedPiece {
-                            HStack(spacing: 12) {
-                                Label(piece.shape.rawValue, systemImage: "square.on.square")
-                                    .font(.subheadline)
+                    Text(confirmedWeight != nil ? "PIECE TERKONFIRMASI" : "QR TERDETEKSI")
+                        .font(.caption)
+                        .fontWeight(.bold)
+                        .foregroundColor(.secondary)
+                    
+                    Text(code)
+                        .font(.title3.bold())
+                    
+                    if let piece = detectedPiece {
+                        HStack(spacing: 12) {
+                            Text(piece.shape.rawValue)
+                                .font(.subheadline.bold())
 
-                                Label("\(piece.gridCount) Grid", systemImage: "square.grid.2x2")
-                                    .font(.subheadline)
-                                
-                                if piece.isAnomaly {
-                                    Text("ANOMALI")
-                                        .font(.caption2.bold())
-                                        .padding(.horizontal, 6)
-                                        .padding(.vertical, 2)
-                                        .background(Color.orange.opacity(0.2))
-                                        .foregroundColor(.orange)
-                                        .cornerRadius(4)
-                                }
+                            Text("\(piece.gridCount) Grid")
+                                .font(.subheadline)
+                            
+                            if piece.isAnomaly {
+                                Text("ANOMALI")
+                                    .font(.caption2.bold())
+                                    .foregroundColor(.orange)
                             }
                         }
-                        
-                        // Bobot hanya muncul setelah user menekan tombol Konfirmasi
-                        if let weight = confirmedWeight {
-                            HStack(spacing: 6) {
-                                Image(systemName: "scalemass.fill")
-                                Text("Bobot: \(weight) kg")
-                            }
+                    }
+                    
+                    if let weight = confirmedWeight {
+                        Text("Bobot: \(weight) kg")
                             .font(.headline)
                             .foregroundColor(.green)
-                            .padding(.vertical, 4)
-                            .padding(.horizontal, 14)
-                            .background(Color.green.opacity(0.15))
-                            .clipShape(Capsule())
-                            .transition(.scale.combined(with: .opacity))
-                        }
-                        
-                        HStack(spacing: 12) {
-                            Button("Scan Ulang") {
-                                withAnimation {
-                                    resetScan()
-                                }
-                            }
-                            .buttonStyle(.bordered)
-                            
-                            if confirmedWeight == nil {
-                                Button("Konfirmasi") {
-                                    withAnimation {
-                                        // Generate bobot saat user menekan konfirmasi
-                                        confirmedWeight = session.weight(for: code)
-                                    }
-                                }
-                                .buttonStyle(.borderedProminent)
-                            } else {
-                                Button("Selesai") {
-                                    onScanned?(detectedPiece, code, confirmedWeight)
-                                    dismiss()
-                                }
-                                .buttonStyle(.borderedProminent)
-                            }
-                        }
-                        .padding(.top, 4)
-                    } else {
-                        Text("Mencari QR code piece...")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
                     }
+                    
+                    HStack(spacing: 12) {
+                        Button("Scan Ulang") {
+                            resetScan()
+                        }
+                        .buttonStyle(.bordered)
+                        
+                        if confirmedWeight == nil {
+                            Button("Konfirmasi") {
+                                confirmedWeight = session.weight(for: code)
+                            }
+                            .buttonStyle(.borderedProminent)
+                        } else {
+                            Button("Selesai") {
+                                onScanned?(detectedPiece, code, confirmedWeight)
+                                dismiss()
+                            }
+                            .buttonStyle(.borderedProminent)
+                        }
+                    }
+                    .padding(.top, 4)
                 }
                 .padding()
-                .frame(maxWidth: 420)
-                .background(.ultraThinMaterial)
-                .cornerRadius(16)
-                .padding(.bottom, 20)
+                .frame(maxWidth: 320)
+                .background(Color(uiColor: .systemBackground))
+                .cornerRadius(12)
             }
         }
         .onAppear {

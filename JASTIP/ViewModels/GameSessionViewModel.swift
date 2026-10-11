@@ -7,20 +7,31 @@
 
 import SwiftUI
 
+
+
+
 @Observable
 class GameSessionViewModel {
     var pieceWeights: [String: Int] = [:]
+    var revealedPieces: [RevealedPiece] = []
     
     init() {
         generateRandomizedWeights()
     }
     
     func startNewGame() {
+        revealedPieces.removeAll()
         generateRandomizedWeights()
     }
     
     func weight(for pieceId: String) -> Int {
         return pieceWeights[pieceId] ?? PieceCatalog.findPiece(by: pieceId)?.gridCount ?? 1
+    }
+    
+    func recordScannedPiece(_ piece: PieceModel, weight: Int) {
+        if !revealedPieces.contains(where: { $0.id == piece.id }) {
+            revealedPieces.append(RevealedPiece(piece: piece, weight: weight))
+        }
     }
     
     private func generateRandomizedWeights() {

@@ -62,8 +62,8 @@ class QRScannerManager: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
     }
     
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-        // debounce 2 sec
-        guard Date().timeIntervalSince(lastScanTime) > 2.0 else { return }
+        // debounce 1 sec
+        guard Date().timeIntervalSince(lastScanTime) > 1.0 else { return }
         guard !isProcessing else { return }
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
         

@@ -22,6 +22,7 @@ struct GameView: View {
     )
     
     @State private var isShowingScanner = false
+    @State private var isShowingRevealedWeights = false
     @State private var lastScannedPiece: PieceModel? = nil
     @State private var currentEvent: RandomEventModel? = nil // for DEBUG AlertView (reminder untuk dihapus)
     
@@ -49,6 +50,14 @@ struct GameView: View {
                     
                     Button("Next Hour", action: onNextHour)
                         .buttonStyle(PrimaryButtonStyle())
+                    
+                    Button("DAFTAR BOBOT") {
+                        withAnimation {
+                            isShowingRevealedWeights = true
+                        }
+                    }
+                    .font(.caption2)
+                    .foregroundStyle(.gray)
                     
                     // TODO: Temporary Button - Hapus sebelum rilis
                     Button("TEST EVENT") {
@@ -91,12 +100,33 @@ struct GameView: View {
                 }
                 .transition(.scale.combined(with: .opacity))
             }
+            
+            if isShowingRevealedWeights {
+                Color.black.opacity(0.4)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        withAnimation {
+                            isShowingRevealedWeights = false
+                        }
+                    }
+                
+                RevealedPiecesListView(pieces: session.revealedPieces) {
+                    withAnimation {
+                        isShowingRevealedWeights = false
+                    }
+                }
+                .transition(.scale.combined(with: .opacity))
+            }
         }
-        .animation(.easeInOut(duration: 0.2), value: currentEvent != nil)
+        .animation(.easeInOut(duration: 0.2), value: currentEvent != nil || isShowingRevealedWeights)
         .navigationBarBackButtonHidden(true)
         .fullScreenCover(isPresented: $isShowingScanner) {
             QRScannerView(session: session) { piece, code, weight in
                 lastScannedPiece = piece
+                
+                if let piece = piece, let weight = weight {
+                    session.recordScannedPiece(piece, weight: weight)
+                }
             }
         }
 
