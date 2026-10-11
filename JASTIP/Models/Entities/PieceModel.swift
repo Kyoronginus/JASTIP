@@ -29,6 +29,7 @@ enum PieceColor: Int {
 
 struct PieceModel: Identifiable {
     let id: String
+    let shape: PieceShape
     let color: PieceColor
     let gridCount: Int
     let isAnomaly: Bool

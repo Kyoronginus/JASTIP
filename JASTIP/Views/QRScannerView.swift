@@ -97,6 +97,9 @@ struct QRScannerView: View {
                         
                         if let piece = detectedPiece {
                             HStack(spacing: 12) {
+                                Label(piece.shape.rawValue, systemImage: "square.on.square")
+                                    .font(.subheadline)
+
                                 Label("\(piece.gridCount) Grid", systemImage: "square.grid.2x2")
                                     .font(.subheadline)
                                 
