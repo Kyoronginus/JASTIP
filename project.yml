@@ -1,0 +1,25 @@
+name: JASTIP
+
+options:
+  bundleIdPrefix: com.jastip
+  deploymentTarget:
+    iOS: 26.0
+  createIntermediateGroups: true
+
+settings:
+  base:
+    CODE_SIGN_STYLE: Automatic
+    GENERATE_INFOPLIST_FILE: YES
+
+targets:
+  JASTIP:
+    type: application
+    platform: iOS
+    sources:
+      - path: JASTIP
+    info:
+      properties:
+        CFBundleDisplayName: JASTIP
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationLandscapeRight
+        NSCameraUsageDescription: "Aplikasi membutuhkan kamera untuk memindai piece boardgame"
