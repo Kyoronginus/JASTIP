@@ -12,6 +12,8 @@ struct GameView: View {
     var onOpenCamera: () -> Void = {}
     var onNextHour: () -> Void = {}
     
+    var session: GameSessionViewModel = GameSessionViewModel()
+    
     var dummy: AirlineCardModel = AirlineCardModel(
         id: "1",
         maxCapacityKg: 20,
@@ -19,6 +21,9 @@ struct GameView: View {
         departureTime: "15.00"
     )
     
+    @State private var isShowingScanner = false
+    @State private var isShowingRevealedWeights = false
+    @State private var lastScannedPiece: PieceModel? = nil
     @State private var currentEvent: RandomEventModel? = nil // for DEBUG AlertView (reminder untuk dihapus)
     
     var body: some View {
@@ -36,11 +41,23 @@ struct GameView: View {
                     
                     Spacer()
                     
-                    Button("SCAN QR", action: onOpenCamera)
-                        .buttonStyle(PrimaryButtonStyle())
+                    Button("SCAN QR") {
+                        isShowingScanner = true
+                        onOpenCamera()
+                    }
+                    .buttonStyle(PrimaryButtonStyle())
+                        
                     
                     Button("Next Hour", action: onNextHour)
                         .buttonStyle(PrimaryButtonStyle())
+                    
+                    Button("DAFTAR BOBOT") {
+                        withAnimation {
+                            isShowingRevealedWeights = true
+                        }
+                    }
+                    .font(.caption2)
+                    .foregroundStyle(.gray)
                     
                     // TODO: Temporary Button - Hapus sebelum rilis
                     Button("TEST EVENT") {
@@ -83,9 +100,36 @@ struct GameView: View {
                 }
                 .transition(.scale.combined(with: .opacity))
             }
+            
+            if isShowingRevealedWeights {
+                Color.black.opacity(0.4)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        withAnimation {
+                            isShowingRevealedWeights = false
+                        }
+                    }
+                
+                RevealedPiecesListView(pieces: session.revealedPieces) {
+                    withAnimation {
+                        isShowingRevealedWeights = false
+                    }
+                }
+                .transition(.scale.combined(with: .opacity))
+            }
         }
-        .animation(.easeInOut(duration: 0.2), value: currentEvent != nil)
+        .animation(.easeInOut(duration: 0.2), value: currentEvent != nil || isShowingRevealedWeights)
         .navigationBarBackButtonHidden(true)
+        .fullScreenCover(isPresented: $isShowingScanner) {
+            QRScannerView(session: session) { piece, code, weight in
+                lastScannedPiece = piece
+                
+                if let piece = piece, let weight = weight {
+                    session.recordScannedPiece(piece, weight: weight)
+                }
+            }
+        }
+
     }
 }
 

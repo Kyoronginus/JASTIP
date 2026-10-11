@@ -18,6 +18,7 @@ settings:
     INFOPLIST_KEY_NSCameraUsageDescription: "Aplikasi membutuhkan kamera untuk memindai piece boardgame"
     INFOPLIST_KEY_UILaunchScreen_Generation: YES
 
+
 targets:
   JASTIP:
     type: application
