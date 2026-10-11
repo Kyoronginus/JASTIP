@@ -2,7 +2,7 @@ name: JASTIP
 include:
   - path: project.local.yml
     optional: true
-    
+
 options:
   bundleIdPrefix: com.jastip
   deploymentTarget:
@@ -16,6 +16,7 @@ settings:
     INFOPLIST_KEY_CFBundleDisplayName: JASTIP
     INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationLandscapeRight
     INFOPLIST_KEY_NSCameraUsageDescription: "Aplikasi membutuhkan kamera untuk memindai piece boardgame"
+    INFOPLIST_KEY_UILaunchScreen_Generation: YES
 
 targets:
   JASTIP:
