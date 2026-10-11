@@ -19,6 +19,8 @@ struct GameView: View {
         departureTime: "15.00"
     )
     
+    @State private var isShowingScanner = false
+    @State private var lastScannedPiece: PieceModel? = nil
     @State private var currentEvent: RandomEventModel? = nil // for DEBUG AlertView (reminder untuk dihapus)
     
     var body: some View {
@@ -36,8 +38,12 @@ struct GameView: View {
                     
                     Spacer()
                     
-                    Button("SCAN QR", action: onOpenCamera)
-                        .buttonStyle(PrimaryButtonStyle())
+                    Button("SCAN QR") {
+                        isShowingScanner = true
+                        onOpenCamera()
+                    }
+                    .buttonStyle(PrimaryButtonStyle())
+                        
                     
                     Button("Next Hour", action: onNextHour)
                         .buttonStyle(PrimaryButtonStyle())
@@ -86,6 +92,11 @@ struct GameView: View {
         }
         .animation(.easeInOut(duration: 0.2), value: currentEvent != nil)
         .navigationBarBackButtonHidden(true)
+        .fullScreenCover(isPresented: $isShowingScanner) {
+            QRScannerView { piece, code, weight in
+                lastScannedPiece = piece
+            }
+        }
     }
 }
 
