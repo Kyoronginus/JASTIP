@@ -10,19 +10,16 @@ import SwiftUI
 struct QRScannerView: View {
     @Environment(\.dismiss) private var dismiss
     
-    @State private var scanner = QRScannerManager()
-    @State private var scannedCode: String? = nil
-    @State private var detectedPiece: PieceModel? = nil
-    @State private var confirmedWeight: Int? = nil
+    @State private var viewModel: QRScannerViewModel
     
-    var session: GameSessionViewModel
-    
-    var onScanned: ((PieceModel?, String, Int?) -> Void)? = nil
+    init(session: GameSessionViewModel, onScanned: ((PieceModel?, String, Int?) -> Void)? = nil) {
+        _viewModel = State(initialValue: QRScannerViewModel(session: session, onScanned: onScanned))
+    }
     
     var body: some View {
         ZStack {
             // 1. Live Camera Preview
-            CameraPreviewView(session: scanner.session)
+            CameraPreviewView(session: viewModel.scanner.session)
                 .ignoresSafeArea()
             
             // 2. Viewfinder Target & Header Bar (Hanya saat mencari QR)
@@ -32,6 +29,11 @@ struct QRScannerView: View {
                         dismiss()
                     }) {
                         Image(systemName: "xmark.circle.fill")
+                            .font(.title2)
+                            .foregroundColor(.white)
+                            .padding(8)
+                            .background(Color.black.opacity(0.6))
+                            .clipShape(Circle())
                     }
                     
                     Spacer()
@@ -44,7 +46,7 @@ struct QRScannerView: View {
                 
                 Spacer()
                 
-                if scannedCode == nil {
+                if !viewModel.isShowingPopup {
                     VStack(spacing: 8) {
                         RoundedRectangle(cornerRadius: 12)
                             .stroke(Color.yellow, lineWidth: 3)
@@ -61,12 +63,12 @@ struct QRScannerView: View {
             }
             
             // 3. Popup Konfirmasi (Tampil di tengah saat QR terdeteksi)
-            if let code = scannedCode {
+            if let code = viewModel.scannedCode {
                 Color.black.opacity(0.4)
                     .ignoresSafeArea()
                 
                 VStack(spacing: 12) {
-                    Text(confirmedWeight != nil ? "PIECE TERKONFIRMASI" : "QR TERDETEKSI")
+                    Text(viewModel.headerTitle)
                         .font(.caption)
                         .fontWeight(.bold)
                         .foregroundColor(.secondary)
@@ -74,7 +76,7 @@ struct QRScannerView: View {
                     Text(code)
                         .font(.title3.bold())
                     
-                    if let piece = detectedPiece {
+                    if let piece = viewModel.detectedPiece {
                         HStack(spacing: 12) {
                             Text(piece.shape.rawValue)
                                 .font(.subheadline.bold())
@@ -90,7 +92,7 @@ struct QRScannerView: View {
                         }
                     }
                     
-                    if let weight = confirmedWeight {
+                    if let weight = viewModel.confirmedWeight {
                         Text("Bobot: \(weight) kg")
                             .font(.headline)
                             .foregroundColor(.green)
@@ -98,18 +100,18 @@ struct QRScannerView: View {
                     
                     HStack(spacing: 12) {
                         Button("Scan Ulang") {
-                            resetScan()
+                            viewModel.resetScan()
                         }
                         .buttonStyle(.bordered)
                         
-                        if confirmedWeight == nil {
+                        if viewModel.confirmedWeight == nil {
                             Button("Konfirmasi") {
-                                confirmedWeight = session.weight(for: code)
+                                viewModel.confirmWeight()
                             }
                             .buttonStyle(.borderedProminent)
                         } else {
                             Button("Selesai") {
-                                onScanned?(detectedPiece, code, confirmedWeight)
+                                viewModel.finishScan()
                                 dismiss()
                             }
                             .buttonStyle(.borderedProminent)
@@ -124,28 +126,11 @@ struct QRScannerView: View {
             }
         }
         .onAppear {
-            scanner.startScanning()
-            scanner.onCodeDetected = { code in
-                handleDetectedCode(code)
-            }
+            viewModel.startScanning()
         }
         .onDisappear {
-            scanner.stopScanning()
+            viewModel.stopScanning()
         }
-    }
-    
-    private func handleDetectedCode(_ code: String) {
-        guard scannedCode == nil else { return }
-        self.scannedCode = code
-        self.detectedPiece = PieceCatalog.findPiece(by: code)
-        self.confirmedWeight = nil
-    }
-    
-    private func resetScan() {
-        self.scannedCode = nil
-        self.detectedPiece = nil
-        self.confirmedWeight = nil
-        scanner.startScanning()
     }
 }
 
