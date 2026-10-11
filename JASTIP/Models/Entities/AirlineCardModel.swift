@@ -7,8 +7,9 @@
 
 import Foundation
 
-struct AirlineCardModel: Identifiable {
+struct AirlineCardModel: Identifiable, Hashable {
    var id: String = UUID().uuidString
+   let airlineName: String
    let maxCapacityKg: Int
    let maxCarryOnKg: Int
    let departureTime: String

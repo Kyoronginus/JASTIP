@@ -1,8 +1,10 @@
 import SwiftUI
 
 struct StartView: View {
+    @State private var path = NavigationPath()
+
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             VStack(spacing: 20) {
                 Spacer()
                 Text("JASTIP!")
@@ -11,10 +13,16 @@ struct StartView: View {
                 
                 Spacer()
                 
-                NavigationLink("START", destination: GameView())
-                    .buttonStyle(PrimaryButtonStyle())
+                Button("START") {
+                    let randomCard = AirlineCardCatalog.getRandomCard()
+                    path.append(randomCard)
+                }
+                .buttonStyle(PrimaryButtonStyle())
                 
                 Spacer()
+            }
+            .navigationDestination(for: AirlineCardModel.self) { card in
+                GameView(airlineCard: card)
             }
         }
     }

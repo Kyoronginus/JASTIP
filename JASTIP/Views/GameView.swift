@@ -8,84 +8,84 @@
 import SwiftUI
 
 struct GameView: View {
-    var currentTime: String = "08.00"
-    var onOpenCamera: () -> Void = {}
-    var onNextHour: () -> Void = {}
-    
-    var dummy: AirlineCardModel = AirlineCardModel(
-        id: "1",
-        maxCapacityKg: 20,
-        maxCarryOnKg: 7,
-        departureTime: "15.00"
-    )
-    
-    @State private var currentEvent: RandomEventModel? = nil // for DEBUG AlertView (reminder untuk dihapus)
-    
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var viewModel: GameSessionViewModel
+    var onOpenCamera: () -> Void
+
+    init(
+        airlineCard: AirlineCardModel = AirlineCardCatalog.dummy,
+        onOpenCamera: @escaping () -> Void = {}
+    ) {
+        _viewModel = State(initialValue: GameSessionViewModel(airlineCard: airlineCard))
+        self.onOpenCamera = onOpenCamera
+    }
+
     var body: some View {
-        ZStack{
+        ZStack {
             Color(uiColor: .systemGroupedBackground)
                 .ignoresSafeArea()
+
             HStack {
-                AirlineCard(data: dummy)
+                AirlineCard(data: viewModel.displayedAirlineCard)
+
                 Spacer()
-                
+
                 VStack(spacing: 12) {
                     Spacer()
-                    Text("TIME: \(currentTime)")
+
+                    Text("TIME: \(viewModel.currentTimeString)")
                         .font(.title2.bold())
-                    
+
                     Spacer()
-                    
+
                     Button("SCAN QR", action: onOpenCamera)
                         .buttonStyle(PrimaryButtonStyle())
-                    
-                    Button("Next Hour", action: onNextHour)
-                        .buttonStyle(PrimaryButtonStyle())
-                    
-                    // TODO: Temporary Button - Hapus sebelum rilis
-                    Button("TEST EVENT") {
-                        currentEvent = RandomEventModel(
-                            title: "Toko Buku Tutup!",
-                            message: "Toko Buku sedang istirahat. Tidak ada item yang bisa diambil di jam ini."
-                        )
+
+                    Button("Next Hour") {
+                        viewModel.nextHour()
                     }
-                    .font(.caption2)
-                    .foregroundStyle(.gray)
-                    
+                    .buttonStyle(PrimaryButtonStyle())
+
                     Spacer()
-                    
-                    Text("TIME: \(currentTime)")
+
+                    Text("TIME: \(viewModel.currentTimeString)")
                         .font(.title2.bold())
                         .rotationEffect(.degrees(180))
-                    
+
                     Spacer()
                 }
-                
+
                 Spacer()
-                AirlineCard(data: dummy)
+
+                AirlineCard(data: viewModel.displayedAirlineCard)
                     .rotationEffect(.degrees(180))
             }
             .padding(.horizontal, 24)
-            .navigationBarBackButtonHidden(true)
-        
-            if let event = currentEvent {
+
+            if let event = viewModel.currentEvent {
                 // Backdrop redup
                 Color.black.opacity(0.4)
                     .ignoresSafeArea()
                     .onTapGesture {
-                        currentEvent = nil
+                        viewModel.dismissEvent()
                     }
-     
+
                 EventAlertView(event: event) {
                     withAnimation {
-                        currentEvent = nil
+                        viewModel.dismissEvent()
                     }
                 }
                 .transition(.scale.combined(with: .opacity))
             }
         }
-        .animation(.easeInOut(duration: 0.2), value: currentEvent != nil)
+        .animation(.easeInOut(duration: 0.2), value: viewModel.currentEvent != nil)
         .navigationBarBackButtonHidden(true)
+        .onChange(of: viewModel.isGameOver) { _, isOver in
+            if isOver {
+                dismiss()
+            }
+        }
     }
 }
 

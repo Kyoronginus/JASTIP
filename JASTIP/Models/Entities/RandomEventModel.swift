@@ -8,8 +8,17 @@
 
 import SwiftUI
 
-struct RandomEventModel: Identifiable {
-   var id: String = UUID().uuidString
-   let title: String
-   let message: String
+// Random Events
+enum RandomEventType: String, CaseIterable {
+    case flightDelay
+    case zeroWeight
+    case relativeCanceled
+    case storesClosed
+}
+
+struct RandomEventModel: Identifiable, Equatable {
+    var id: String = UUID().uuidString
+    var type: RandomEventType = .storesClosed
+    let title: String
+    let message: String
 }

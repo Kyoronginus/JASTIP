@@ -13,7 +13,7 @@ struct AirlineCard: View {
     var body: some View {
         VStack(spacing: 8) {
             Spacer()
-            Text("Airline Card")
+            Text(data.airlineName)
                 .font(.headline)
                 .padding(.bottom, 20)
 
@@ -43,22 +43,12 @@ struct AirlineCard: View {
 }
 
 #Preview("Light") {
-    AirlineCard(data: AirlineCardModel(
-        id: "1",
-        maxCapacityKg: 20,
-        maxCarryOnKg: 7,
-        departureTime: "15.00"
-    ))
-    .preferredColorScheme(.light)
+    AirlineCard(data: AirlineCardCatalog.dummy)
+        .preferredColorScheme(.light)
 }
 
 #Preview("Dark") {
-    AirlineCard(data: AirlineCardModel(
-        id: "1",
-        maxCapacityKg: 20,
-        maxCarryOnKg: 7,
-        departureTime: "15.00"
-    ))
-    .preferredColorScheme(.dark)
+    AirlineCard(data: AirlineCardCatalog.dummy)
+        .preferredColorScheme(.dark)
 }
 
