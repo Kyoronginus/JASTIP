@@ -11,6 +11,7 @@ import Vision
 @Observable
 class QRScannerManager: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
     var scannedCode: String?
+    var onCodeDetected: ((String) -> Void)?
     
     let session = AVCaptureSession()
     
@@ -18,7 +19,9 @@ class QRScannerManager: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
     private var isProcessing = false
     private var lastScanTime = Date.distantPast
     
-    var onCodeDetected: ((String) -> Void)?
+    private var currentInput: AVCaptureDeviceInput?
+    var currentPosition: AVCaptureDevice.Position = .front
+
     
     override init() {
         super.init()
@@ -36,6 +39,7 @@ class QRScannerManager: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
             return
         }
         
+        self.currentInput = input
         session.addInput(input)
         
         if session.canAddOutput(videoOutput) {
@@ -45,6 +49,33 @@ class QRScannerManager: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
         }
         
         session.commitConfiguration()
+    }
+    
+    func flipCamera() {
+        session.beginConfiguration()
+        defer { session.commitConfiguration() }
+        
+        // Lepas input lama
+        if let currentInput = currentInput {
+            session.removeInput(currentInput)
+        }
+        
+        // Tentukan posisi baru
+        let newPosition: AVCaptureDevice.Position = (currentPosition == .front) ? .back : .front
+        
+        guard let newDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: newPosition),
+              let newInput = try? AVCaptureDeviceInput(device: newDevice),
+              session.canAddInput(newInput) else {
+            // Jika gagal, pasang kembali input lama
+            if let currentInput = currentInput {
+                session.addInput(currentInput)
+            }
+            return
+        }
+        
+        session.addInput(newInput)
+        self.currentInput = newInput
+        self.currentPosition = newPosition
     }
     
     func startScanning() {

@@ -41,9 +41,13 @@ class VideoPreviewUIView: UIView {
     func updateOrientation() {
         guard let connection = videoPreviewLayer.connection else { return }
         
+        let device = (videoPreviewLayer.session?.inputs.first as? AVCaptureDeviceInput)?.device
+        let isFrontCamera = (device?.position == .front)
+        
+        
         if connection.isVideoMirroringSupported {
             connection.automaticallyAdjustsVideoMirroring = false
-            connection.isVideoMirrored = true
+            connection.isVideoMirrored = isFrontCamera
         }
         
         if let device = (videoPreviewLayer.session?.inputs.first as? AVCaptureDeviceInput)?.device {

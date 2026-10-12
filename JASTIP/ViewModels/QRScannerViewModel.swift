@@ -65,4 +65,8 @@ class QRScannerViewModel {
         guard let code = scannedCode else { return }
         onScanned?(detectedPiece, code, confirmedWeight)
     }
+    
+    func flipCamera() {
+        scanner.flipCamera()
+    }
 }

@@ -40,6 +40,17 @@ struct QRScannerView: View {
                     
                     Color.clear
                         .frame(width: 80, height: 32)
+                    
+                    Button(action: {
+                        viewModel.flipCamera()
+                    }) {
+                        Image(systemName: "camera.rotate.fill")
+                            .font(.title2)
+                            .foregroundColor(.white)
+                            .padding(8)
+                            .background(Color.black.opacity(0.6))
+                            .clipShape(Circle())
+                    }
                 }
                 .padding(.top, 16)
                 .padding(.horizontal, 20)
