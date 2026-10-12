@@ -15,7 +15,7 @@ settings:
     GENERATE_INFOPLIST_FILE: YES
     INFOPLIST_KEY_CFBundleDisplayName: JASTIP
     INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationLandscapeRight
-    INFOPLIST_KEY_NSCameraUsageDescription: "Aplikasi membutuhkan kamera untuk memindai piece boardgame"
+    INFOPLIST_KEY_NSCameraUsageDescription: "The app requires camera access to scan board game pieces"
     INFOPLIST_KEY_UILaunchScreen_Generation: YES
 
 

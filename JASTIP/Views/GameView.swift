@@ -26,19 +26,35 @@ struct GameView: View {
     @State private var lastScannedPiece: PieceModel? = nil
     @State private var currentEvent: RandomEventModel? = nil // for DEBUG AlertView (reminder untuk dihapus)
     
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var viewModel: GameSessionViewModel
+    var onOpenCamera: () -> Void
+
+    init(
+        airlineCard: AirlineCardModel = AirlineCardCatalog.dummy,
+        onOpenCamera: @escaping () -> Void = {}
+    ) {
+        _viewModel = State(initialValue: GameSessionViewModel(airlineCard: airlineCard))
+        self.onOpenCamera = onOpenCamera
+    }
+
     var body: some View {
         ZStack{
             Color(uiColor: .systemGroupedBackground)
                 .ignoresSafeArea()
+
             HStack {
-                AirlineCard(data: dummy)
+                AirlineCard(data: viewModel.displayedAirlineCard)
+
                 Spacer()
-                
+
                 VStack(spacing: 12) {
                     Spacer()
-                    Text("TIME: \(currentTime)")
+
+                    Text("TIME: \(viewModel.currentTimeString)")
                         .font(.title2.bold())
-                    
+
                     Spacer()
                     
                     Button("SCAN QR") {
@@ -65,37 +81,39 @@ struct GameView: View {
                             title: "Toko Buku Tutup!",
                             message: "Toko Buku sedang istirahat. Tidak ada item yang bisa diambil di jam ini."
                         )
+
+                    Button("Next Hour") {
+                        viewModel.nextHour()
                     }
-                    .font(.caption2)
-                    .foregroundStyle(.gray)
-                    
+                    .buttonStyle(PrimaryButtonStyle())
+
                     Spacer()
-                    
-                    Text("TIME: \(currentTime)")
+
+                    Text("TIME: \(viewModel.currentTimeString)")
                         .font(.title2.bold())
                         .rotationEffect(.degrees(180))
-                    
+
                     Spacer()
                 }
-                
+
                 Spacer()
-                AirlineCard(data: dummy)
+
+                AirlineCard(data: viewModel.displayedAirlineCard)
                     .rotationEffect(.degrees(180))
             }
             .padding(.horizontal, 24)
-            .navigationBarBackButtonHidden(true)
-        
-            if let event = currentEvent {
+
+            if let event = viewModel.currentEvent {
                 // Backdrop redup
                 Color.black.opacity(0.4)
                     .ignoresSafeArea()
                     .onTapGesture {
-                        currentEvent = nil
+                        viewModel.dismissEvent()
                     }
-     
+
                 EventAlertView(event: event) {
                     withAnimation {
-                        currentEvent = nil
+                        viewModel.dismissEvent()
                     }
                 }
                 .transition(.scale.combined(with: .opacity))
@@ -127,6 +145,9 @@ struct GameView: View {
                 if let piece = piece, let weight = weight {
                     session.recordScannedPiece(piece, weight: weight)
                 }
+        .onChange(of: viewModel.isGameOver) { _, isOver in
+            if isOver {
+                dismiss()
             }
         }
 

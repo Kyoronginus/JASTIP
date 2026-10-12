@@ -36,7 +36,7 @@ struct EventAlertView: View {
                 .padding(.horizontal, 12)
 
             Button(action: onDismiss) {
-                Text("OK, MENGERTI")
+                Text("OK, GOT IT")
                     .font(.subheadline.bold())
                     .frame(maxWidth: .infinity)
             }
@@ -65,8 +65,8 @@ struct EventAlertView: View {
         Color.black.opacity(0.4).ignoresSafeArea()
         EventAlertView(
             event: RandomEventModel(
-                title: "Toko Buku Tutup!",
-                message: "Toko Buku sedang istirahat. Tidak ada item yang bisa diambil di jam ini."
+                title: "Bookstore Closed!",
+                message: "The bookstore is taking a break. No items can be collected during this hour."
             )
         )
     }
@@ -78,8 +78,8 @@ struct EventAlertView: View {
         Color.black.opacity(0.4).ignoresSafeArea()
         EventAlertView(
             event: RandomEventModel(
-                title: "Toko Buku Tutup!",
-                message: "Toko Buku sedang istirahat. Tidak ada item yang bisa diambil di jam ini."
+                title: "Bookstore Closed!",
+                message: "The bookstore is taking a break. No items can be collected during this hour."
             )
         )
     }
