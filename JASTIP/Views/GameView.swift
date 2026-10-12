@@ -123,8 +123,8 @@ struct GameView: View {
                 }
             }
         }
-        .onChange(of: viewModel.isGameOver) { _, isOver in
-            if isOver {
+        .fullScreenCover(isPresented: $viewModel.isGameOver) {
+            ScoringView(viewModel: viewModel) {
                 dismiss()
             }
         }

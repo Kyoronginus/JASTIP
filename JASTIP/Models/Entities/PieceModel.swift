@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftUI
 
 enum PieceShape: String {
     case single = "Single"
@@ -19,12 +20,22 @@ enum PieceShape: String {
     case unique = "Unique"
 }
 
-enum PieceColor: String {
+enum PieceColor: String, CaseIterable {
     case red = "Red"
     case yellow = "Yellow"
     case green = "Green"
     case blue = "Blue"
     case pink = "Pink"
+    
+    var displayColor: Color {
+        switch self {
+        case .red: return .red
+        case .yellow: return .yellow
+        case .green: return .green
+        case .blue: return .blue
+        case .pink: return .pink
+        }
+    }
 }
 
 struct PieceModel: Identifiable {

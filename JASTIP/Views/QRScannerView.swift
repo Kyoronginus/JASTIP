@@ -92,7 +92,7 @@ struct QRScannerView: View {
                             Text(piece.shape.rawValue)
                                 .font(.subheadline.bold())
 
-                            Text("\(piece.gridCount) Grid")
+                            Text("\(piece.gridCount) base kg")
                                 .font(.subheadline)
                             
                             if piece.isAnomaly {
