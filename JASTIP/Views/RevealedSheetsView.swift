@@ -5,7 +5,6 @@
 //  Created by Feivel Qutby on 11/10/26.
 //
 
-
 import SwiftUI
 
 struct RevealedSheetsView: View {
