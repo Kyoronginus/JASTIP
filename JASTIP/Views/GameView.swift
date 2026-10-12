@@ -63,17 +63,6 @@ struct GameView: View {
                     .font(.caption2)
                     .foregroundStyle(.gray)
                     
-                    // TODO: Temporary Button - Hapus sebelum rilis
-                    Button("TEST EVENT") {
-                        viewModel.currentEvent = RandomEventModel(
-                            title: "Toko Buku Tutup!",
-                            message: "Toko Buku sedang istirahat. Tidak ada item yang bisa diambil di jam ini."
-                        )
-                    }
-                    .font(.caption2)
-                    .foregroundStyle(.gray)
-                
-                    
                     Spacer()
 
                     Text("TIME: \(viewModel.currentTimeString)")

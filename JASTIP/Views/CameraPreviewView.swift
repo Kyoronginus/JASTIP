@@ -41,29 +41,17 @@ class VideoPreviewUIView: UIView {
     func updateOrientation() {
         guard let connection = videoPreviewLayer.connection else { return }
         
-        let orientation: UIInterfaceOrientation
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
-            orientation = windowScene.effectiveGeometry.interfaceOrientation
-        } else {
-            orientation = .landscapeRight
+        if connection.isVideoMirroringSupported {
+            connection.automaticallyAdjustsVideoMirroring = false
+            connection.isVideoMirrored = true
         }
         
-        let targetAngle: CGFloat
-        switch orientation {
-        case .landscapeRight:
-            targetAngle = 0.0
-        case .landscapeLeft:
-            targetAngle = 180.0
-        case .portraitUpsideDown:
-            targetAngle = 270.0
-        case .portrait, .unknown:
-            fallthrough
-        @unknown default:
-            targetAngle = 90.0
-        }
-        
-        if connection.isVideoRotationAngleSupported(targetAngle) {
-            connection.videoRotationAngle = targetAngle
+        if let device = (videoPreviewLayer.session?.inputs.first as? AVCaptureDeviceInput)?.device {
+            let coordinator = AVCaptureDevice.RotationCoordinator(device: device, previewLayer: videoPreviewLayer)
+            let angle = coordinator.videoRotationAngleForHorizonLevelPreview
+            if connection.isVideoRotationAngleSupported(angle) {
+                connection.videoRotationAngle = angle
+            }
         }
     }
 }
