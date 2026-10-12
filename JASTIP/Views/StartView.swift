@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct StartView: View {
+    @State private var gameSession = GameSessionViewModel()
+    
     var body: some View {
         NavigationStack {
             VStack(spacing: 20) {
@@ -11,8 +13,15 @@ struct StartView: View {
                 
                 Spacer()
                 
-                NavigationLink("START", destination: GameView())
-                    .buttonStyle(PrimaryButtonStyle())
+                NavigationLink {
+                    GameView(session: gameSession)
+                        .onAppear {
+                            gameSession.startNewGame()
+                        }
+                } label: {
+                    Text("START")
+                }
+                .buttonStyle(PrimaryButtonStyle())
                 
                 Spacer()
             }
