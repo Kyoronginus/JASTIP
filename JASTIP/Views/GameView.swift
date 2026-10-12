@@ -17,6 +17,7 @@ struct GameView: View {
     @State private var isShowingRevealedWeights = false
     @State private var lastScannedPiece: PieceModel? = nil
 
+
     init(
         airlineCard: AirlineCardModel = AirlineCardCatalog.dummy,
         onOpenCamera: @escaping () -> Void = {}
@@ -71,12 +72,7 @@ struct GameView: View {
                     }
                     .font(.caption2)
                     .foregroundStyle(.gray)
-                    
-                    Button("OPEN SHAPES") {
-                        isShowingRevealedSheet = true
-                    }
-                    .font(.caption2.bold())
-                    .buttonStyle(PrimaryButtonStyle())
+                
                     
                     Spacer()
 
@@ -129,10 +125,6 @@ struct GameView: View {
         }
         .animation(.easeInOut(duration: 0.2), value: viewModel.currentEvent != nil || isShowingRevealedWeights)
         .navigationBarBackButtonHidden(true)
-        .sheet(isPresented: $isShowingRevealedSheet) {
-               RevealedSheetsView()
-                   .presentationDetents([.medium, .large])
-           }
         .fullScreenCover(isPresented: $isShowingScanner) {
             QRScannerView(session: viewModel) { piece, code, weight in
                 lastScannedPiece = piece
