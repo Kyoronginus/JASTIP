@@ -8,28 +8,14 @@
 import SwiftUI
 
 struct GameView: View {
-    var currentTime: String = "08.00"
-    var onOpenCamera: () -> Void = {}
-    var onNextHour: () -> Void = {}
-    
-    var session: GameSessionViewModel = GameSessionViewModel()
-    
-    var dummy: AirlineCardModel = AirlineCardModel(
-        id: "1",
-        maxCapacityKg: 20,
-        maxCarryOnKg: 7,
-        departureTime: "15.00"
-    )
-    
-    @State private var isShowingScanner = false
-    @State private var isShowingRevealedWeights = false
-    @State private var lastScannedPiece: PieceModel? = nil
-    @State private var currentEvent: RandomEventModel? = nil // for DEBUG AlertView (reminder untuk dihapus)
-    
     @Environment(\.dismiss) private var dismiss
 
     @State private var viewModel: GameSessionViewModel
     var onOpenCamera: () -> Void
+
+    @State private var isShowingScanner = false
+    @State private var isShowingRevealedWeights = false
+    @State private var lastScannedPiece: PieceModel? = nil
 
     init(
         airlineCard: AirlineCardModel = AirlineCardCatalog.dummy,
@@ -40,7 +26,7 @@ struct GameView: View {
     }
 
     var body: some View {
-        ZStack{
+        ZStack {
             Color(uiColor: .systemGroupedBackground)
                 .ignoresSafeArea()
 
@@ -62,10 +48,11 @@ struct GameView: View {
                         onOpenCamera()
                     }
                     .buttonStyle(PrimaryButtonStyle())
-                        
                     
-                    Button("Next Hour", action: onNextHour)
-                        .buttonStyle(PrimaryButtonStyle())
+                    Button("Next Hour") {
+                        viewModel.nextHour()
+                    }
+                    .buttonStyle(PrimaryButtonStyle())
                     
                     Button("DAFTAR BOBOT") {
                         withAnimation {
@@ -77,15 +64,13 @@ struct GameView: View {
                     
                     // TODO: Temporary Button - Hapus sebelum rilis
                     Button("TEST EVENT") {
-                        currentEvent = RandomEventModel(
+                        viewModel.currentEvent = RandomEventModel(
                             title: "Toko Buku Tutup!",
                             message: "Toko Buku sedang istirahat. Tidak ada item yang bisa diambil di jam ini."
                         )
-
-                    Button("Next Hour") {
-                        viewModel.nextHour()
                     }
-                    .buttonStyle(PrimaryButtonStyle())
+                    .font(.caption2)
+                    .foregroundStyle(.gray)
 
                     Spacer()
 
@@ -128,7 +113,7 @@ struct GameView: View {
                         }
                     }
                 
-                RevealedPiecesListView(pieces: session.revealedPieces) {
+                RevealedPiecesListView(pieces: viewModel.revealedPieces) {
                     withAnimation {
                         isShowingRevealedWeights = false
                     }
@@ -136,21 +121,22 @@ struct GameView: View {
                 .transition(.scale.combined(with: .opacity))
             }
         }
-        .animation(.easeInOut(duration: 0.2), value: currentEvent != nil || isShowingRevealedWeights)
+        .animation(.easeInOut(duration: 0.2), value: viewModel.currentEvent != nil || isShowingRevealedWeights)
         .navigationBarBackButtonHidden(true)
         .fullScreenCover(isPresented: $isShowingScanner) {
-            QRScannerView(session: session) { piece, code, weight in
+            QRScannerView(session: viewModel) { piece, code, weight in
                 lastScannedPiece = piece
                 
                 if let piece = piece, let weight = weight {
-                    session.recordScannedPiece(piece, weight: weight)
+                    viewModel.recordScannedPiece(piece, weight: weight)
                 }
+            }
+        }
         .onChange(of: viewModel.isGameOver) { _, isOver in
             if isOver {
                 dismiss()
             }
         }
-
     }
 }
 

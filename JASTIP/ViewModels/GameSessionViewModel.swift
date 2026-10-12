@@ -25,12 +25,19 @@ class GameSessionViewModel {
     private var lastEventHour: Int? = nil
     
     init(airlineCard: AirlineCardModel = AirlineCardCatalog.dummy) {
-        generateRandomizedWeights()
         self.airlineCard = airlineCard
+        generateRandomizedWeights()
     }
     
     func startNewGame() {
         revealedPieces.removeAll()
+        currentHour = 8
+        delayHours = 0
+        currentEvent = nil
+        isGameOver = false
+        availableEvents = RandomEventType.allCases
+        eventCount = 0
+        lastEventHour = nil
         generateRandomizedWeights()
     }
     

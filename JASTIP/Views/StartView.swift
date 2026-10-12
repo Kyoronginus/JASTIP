@@ -1,8 +1,13 @@
+//
+//  StartView.swift
+//  JASTIP
+//
+//  Created by Feivel Qutby on 10/10/26.
+//
+
 import SwiftUI
 
 struct StartView: View {
-    @State private var gameSession = GameSessionViewModel()
-    
     @State private var path = NavigationPath()
 
     var body: some View {
@@ -15,13 +20,6 @@ struct StartView: View {
                 
                 Spacer()
                 
-                NavigationLink {
-                    GameView(session: gameSession)
-                        .onAppear {
-                            gameSession.startNewGame()
-                        }
-                } label: {
-                    Text("START")
                 Button("START") {
                     let randomCard = AirlineCardCatalog.getRandomCard()
                     path.append(randomCard)
@@ -46,4 +44,3 @@ struct StartView: View {
     StartView()
         .preferredColorScheme(.dark)
 }
-
