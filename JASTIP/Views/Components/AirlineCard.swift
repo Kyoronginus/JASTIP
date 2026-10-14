@@ -29,7 +29,7 @@ struct AirlineCard: View {
             Spacer()
         }
         .padding(20)
-        .frame(width: 200, height: 300)
+        .frame(width: 200, height: 275)
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color(uiColor: .secondarySystemGroupedBackground))

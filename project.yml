@@ -14,7 +14,12 @@ settings:
     CODE_SIGN_STYLE: Automatic
     GENERATE_INFOPLIST_FILE: YES
     INFOPLIST_KEY_CFBundleDisplayName: JASTIP
-    INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationLandscapeRight
+
+    # iPhone: Portrait & Landscape Right
+    INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeRight"
+    # iPad: Portrait, Upside Down, Landscape Left, Landscape Right
+    INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+    
     INFOPLIST_KEY_NSCameraUsageDescription: "The app requires camera access to scan board game pieces"
     INFOPLIST_KEY_UILaunchScreen_Generation: YES
 
