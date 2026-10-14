@@ -42,10 +42,12 @@ struct GameView: View {
     @State private var lastScannedWeight: Int? = nil
     
     init(
+        viewModel: GameSessionViewModel? = nil,
         airlineCard: AirlineCardModel = AirlineCardCatalog.dummy,
         onOpenCamera: @escaping () -> Void = {}
     ) {
-        _viewModel = State(initialValue: GameSessionViewModel(airlineCard: airlineCard))
+        let initViewModel = viewModel ?? GameSessionViewModel(airlineCard: airlineCard)
+        _viewModel = State(initialValue: initViewModel)
         self.onOpenCamera = onOpenCamera
     }
     
@@ -81,8 +83,14 @@ struct GameView: View {
                 }
                 // Middle Part
                 
+                
                 // CAROUSEL
+                Text("Revealed Pieces")
+                    .padding(8)
+                    .font(.headline.bold())
+                    .foregroundStyle(.primary)
                 GameCarouselView(pieces: viewModel.revealedPieces)
+                    .padding(.vertical,8)
 
                 
                 
@@ -185,7 +193,18 @@ struct GameView: View {
 }
 
 #Preview("Light") {
-    GameView()
+    let mockViewModel = GameSessionViewModel()
+    mockViewModel.revealedPieces = [
+        RevealedPiece(piece: PieceCatalog.allPieces[0], weight: 3),
+        RevealedPiece(piece: PieceCatalog.allPieces[1], weight: 4),
+        RevealedPiece(piece: PieceCatalog.allPieces[0], weight: 3),
+        RevealedPiece(piece: PieceCatalog.allPieces[1], weight: 4),
+        RevealedPiece(piece: PieceCatalog.allPieces[0], weight: 3),
+        RevealedPiece(piece: PieceCatalog.allPieces[1], weight: 4),
+        RevealedPiece(piece: PieceCatalog.allPieces[1], weight: 4)
+    ]
+    
+    return GameView(viewModel: mockViewModel)
         .preferredColorScheme(.light)
 }
 

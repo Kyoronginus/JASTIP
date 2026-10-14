@@ -44,6 +44,7 @@ struct PieceModel: Identifiable {
     let color: PieceColor
     let gridCount: Int
     let isAnomaly: Bool
+    var imageName: String = "" //placeholder
 }
 
 struct RevealedPiece: Identifiable {
