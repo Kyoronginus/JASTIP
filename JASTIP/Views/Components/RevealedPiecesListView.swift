@@ -70,7 +70,7 @@ struct RevealedPiecesListView: View {
     }
 }
 
-#Preview("With Items", traits: .landscapeRight) {
+#Preview("Light") {
     ZStack {
         Color.black.opacity(0.4).ignoresSafeArea()
         RevealedPiecesListView(pieces: [
@@ -84,11 +84,22 @@ struct RevealedPiecesListView: View {
             )
         ])
     }
+    .preferredColorScheme(.light)
 }
 
-#Preview("Empty", traits: .landscapeRight) {
+#Preview("Dark") {
     ZStack {
         Color.black.opacity(0.4).ignoresSafeArea()
-        RevealedPiecesListView(pieces: [])
+        RevealedPiecesListView(pieces: [
+            RevealedPiece(
+                piece: PieceModel(id: "JASTIP1-6", shape: .tetrominoT, color: .red, gridCount: 4, isAnomaly: false),
+                weight: 4
+            ),
+            RevealedPiece(
+                piece: PieceModel(id: "JASTIP4-2", shape: .domino, color: .blue, gridCount: 2, isAnomaly: false),
+                weight: 3
+            )
+        ])
     }
+    .preferredColorScheme(.dark)
 }

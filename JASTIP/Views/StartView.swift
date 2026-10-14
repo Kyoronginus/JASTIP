@@ -35,12 +35,12 @@ struct StartView: View {
     }
 }
 
-#Preview("Light", traits: .landscapeRight) {
+#Preview("Light") {
     StartView()
         .preferredColorScheme(.light)
 }
 
-#Preview("Dark", traits: .landscapeRight) {
+#Preview("Dark") {
     StartView()
         .preferredColorScheme(.dark)
 }

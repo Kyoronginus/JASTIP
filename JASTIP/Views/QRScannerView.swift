@@ -145,6 +145,12 @@ struct QRScannerView: View {
     }
 }
 
-#Preview("Landscape", traits: .landscapeRight) {
+#Preview("Light") {
     QRScannerView(session: GameSessionViewModel())
+        .preferredColorScheme(.light)
+}
+
+#Preview("Dark") {
+    QRScannerView(session: GameSessionViewModel())
+        .preferredColorScheme(.dark)
 }

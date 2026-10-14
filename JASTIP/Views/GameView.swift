@@ -17,7 +17,6 @@ struct GameView: View {
     @State private var isShowingRevealedWeights = false
     @State private var lastScannedPiece: PieceModel? = nil
 
-
     init(
         airlineCard: AirlineCardModel = AirlineCardCatalog.dummy,
         onOpenCamera: @escaping () -> Void = {}
@@ -31,56 +30,45 @@ struct GameView: View {
             Color(uiColor: .systemGroupedBackground)
                 .ignoresSafeArea()
 
-            HStack {
-                AirlineCard(data: viewModel.displayedAirlineCard)
-
-                Spacer()
-
-                VStack(spacing: 12) {
-                    Spacer()
-
-                    Text("TIME: \(viewModel.currentTimeString)")
-                        .font(.title2.bold())
-
+            VStack{
+                HStack{
+                    AirlineCard(data: viewModel.displayedAirlineCard)
+                    
                     Spacer()
                     
-                    Button("SCAN QR") {
-                        isShowingScanner = true
-                        onOpenCamera()
-                    }
-                    .buttonStyle(PrimaryButtonStyle())
-                    
-                    Button("Next Hour") {
-                        viewModel.nextHour()
-                    }
-                    .buttonStyle(PrimaryButtonStyle())
-                    
-                    Button("DAFTAR BOBOT") {
-                        withAnimation {
-                            isShowingRevealedWeights = true
+                    VStack{
+                        Text("Current Time")
+                            .font(.title2.bold())
+                        Text("\(viewModel.currentTimeString)")
+                            .font(.title2.bold())
+                        
+                        Button("Next Hour") {
+                            viewModel.nextHour()
                         }
+                        .buttonStyle(PrimaryButtonStyle())
+                        
+                        Button("SCAN QR") {
+                            isShowingScanner = true
+                            onOpenCamera()
+                        }
+                        .buttonStyle(PrimaryButtonStyle())
                     }
-                    .font(.caption2)
-                    .foregroundStyle(.gray)
-                    
-                    Spacer()
-
-                    Text("TIME: \(viewModel.currentTimeString)")
-                        .font(.title2.bold())
-                        .rotationEffect(.degrees(180))
-
-                    Spacer()
                 }
+                .padding(.horizontal,20)
+                
+                
+                
+                // CAROUSEL
+                
+                
+                
+                
+                // LUGGAGES
+                
 
-                Spacer()
-
-                AirlineCard(data: viewModel.displayedAirlineCard)
-                    .rotationEffect(.degrees(180))
             }
-            .padding(.horizontal, 24)
 
             if let event = viewModel.currentEvent {
-                // Backdrop redup
                 Color.black.opacity(0.4)
                     .ignoresSafeArea()
                     .onTapGesture {
@@ -131,12 +119,12 @@ struct GameView: View {
     }
 }
 
-#Preview("Light", traits: .landscapeRight) {
+#Preview("Light") {
     GameView()
         .preferredColorScheme(.light)
 }
 
-#Preview("Dark", traits: .landscapeRight) {
+#Preview("Dark") {
     GameView()
         .preferredColorScheme(.dark)
 }

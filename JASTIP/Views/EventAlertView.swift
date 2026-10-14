@@ -59,7 +59,7 @@ struct EventAlertView: View {
     }
 }
 
-#Preview("Light", traits: .landscapeRight) {
+#Preview("Light") {
     ZStack {
         Color.black.opacity(0.4).ignoresSafeArea()
         EventAlertView(
@@ -72,7 +72,7 @@ struct EventAlertView: View {
     .preferredColorScheme(.light)
 }
 
-#Preview("Dark", traits: .landscapeRight) {
+#Preview("Dark") {
     ZStack {
         Color.black.opacity(0.4).ignoresSafeArea()
         EventAlertView(

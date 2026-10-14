@@ -140,12 +140,12 @@ struct ScoringView: View {
     }
 }
 
-#Preview("Light", traits: .landscapeRight) {
+#Preview("Light") {
     ScoringView(viewModel: GameSessionViewModel())
         .preferredColorScheme(.light)
 }
 
-#Preview("Dark", traits: .landscapeRight) {
+#Preview("Dark") {
     ScoringView(viewModel: GameSessionViewModel())
         .preferredColorScheme(.dark)
 }
