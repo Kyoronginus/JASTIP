@@ -55,6 +55,7 @@ struct GameView: View {
                 .ignoresSafeArea()
             
             VStack{
+                // Top Part
                 HStack{
                     AirlineCard(data: viewModel.displayedAirlineCard)
                     
@@ -78,13 +79,12 @@ struct GameView: View {
                         .buttonStyle(PrimaryButtonStyle())
                     }
                 }
-                // CAROUSEL
+                // Middle Part
                 
                 
                 
                 
-                // LUGGAGES
-                
+                // Bottom Part
                 Spacer()
                 VStack(spacing: 20) {
                     HStack(alignment: .bottom, spacing: 24) {
@@ -191,19 +191,3 @@ struct GameView: View {
     GameView()
         .preferredColorScheme(.dark)
 }
-
-//// 1. Simpan bobot barang terakhir yang di-scan
-//
-//
-//// 2. Di closure QRScannerView (bawah):
-//.fullScreenCover(isPresented: $isShowingScanner) {
-//    QRScannerView(session: viewModel) { piece, code, weight in
-//        lastScannedPiece = piece
-//        if let piece = piece, let weight = weight {
-//            viewModel.recordScannedPiece(piece, weight: weight)
-//            lastScannedWeight = weight // <-- Simpan bobotnya
-//        }
-//    }
-//}
-//
-//// 3. Tombol di bawah ProgressBar:

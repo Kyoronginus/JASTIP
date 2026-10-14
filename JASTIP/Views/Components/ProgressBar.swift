@@ -5,7 +5,6 @@
 //  Created by Feivel Qutby on 14/10/26.
 //
 
-
 import SwiftUI
 
 struct ProgressBar: View {
@@ -17,20 +16,16 @@ struct ProgressBar: View {
         HStack {
             GeometryReader { geometry in
                 ZStack(alignment: .bottom) {
-                    // Track (Background)
                     RoundedRectangle(cornerRadius: 12)
                         .fill(Color(.systemGray5))
                     
-                    // Filled Progress Area
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(.blue)
-                    // Multiply the total height by the progress fraction
+                        .fill(.blue.opacity(0.6))
                         .frame(height: geometry.size.height * CGFloat(max(0, min(progress, 1))))
                 }
             }
-            // Set the size of the container boundary here
             .frame(width: x, height: y)
-            .animation(.default, value: progress) // Smooth fill animation
+            .animation(.default, value: progress)
         }
     }
 }
