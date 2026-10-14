@@ -81,7 +81,9 @@ struct GameView: View {
                 }
                 // Middle Part
                 
-                
+                // CAROUSEL
+                GameCarouselView(pieces: viewModel.revealedPieces)
+
                 
                 
                 // Bottom Part
