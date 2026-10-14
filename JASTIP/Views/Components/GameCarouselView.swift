@@ -27,11 +27,24 @@ struct GameCarouselView: View {
             HStack (spacing: 24){
                 ForEach(pieces) { item in
                     VStack {
-                        Image(systemName: "shoe.fill")
-                            .resizable()
-                            .scaledToFit()
+//                        Image(systemName: "shoe.fill")
+//                            .resizable()
+//                            .scaledToFit()
+//                            .frame(width: 100, height: 100)
+                        // placeholder
+                        Rectangle()
+                            .foregroundStyle(item.piece.color.displayColor.opacity(0.20))
                             .frame(width: 100, height: 100)
+                            .overlay(
+                                VStack{
+                                    Text(item.piece.shape.rawValue)
+                                    Text(item.piece.color.rawValue)
+                                }
+                            )
+
+                        
                         Text("\(item.weight) kg")
+                            .font(.subheadline.bold())
                     }
                 }
             }
