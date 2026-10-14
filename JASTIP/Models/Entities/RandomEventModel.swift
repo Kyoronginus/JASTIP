@@ -13,6 +13,7 @@ enum RandomEventType: String, CaseIterable {
     case zeroWeight
     case relativeCanceled
     case storesClosed
+    case reshuffleStore
 }
 
 struct RandomEventModel: Identifiable, Equatable {

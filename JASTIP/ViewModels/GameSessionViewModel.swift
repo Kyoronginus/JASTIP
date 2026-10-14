@@ -19,6 +19,9 @@ class GameSessionViewModel {
     var currentEvent: RandomEventModel? = nil
     var isGameOver: Bool = false
     
+    // MARK: - Private State Tracking
+        private var triggeredUniqueEvents: Set<RandomEventType> = []
+    
     // MARK: - Network Integration Properties
     var networkManager = NetworkSessionManager()
     var isGameStarted: Bool = false // Status untuk trigger pindah view dari StartView ke GameView
@@ -52,12 +55,10 @@ class GameSessionViewModel {
             delayHours = 0
             currentEvent = nil
             isGameOver = false
-            availableEvents = RandomEventType.allCases
-            eventCount = 0
-            lastEventHour = nil
+            triggeredUniqueEvents.removeAll() // Reset event unik saat game baru dimulai
             generateRandomizedWeights()
         }
-        
+    
         func weight(for pieceId: String) -> Int {
             return pieceWeights[pieceId] ?? PieceCatalog.findPiece(by: pieceId)?.gridCount ?? 1
         }
@@ -143,27 +144,31 @@ class GameSessionViewModel {
         }
         
         private func checkForRandomEvent() {
-            // 1. Maksimal 2 event per game
-            guard eventCount < 2 else { return }
+            // 1. Kocok RNG dengan probabilitas 40%
+            let roll = Int.random(in: 1...100)
+            guard roll <= 40 else { return }
             
-            // 2. Tidak boleh di 2 ronde terakhir
-            guard currentHour <= (boardingHour - 2) else { return }
-            
-            // 3. Cooldown: Tidak boleh 2 jam berturut-turut kena event
-            if let last = lastEventHour, currentHour <= (last + 1) {
-                return
+            // 2. Filter event yang belum pernah muncul (khusus .flightDelay dan .relativeCanceled)
+            // Event lain yang tidak dibatasi bisa terus masuk
+            let availableTypes = RandomEventType.allCases.filter { type in
+                if type == .flightDelay || type == .relativeCanceled {
+                    return !triggeredUniqueEvents.contains(type)
+                }
+                return true
             }
             
-            // 4. Kocok RNG 30%
-            let roll = Int.random(in: 1...100)
-            guard roll <= 30 else { return }
+            // Jika semua event berbatas sudah habis terpanggil, ambil dari yang tersisa
+            guard !availableTypes.isEmpty else { return }
             
-            // 5. Ambil event dari katalog
-            if let event = RandomEventCatalog.getRandomEvent(from: availableEvents) {
+            // 3. Ambil event dari katalog menggunakan fungsi berbobot yang sudah ada
+            if let event = RandomEventCatalog.getRandomEvent(from: availableTypes) {
+                
+                // 4. Jika event yang keluar termasuk yang dibatasi, tandai agar tidak muncul lagi
+                if event.type == .flightDelay || event.type == .relativeCanceled {
+                    triggeredUniqueEvents.insert(event.type)
+                }
+                
                 currentEvent = event
-                availableEvents.removeAll { $0 == event.type }
-                eventCount += 1
-                lastEventHour = currentHour
                 
                 // Efek khusus Flight Delay: Tambah boarding +1 jam
                 if event.type == .flightDelay {
