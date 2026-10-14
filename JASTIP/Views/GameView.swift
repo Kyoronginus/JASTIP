@@ -9,14 +9,38 @@ import SwiftUI
 
 struct GameView: View {
     @Environment(\.dismiss) private var dismiss
-
+    
     @State private var viewModel: GameSessionViewModel
     var onOpenCamera: () -> Void
-
+    
     @State private var isShowingScanner = false
     @State private var isShowingRevealedWeights = false
     @State private var lastScannedPiece: PieceModel? = nil
-
+    
+    @State private var suitWeight: Int = 0
+    @State private var carryWeight: Int = 0
+    
+    private var maxSuitCapacity: Int {
+        viewModel.displayedAirlineCard.maxCapacityKg
+    }
+    
+    private var maxCarryCapacity: Int {
+        viewModel.displayedAirlineCard.maxCarryOnKg
+    }
+    
+    // Progress otomatis dihitung dari (berat / kapasitas)
+    private var suitProgress: Double {
+        guard maxSuitCapacity > 0 else { return 0 }
+        return Double(suitWeight) / Double(maxSuitCapacity)
+    }
+    
+    private var carryProgress: Double {
+        guard maxCarryCapacity > 0 else { return 0 }
+        return Double(carryWeight) / Double(maxCarryCapacity)
+    }
+    
+    @State private var lastScannedWeight: Int? = nil
+    
     init(
         airlineCard: AirlineCardModel = AirlineCardCatalog.dummy,
         onOpenCamera: @escaping () -> Void = {}
@@ -24,12 +48,12 @@ struct GameView: View {
         _viewModel = State(initialValue: GameSessionViewModel(airlineCard: airlineCard))
         self.onOpenCamera = onOpenCamera
     }
-
+    
     var body: some View {
         ZStack {
             Color(uiColor: .systemGroupedBackground)
                 .ignoresSafeArea()
-
+            
             VStack{
                 HStack{
                     AirlineCard(data: viewModel.displayedAirlineCard)
@@ -54,10 +78,6 @@ struct GameView: View {
                         .buttonStyle(PrimaryButtonStyle())
                     }
                 }
-                .padding(.horizontal,20)
-                
-                
-                
                 // CAROUSEL
                 
                 
@@ -65,16 +85,59 @@ struct GameView: View {
                 
                 // LUGGAGES
                 
-
+                Spacer()
+                VStack(spacing: 20) {
+                    HStack(alignment: .bottom, spacing: 24) {
+                        ProgressBar(progress: suitProgress, x: 180, y: 220)
+                            .overlay {
+                                VStack(spacing: 8) {
+                                    Text("Suitcase")
+                                        .font(.headline.bold())
+                                        .foregroundStyle(.primary)
+                                    
+                                    Spacer()
+                                    
+                                    // Teks Berat yang Sync
+                                    Text("\(suitWeight) / \(maxSuitCapacity) kg")
+                                        .font(.subheadline.bold())
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 4)
+                                        .background(Color(uiColor: .systemBackground).opacity(0.85))
+                                        .clipShape(Capsule())
+                                }
+                                .padding(.vertical, 16)
+                            }
+                        
+                        ProgressBar(progress: carryProgress, x: 140, y: 140)
+                            .overlay {
+                                VStack(spacing: 8) {
+                                    Text("Carry-on")
+                                        .font(.subheadline.bold())
+                                        .foregroundStyle(.primary)
+                                    
+                                    Spacer()
+                                    
+                                    Text("\(carryWeight) / \(maxCarryCapacity) kg")
+                                        .font(.caption.bold())
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(Color(uiColor: .systemBackground).opacity(0.85))
+                                        .clipShape(Capsule())
+                                }
+                                .padding(.vertical, 14)
+                            }
+                    }
+                }
             }
-
+            .padding(.horizontal,20)
+            
             if let event = viewModel.currentEvent {
                 Color.black.opacity(0.4)
                     .ignoresSafeArea()
                     .onTapGesture {
                         viewModel.dismissEvent()
                     }
-
+                
                 EventAlertView(event: event) {
                     withAnimation {
                         viewModel.dismissEvent()
@@ -105,9 +168,9 @@ struct GameView: View {
         .fullScreenCover(isPresented: $isShowingScanner) {
             QRScannerView(session: viewModel) { piece, code, weight in
                 lastScannedPiece = piece
-                
                 if let piece = piece, let weight = weight {
                     viewModel.recordScannedPiece(piece, weight: weight)
+                    lastScannedWeight = weight
                 }
             }
         }
@@ -128,3 +191,19 @@ struct GameView: View {
     GameView()
         .preferredColorScheme(.dark)
 }
+
+//// 1. Simpan bobot barang terakhir yang di-scan
+//
+//
+//// 2. Di closure QRScannerView (bawah):
+//.fullScreenCover(isPresented: $isShowingScanner) {
+//    QRScannerView(session: viewModel) { piece, code, weight in
+//        lastScannedPiece = piece
+//        if let piece = piece, let weight = weight {
+//            viewModel.recordScannedPiece(piece, weight: weight)
+//            lastScannedWeight = weight // <-- Simpan bobotnya
+//        }
+//    }
+//}
+//
+//// 3. Tombol di bawah ProgressBar:
