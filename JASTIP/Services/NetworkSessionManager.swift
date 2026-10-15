@@ -29,6 +29,7 @@ class NetworkSessionManager: NSObject {
     var onStartGameReceived: ((AirlineCardModel) -> Void)?
     var onNextHourReceived: (() -> Void)?
     var onNextHourPayloadReceived: ((NextHourPayload) -> Void)?
+    var onScannedItemReceived: ((RevealedPiece, Int) -> Void)?
 
     override init() {
         super.init()
@@ -66,6 +67,25 @@ class NetworkSessionManager: NSObject {
         // Trigger untuk device yang memencet tombol START
         DispatchQueue.main.async {
             self.onStartGameReceived?(card)
+        }
+    }
+    
+    func sendScannedItem(piece: RevealedPiece, weight: Int) {
+        struct ScanPayload: Codable {
+            let piece: PieceModel
+            let weight: Int
+        }
+        
+        // Kirim piece.piece karena bertipe PieceModel
+        let payload = ScanPayload(piece: piece.piece, weight: weight)
+        guard let jsonData = try? JSONEncoder().encode(payload),
+              let jsonString = String(data: jsonData, encoding: .utf8) else { return }
+        
+        let message = "SCAN_ITEM:\(jsonString)"
+        guard let data = message.data(using: .utf8) else { return }
+        
+        if !session.connectedPeers.isEmpty {
+            try? session.send(data, toPeers: session.connectedPeers, with: .reliable)
         }
     }
     
@@ -113,6 +133,18 @@ extension NetworkSessionManager: MCSessionDelegate {
                     if let jsonData = jsonString.data(using: .utf8),
                        let payload = try? JSONDecoder().decode(NextHourPayload.self, from: jsonData) {
                         self.onNextHourPayloadReceived?(payload)
+                    }
+                } else if message.hasPrefix("SCAN_ITEM:") {
+                    let jsonString = String(message.dropFirst("SCAN_ITEM:".count))
+                    struct ScanPayload: Codable {
+                        let piece: PieceModel
+                        let weight: Int
+                    }
+                    if let jsonData = jsonString.data(using: .utf8),
+                       let payload = try? JSONDecoder().decode(ScanPayload.self, from: jsonData) {
+                        // Bungkus kembali ke RevealedPiece saat diterima
+                        let revealed = RevealedPiece(piece: payload.piece, weight: payload.weight)
+                        self.onScannedItemReceived?(revealed, payload.weight)
                     }
                 }
             }

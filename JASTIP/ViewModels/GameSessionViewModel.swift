@@ -53,6 +53,12 @@ class GameSessionViewModel {
         networkManager.onNextHourPayloadReceived = { [weak self] payload in
             self?.applyRemoteNextHour(payload: payload)
         }
+        
+        networkManager.onScannedItemReceived = { [weak self] revealedPiece, weight in
+            if !(self?.revealedPieces.contains(where: { $0.id == revealedPiece.id }) ?? false) {
+                self?.revealedPieces.append(revealedPiece)
+            }
+        }
     }
         
         func startNewGame() {
@@ -207,12 +213,17 @@ class GameSessionViewModel {
     
         // Fungsi untuk mencatat item sekaligus memilih tempat (Suitcase / Carry-On)
         func recordItemPlacement(piece: PieceModel, weight: Int, isSuitcase: Bool) {
-            // Masukkan ke carousel jika belum ada (shared info)
+            let revealed = RevealedPiece(piece: piece, weight: weight)
+
+            // 1. Masukin ke carousel HP sendiri kalau belum ada
             if !revealedPieces.contains(where: { $0.id == piece.id }) {
-                revealedPieces.append(RevealedPiece(piece: piece, weight: weight))
+                revealedPieces.append(revealed)
             }
-            
-            // Tambahkan berat ke kategori yang dipilih
+
+            // 2. Kirim datanya ke HP player lain via Multipeer
+            networkManager.sendScannedItem(piece: revealed, weight: weight)
+
+            // 3. Tambahin bobot HANYA ke tracker HP ini sendiri (berat suitcase/carry-on gak digabung ke HP lain)
             if isSuitcase {
                 suitWeight += weight
             } else {
