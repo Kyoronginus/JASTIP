@@ -9,6 +9,7 @@ import Foundation
 import MultipeerConnectivity
 import Observation
 import UIKit
+import Observation
 
 @Observable
 class NetworkSessionManager: NSObject {

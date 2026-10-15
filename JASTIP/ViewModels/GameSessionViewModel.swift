@@ -19,6 +19,10 @@ class GameSessionViewModel {
     var currentEvent: RandomEventModel? = nil
     var isGameOver: Bool = false
     
+    // MARK: - Weight Tracking Properties
+        var suitWeight: Int = 0
+        var carryWeight: Int = 0
+    
     // MARK: - Private State Tracking
         private var triggeredUniqueEvents: Set<RandomEventType> = []
     
@@ -62,6 +66,8 @@ class GameSessionViewModel {
             currentEvent = nil
             isGameOver = false
             triggeredUniqueEvents.removeAll() // Reset event unik saat game baru dimulai
+            suitWeight = 0
+            carryWeight = 0
             generateRandomizedWeights()
             self.airlineCard = AirlineCardCatalog.getRandomCard()
         }
@@ -76,6 +82,8 @@ class GameSessionViewModel {
             }
         }
         
+    
+    
         private func generateRandomizedWeights() {
             var weights: [String: Int] = [:]
             let deltas = [-2, -1, 1, 2]
@@ -110,8 +118,7 @@ class GameSessionViewModel {
             
             self.pieceWeights = weights
         }
-        
-        // MARK: - Computed Presentation Properties
+
         var currentTimeString: String {
             String(format: "%02d:00", currentHour)
         }
@@ -135,6 +142,11 @@ class GameSessionViewModel {
                 )
             }
         }
+    
+        
+    
+    
+    
         
         // MARK: - Business Logic Methods
         func nextHour() {
@@ -220,15 +232,26 @@ class GameSessionViewModel {
                 
                 // 4. Jika event yang keluar termasuk yang dibatasi, tandai agar tidak muncul lagi
                 if event.type == .flightDelay || event.type == .relativeCanceled {
-                    triggeredUniqueEvents.insert(event.type)
-                }
-                
-                currentEvent = event
-                
+    
                 // Efek khusus Flight Delay: Tambah boarding +1 jam
                 if event.type == .flightDelay {
                     delayHours += 1
                 }
+            }
+        }
+    
+        // Fungsi untuk mencatat item sekaligus memilih tempat (Suitcase / Carry-On)
+        func recordItemPlacement(piece: PieceModel, weight: Int, isSuitcase: Bool) {
+            // Masukkan ke carousel jika belum ada (shared info)
+            if !revealedPieces.contains(where: { $0.id == piece.id }) {
+                revealedPieces.append(RevealedPiece(piece: piece, weight: weight))
+            }
+            
+            // Tambahkan berat ke kategori yang dipilih
+            if isSuitcase {
+                suitWeight += weight
+            } else {
+                carryWeight += weight
             }
         }
     
@@ -238,3 +261,4 @@ class GameSessionViewModel {
             startNewGame()
         }
     }
+}

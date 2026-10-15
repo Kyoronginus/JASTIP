@@ -17,8 +17,16 @@ struct GameView: View {
     @State private var isShowingRevealedWeights = false
     @State private var lastScannedPiece: PieceModel? = nil
     
-    @State private var suitWeight: Int = 0
-    @State private var carryWeight: Int = 0
+//    @State private var suitWeight: Int = 0
+//    @State private var carryWeight: Int = 0
+    
+    private var suitWeight: Int {
+        viewModel.suitWeight
+    }
+    
+    private var carryWeight: Int {
+        viewModel.carryWeight
+    }
     
     private var maxSuitCapacity: Int {
         viewModel.displayedAirlineCard.maxCapacityKg
@@ -180,8 +188,7 @@ struct GameView: View {
         .fullScreenCover(isPresented: $isShowingScanner) {
             QRScannerView(session: viewModel) { piece, code, weight in
                 lastScannedPiece = piece
-                if let piece = piece, let weight = weight {
-                    viewModel.recordScannedPiece(piece, weight: weight)
+                if let weight = weight {
                     lastScannedWeight = weight
                 }
             }

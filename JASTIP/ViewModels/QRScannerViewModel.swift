@@ -66,6 +66,17 @@ class QRScannerViewModel {
         onScanned?(detectedPiece, code, confirmedWeight)
     }
     
+    // Fungsi baru untuk menangani pilihan tempat penyimpanan item
+    func selectDestination(isSuitcase: Bool) {
+        guard let code = scannedCode, let weight = confirmedWeight, let piece = detectedPiece else { return }
+        
+        // Catat ke session (carousel & weight tracker)
+        session.recordItemPlacement(piece: piece, weight: weight, isSuitcase: isSuitcase)
+        
+        // Selesaikan scan dan tutup popup/scanner
+        onScanned?(piece, code, weight)
+    }
+    
     func flipCamera() {
         scanner.flipCamera()
     }

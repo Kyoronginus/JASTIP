@@ -23,5 +23,7 @@
 		<string>_jastip-game._tcp</string>
 		<string>_jastip-game._udp</string>
 	</array>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>This app uses Bonjour to find other devices on the local network</string>
 </dict>
 </plist>
