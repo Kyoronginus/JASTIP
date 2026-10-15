@@ -6,147 +6,143 @@
 //
 
 import Foundation
-import Network
-import Combine
+import MultipeerConnectivity
+import Observation
 import UIKit
 import Observation
 
 @Observable
-class NetworkSessionManager {
-    // Bonjour Service Type
-    private let serviceType = "_jastip-game._tcp"
+class NetworkSessionManager: NSObject {
+    // Bonjour Service Type: max 15 karakter, huruf kecil, angka, tanda strip
+    private let serviceType = "jastip-game"
     
-    private var listener: NWListener?
-    private var browser: NWBrowser?
+    private let myPeerID = MCPeerID(displayName: UIDevice.current.name)
+    private var session: MCSession!
+    private var advertiser: MCNearbyServiceAdvertiser!
+    private var browser: MCNearbyServiceBrowser!
     
-    // Nyimpen daftar connection yg aktif dgn peer lain
-    var activeConnections: [NWConnection] = []
-    var connectedPeersCount: Int = 0
+    // Status yang dipantau StartView
+    var connectedPeersCount: Int = 1 // Termasuk device ini sendiri
+    var connectedPeerNames: [String] = []
     
-    // Callback ketika nerima pesan "START_GAME"
+    // Callback ketika sinyal START_GAME diterima
     var onStartGameReceived: (() -> Void)?
-    
-    init() {
-        startAdvertising()
-        startBrowsing()
+    var onNextHourReceived: (() -> Void)?
+
+    override init() {
+        super.init()
+        setupMultipeer()
     }
     
-    // MARK: - 1. Advertising (Membuka Listener agar device lain bisa nemu device ini)
-    func startAdvertising() {
-        do {
-            let parameters = NWParameters.tcp
-            parameters.includePeerToPeer = true
-            
-            listener = try NWListener(using: parameters)
-            listener?.service = NWListener.Service(name:UIDevice.current.name, type: serviceType)
-            listener?.stateUpdateHandler = { newState in
-                switch newState {
-                case .ready:
-                    print("🟢 NetworkListener ready: \(UIDevice.current.name)")
-                case .failed(let error):
-                    print("🔴 Listener failed: \(error)")
-                default:
-                    break
-                }
-            }
-            
-            // Handle connection yg masuk dari device lain
-            listener?.newConnectionHandler = { [weak self] newConnection in self?.setupConnection(newConnection)
-            }
-            
-            listener?.start(queue: .main)
-        } catch {
-            print("Failed to create listener: \(error)")
-        }
+    private func setupMultipeer() {
+        // 1. Setup Session
+        session = MCSession(peer: myPeerID, securityIdentity: nil, encryptionPreference: .none)
+        session.delegate = self
+        
+        // 2. Setup Advertiser (Membuka diri agar bisa ditemukan HP lain)
+        advertiser = MCNearbyServiceAdvertiser(peer: myPeerID, discoveryInfo: nil, serviceType: serviceType)
+        advertiser.delegate = self
+        advertiser.startAdvertisingPeer()
+        
+        // 3. Setup Browser (Mencari HP lain yang sedang membuka app)
+        browser = MCNearbyServiceBrowser(peer: myPeerID, serviceType: serviceType)
+        browser.delegate = self
+        browser.startBrowsingForPeers()
     }
     
-    // MARK: - 2. Browsing (Mencari device lain yg membuka app)
-    func startBrowsing() {
-        let parameters = NWParameters.tcp
-        parameters.includePeerToPeer = true
-        
-        let browserDescriptor = NWBrowser.Descriptor.bonjour(type: serviceType, domain: "local")
-        browser = NWBrowser(for: browserDescriptor, using: parameters)
-        
-        browser?.browseResultsChangedHandler = { [weak self] results, _ in
-            for result in results {
-                if case let .service(name, _, _, _) = result.endpoint {
-                    // Avoid connection ke diri sendiri
-                    if name != UIDevice.current.name {
-                        let connection = NWConnection(to: result.endpoint, using: parameters)
-                        self?.setupConnection(connection)
-                    }
-                }
-            }
-        }
-        
-        browser?.start(queue: .main)
-    }
-    
-    // MARK: - 3. Setup & Receive Data
-    private func setupConnection(_ connection: NWConnection) {
-        // Cek apakah connection udah ada agar tidak duplikat
-        guard !activeConnections.contains(where: { $0.endpoint == connection.endpoint }) else { return }
-        
-        connection.stateUpdateHandler = { [weak self] state in
-            switch state {
-                case .ready:
-                    print("Connected to: \(connection.endpoint)")
-                    DispatchQueue.main.async {
-                        if !(self?.activeConnections.contains(where: { $0.endpoint == connection.endpoint }) ?? false) {
-                            self?.activeConnections.append(connection)
-                            self?.connectedPeersCount = (self?.activeConnections.count ?? 0) + 1 // include self
-                        }
-                    }
-                    self?.receiveData(on: connection)
-                case .failed, .cancelled:
-                    DispatchQueue.main.async {
-                        self?.activeConnections.removeAll(where: { $0.endpoint == connection.endpoint })
-                        self?.connectedPeersCount = max(1, (self?.activeConnections.count ?? 0) + 1)
-                    }
-                default:
-                    break
-            }
-        }
-        
-        connection.start(queue: .main)
-    }
-    
-    private func receiveData(on connection: NWConnection) {
-        connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { [weak self] data, _, isComplete, error in
-            if let data = data, let message = String(data: data, encoding: .utf8) {
-                print("Received message: \(message)")
-                if message == "START_GAME" {
-                    DispatchQueue.main.async {
-                        self?.onStartGameReceived?()
-                    }
-                }
-            }
-            
-            if isComplete {
-                connection.cancel()
-            } else if error == nil {
-                // Keep listening data berikutnya secara berulang
-                self?.receiveData(on: connection)
-            }
-        }
-    }
-    
-    // MARK: - 4. Broadcast Message (Send "START_GAME")
+    // MARK: - Broadcast Start Game
     func sendStartGameTrigger() {
         let message = "START_GAME"
         guard let data = message.data(using: .utf8) else { return }
         
-        for connection in activeConnections {
-            connection.send(content: data, completion: .contentProcessed({ error in
-                if let error = error {
-                    print("Send error: \(error)")
-                } else {
-                    print("START_GAME sent to \(connection.endpoint)")
-                }
-            }))
+        if !session.connectedPeers.isEmpty {
+            try? session.send(data, toPeers: session.connectedPeers, with: .reliable)
         }
-        // Local Trigger untuk device yg klik tombol start
-        self.onStartGameReceived?()
+        
+        // Trigger untuk device yang memencet tombol START
+        DispatchQueue.main.async {
+            self.onStartGameReceived?()
+        }
+    }
+    
+    deinit {
+        advertiser?.stopAdvertisingPeer()
+        browser?.stopBrowsingForPeers()
+        session?.disconnect()
+    }
+}
+
+
+
+// MARK: - MCSessionDelegate
+extension NetworkSessionManager: MCSessionDelegate {
+    func session(_ session: MCSession, peer peerID: MCPeerID, didChange state: MCSessionState) {
+        DispatchQueue.main.async {
+            switch state {
+            case .connected:
+                print("🟢 Connected to \(peerID.displayName)")
+            case .notConnected:
+                print("🔴 Disconnected from \(peerID.displayName)")
+            case .connecting:
+                print("🟡 Connecting to \(peerID.displayName)")
+            @unknown default:
+                break
+            }
+            
+            // Hitung akurat: jumlah teman terhubung + 1 (diri sendiri)
+            self.connectedPeersCount = session.connectedPeers.count + 1
+            self.connectedPeerNames = session.connectedPeers.map { $0.displayName }
+        }
+    }
+    
+    func session(_ session: MCSession, didReceive data: Data, fromPeer peerID: MCPeerID) {
+        if let message = String(data: data, encoding: .utf8) {
+            DispatchQueue.main.async {
+                if message == "START_GAME" {
+                    self.onStartGameReceived?()
+                } else if message == "NEXT_HOUR" {
+                    self.onNextHourReceived?()
+                }
+            }
+        }
+    }
+
+    func sendNextHourTrigger() {
+        let message = "NEXT_HOUR"
+        guard let data = message.data(using: .utf8) else { return }
+        
+        if !session.connectedPeers.isEmpty {
+            try? session.send(data, toPeers: session.connectedPeers, with: .reliable)
+        }
+    }
+    
+    // Delegate methods wajib (kosongkan saja untuk kebutuhan message string)
+    func session(_ session: MCSession, didReceive stream: InputStream, withName streamName: String, fromPeer peerID: MCPeerID) {}
+    func session(_ session: MCSession, didStartReceivingResourceWithName resourceName: String, fromPeer peerID: MCPeerID, with progress: Progress) {}
+    func session(_ session: MCSession, didFinishReceivingResourceWithName resourceName: String, fromPeer peerID: MCPeerID, at localURL: URL?, withError error: Error?) {}
+}
+
+// MARK: - MCNearbyServiceAdvertiserDelegate
+extension NetworkSessionManager: MCNearbyServiceAdvertiserDelegate {
+    // Menerima undangan join dari player lain
+    func advertiser(_ advertiser: MCNearbyServiceAdvertiser, didReceiveInvitationFromPeer peerID: MCPeerID, withContext context: Data?, invitationHandler: @escaping (Bool, MCSession?) -> Void) {
+        // Otomatis terima jika player belum mencapai maksimal 4 orang (3 teman + 1 diri sendiri)
+        let shouldAccept = session.connectedPeers.count < 5
+        invitationHandler(shouldAccept, session)
+    }
+}
+
+// MARK: - MCNearbyServiceBrowserDelegate
+extension NetworkSessionManager: MCNearbyServiceBrowserDelegate {
+    func browser(_ browser: MCNearbyServiceBrowser, foundPeer peerID: MCPeerID, withDiscoveryInfo info: [String : String]?) {
+        // Tie-breaking: hanya kirim invite jika nama device kita lebih besar secara alfabet.
+        // Ini mencegah HP A dan HP B saling kirim invite bersamaan (anti-double connection)
+        if myPeerID.displayName > peerID.displayName && session.connectedPeers.count < 3 {
+            browser.invitePeer(peerID, to: session, withContext: nil, timeout: 10)
+        }
+    }
+    
+    func browser(_ browser: MCNearbyServiceBrowser, lostPeer peerID: MCPeerID) {
+        print("Lost peer: \(peerID.displayName)")
     }
 }

@@ -39,13 +39,18 @@ class GameSessionViewModel {
     private var eventCount: Int = 0
     private var lastEventHour: Int? = nil
     
-    init(airlineCard: AirlineCardModel = AirlineCardCatalog.dummy) {
+    init(airlineCard: AirlineCardModel = AirlineCardCatalog.getRandomCard()) {
         self.airlineCard = airlineCard
         generateRandomizedWeights()
         
         // Setup callback ketika sinyal START_GAME diterima dari device lain
         networkManager.onStartGameReceived = { [weak self] in
             self?.isGameStarted = true
+        }
+
+        // Setup callback ketika pemain lain memencet Next Hour
+        networkManager.onNextHourReceived = { [weak self] in
+            self?.advanceHour(broadcast: false)
         }
     }
         
@@ -131,6 +136,15 @@ class GameSessionViewModel {
         
         // MARK: - Business Logic Methods
         func nextHour() {
+            advanceHour(broadcast: true)
+        }
+
+        private func advanceHour(broadcast: Bool) {
+            // Jika dipencet sendiri, sebarkan ke pemain lain
+            if broadcast {
+                networkManager.sendNextHourTrigger()
+            }
+            
             if currentHour >= boardingHour {
                 isGameOver = true
             } else {
@@ -141,7 +155,7 @@ class GameSessionViewModel {
         
         func dismissEvent() {
             currentEvent = nil
-        }
+        }   
         
         private func checkForRandomEvent() {
             // 1. Kocok RNG dengan probabilitas 40%

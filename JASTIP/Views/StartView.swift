@@ -15,7 +15,7 @@ struct StartView: View {
         VStack(spacing: 20) {
             Spacer()
             
-            Text("JASTIP!")
+            Text("JASTIP")
                 .padding()
                 .font(.system(size: 64, weight: .bold, design: .rounded))
             
