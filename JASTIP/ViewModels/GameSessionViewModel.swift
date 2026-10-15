@@ -18,6 +18,7 @@ class GameSessionViewModel {
     var delayHours: Int = 0
     var currentEvent: RandomEventModel? = nil
     var isGameOver: Bool = false
+    var lockHostToggle: Bool = false
     
     // MARK: - Weight Tracking Properties
         var suitWeight: Int = 0

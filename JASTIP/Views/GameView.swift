@@ -16,6 +16,7 @@ struct GameView: View {
     @State private var isShowingScanner = false
     @State private var isShowingRevealedWeights = false
     @State private var lastScannedPiece: PieceModel? = nil
+    @State private var lockHostToggle: Bool
     
 //    @State private var suitWeight: Int = 0
 //    @State private var carryWeight: Int = 0
@@ -52,11 +53,13 @@ struct GameView: View {
     init(
         viewModel: GameSessionViewModel? = nil,
         airlineCard: AirlineCardModel = AirlineCardCatalog.dummy,
-        onOpenCamera: @escaping () -> Void = {}
+        onOpenCamera: @escaping () -> Void = {},
+        lockHostToggle: Bool
     ) {
         let initViewModel = viewModel ?? GameSessionViewModel(airlineCard: airlineCard)
         _viewModel = State(initialValue: initViewModel)
         self.onOpenCamera = onOpenCamera
+        self.lockHostToggle = lockHostToggle
     }
     
     var body: some View {
@@ -82,6 +85,7 @@ struct GameView: View {
                         }
                         .buttonStyle(PrimaryButtonStyle())
                         .disabled(viewModel.currentEvent != nil)
+                        .disabled(!lockHostToggle)
                         
                         Button("SCAN QR") {
                             isShowingScanner = true
@@ -213,11 +217,15 @@ struct GameView: View {
         RevealedPiece(piece: PieceCatalog.allPieces[1], weight: 4)
     ]
     
-    return GameView(viewModel: mockViewModel)
+    return GameView(viewModel: mockViewModel, lockHostToggle: false)
         .preferredColorScheme(.light)
 }
 
 #Preview("Dark") {
-    GameView()
+    let mockViewModel = GameSessionViewModel()
+    mockViewModel.revealedPieces = [
+    ]
+    
+    return GameView(viewModel: mockViewModel, lockHostToggle: false)
         .preferredColorScheme(.dark)
 }

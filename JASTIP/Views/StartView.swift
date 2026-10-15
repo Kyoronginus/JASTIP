@@ -10,7 +10,13 @@ import SwiftUI
 struct StartView: View {
     // Menggunakan @Bindable karena ViewModel kalian menggunakan @Observable macro terbaru
     @Bindable var viewModel: GameSessionViewModel
-
+    @State var lockHostToggle: Bool
+    
+    init(viewModel: GameSessionViewModel, lockHostToggle: Bool) {
+        self.viewModel = viewModel
+        self.lockHostToggle = lockHostToggle
+    }
+    
     var body: some View {
         VStack(spacing: 20) {
             Spacer()
@@ -36,24 +42,29 @@ struct StartView: View {
             Spacer()
             
             Button("START") {
-                // Memanggil fungsi network trigger yang akan menyalakan isGameStarted
-                // dan otomatis memindahkan semua device ke GameView secara serentak
                 viewModel.triggerStartGame()
             }
             .buttonStyle(PrimaryButtonStyle())
+            .disabled(!lockHostToggle)
             
             Spacer()
+            
+            Toggle("Host", isOn: $lockHostToggle)
+                .padding()
+                .background(Color(.systemGroupedBackground))
+                .cornerRadius(10)
+                .tint(.blue)
         }
         .padding()
     }
 }
 
 #Preview("Light") {
-    StartView(viewModel: GameSessionViewModel())
+    StartView(viewModel: GameSessionViewModel(), lockHostToggle: false)
         .preferredColorScheme(.light)
 }
 
 #Preview("Dark") {
-    StartView(viewModel: GameSessionViewModel())
+    StartView(viewModel: GameSessionViewModel(), lockHostToggle: false)
         .preferredColorScheme(.dark)
 }
