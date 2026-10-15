@@ -12,8 +12,8 @@ import Observation
 class GameSessionViewModel {
     var pieceWeights: [String: Int] = [:]
     var revealedPieces: [RevealedPiece] = []
-    
-    let airlineCard: AirlineCardModel
+
+    var airlineCard: AirlineCardModel
     var currentHour: Int = 8
     var delayHours: Int = 0
     var currentEvent: RandomEventModel? = nil
@@ -31,7 +31,7 @@ class GameSessionViewModel {
     }
     
     func triggerStartGame() {
-        networkManager.sendStartGameTrigger()
+        networkManager.sendStartGameTrigger(card: airlineCard)
     }
     
     // MARK: - Private State Tracking
@@ -44,7 +44,8 @@ class GameSessionViewModel {
         generateRandomizedWeights()
         
         // Setup callback ketika sinyal START_GAME diterima dari device lain
-        networkManager.onStartGameReceived = { [weak self] in
+        networkManager.onStartGameReceived = { [weak self] card in
+            self?.airlineCard = card
             self?.isGameStarted = true
         }
 
@@ -62,6 +63,7 @@ class GameSessionViewModel {
             isGameOver = false
             triggeredUniqueEvents.removeAll() // Reset event unik saat game baru dimulai
             generateRandomizedWeights()
+            self.airlineCard = AirlineCardCatalog.getRandomCard()
         }
     
         func weight(for pieceId: String) -> Int {

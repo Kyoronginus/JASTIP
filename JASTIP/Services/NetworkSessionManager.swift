@@ -25,7 +25,7 @@ class NetworkSessionManager: NSObject {
     var connectedPeerNames: [String] = []
     
     // Callback ketika sinyal START_GAME diterima
-    var onStartGameReceived: (() -> Void)?
+    var onStartGameReceived: ((AirlineCardModel) -> Void)?
     var onNextHourReceived: (() -> Void)?
     var onNextHourPayloadReceived: ((NextHourPayload) -> Void)?
 
@@ -51,8 +51,11 @@ class NetworkSessionManager: NSObject {
     }
     
     // MARK: - Broadcast Start Game
-    func sendStartGameTrigger() {
-        let message = "START_GAME"
+    func sendStartGameTrigger(card: AirlineCardModel) {
+        guard let jsonData = try? JSONEncoder().encode(card),
+              let jsonString = String(data: jsonData, encoding: .utf8) else { return }
+        
+        let message = "START_GAME:\(jsonString)"
         guard let data = message.data(using: .utf8) else { return }
         
         if !session.connectedPeers.isEmpty {
@@ -61,7 +64,7 @@ class NetworkSessionManager: NSObject {
         
         // Trigger untuk device yang memencet tombol START
         DispatchQueue.main.async {
-            self.onStartGameReceived?()
+            self.onStartGameReceived?(card)
         }
     }
     
@@ -98,8 +101,12 @@ extension NetworkSessionManager: MCSessionDelegate {
     func session(_ session: MCSession, didReceive data: Data, fromPeer peerID: MCPeerID) {
         if let message = String(data: data, encoding: .utf8) {
             DispatchQueue.main.async {
-                if message == "START_GAME" {
-                    self.onStartGameReceived?()
+                if message.hasPrefix("START_GAME:") {
+                    let jsonString = String(message.dropFirst("START_GAME:".count))
+                    if let jsonData = jsonString.data(using: .utf8),
+                       let card = try? JSONDecoder().decode(AirlineCardModel.self, from: jsonData) {
+                        self.onStartGameReceived?(card)
+                    }
                 } else if message.hasPrefix("NEXT_HOUR") {
                     let jsonString = String(message.dropFirst("NEXT_HOUR:".count))
                     if let jsonData = jsonString.data(using: .utf8),
