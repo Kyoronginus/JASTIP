@@ -185,9 +185,7 @@ struct GameView: View {
             }
         }
         .fullScreenCover(isPresented: $viewModel.isGameOver) {
-            ScoringView(viewModel: viewModel) {
-                dismiss()
-            }
+            EndView()
         }
     }
 }
