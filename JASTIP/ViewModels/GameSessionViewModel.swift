@@ -38,11 +38,6 @@ class GameSessionViewModel {
         networkManager.sendStartGameTrigger(card: airlineCard)
     }
     
-    // MARK: - Private State Tracking
-    private var availableEvents: [RandomEventType] = RandomEventType.allCases
-    private var eventCount: Int = 0
-    private var lastEventHour: Int? = nil
-    
     init(airlineCard: AirlineCardModel = AirlineCardCatalog.getRandomCard()) {
         self.airlineCard = airlineCard
         generateRandomizedWeights()
@@ -209,37 +204,6 @@ class GameSessionViewModel {
         }
     
     
-        // gapake lagi
-        private func checkForRandomEvent() {
-            // 1. Kocok RNG dengan probabilitas 40%
-            let roll = Int.random(in: 1...100)
-            guard roll <= 40 else { return }
-            
-            // 2. Filter event yang belum pernah muncul (khusus .flightDelay dan .relativeCanceled)
-            // Event lain yang tidak dibatasi bisa terus masuk
-            let availableTypes = RandomEventType.allCases.filter { type in
-                if type == .flightDelay || type == .relativeCanceled {
-                    return !triggeredUniqueEvents.contains(type)
-                }
-                return true
-            }
-            
-            // Jika semua event berbatas sudah habis terpanggil, ambil dari yang tersisa
-            guard !availableTypes.isEmpty else { return }
-            
-            // 3. Ambil event dari katalog menggunakan fungsi berbobot yang sudah ada
-            if let event = RandomEventCatalog.getRandomEvent(from: availableTypes) {
-                
-                // 4. Jika event yang keluar termasuk yang dibatasi, tandai agar tidak muncul lagi
-                if event.type == .flightDelay || event.type == .relativeCanceled {
-    
-                // Efek khusus Flight Delay: Tambah boarding +1 jam
-                if event.type == .flightDelay {
-                    delayHours += 1
-                }
-            }
-        }
-    
         // Fungsi untuk mencatat item sekaligus memilih tempat (Suitcase / Carry-On)
         func recordItemPlacement(piece: PieceModel, weight: Int, isSuitcase: Bool) {
             // Masukkan ke carousel jika belum ada (shared info)
@@ -261,4 +225,3 @@ class GameSessionViewModel {
             startNewGame()
         }
     }
-}
