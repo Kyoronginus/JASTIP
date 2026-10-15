@@ -103,32 +103,46 @@ struct QRScannerView: View {
                         }
                     }
                     
+                    // Tombol & Teks Pilihan
                     if let weight = viewModel.confirmedWeight {
-                        Text("Bobot: \(weight) kg")
-                            .font(.headline)
-                            .foregroundColor(.green)
-                    }
-                    
-                    HStack(spacing: 12) {
-                        Button("Scan Ulang") {
-                            viewModel.resetScan()
+                        VStack(spacing: 12) {
+                            Text("Bobot: \(weight) kg")
+                                .font(.headline)
+                                .foregroundColor(.green)
+                            
+                            Text("Where do u want to put it in?")
+                                .font(.subheadline.bold())
+                                .foregroundColor(.primary)
+                            
+                            HStack(spacing: 12) {
+                                Button("Suitcase") {
+                                    viewModel.selectDestination(isSuitcase: true)
+                                    dismiss()
+                                }
+                                .buttonStyle(.borderedProminent)
+                                .tint(.blue)
+                                
+                                Button("Carry-On") {
+                                    viewModel.selectDestination(isSuitcase: false)
+                                    dismiss()
+                                }
+                                .buttonStyle(.borderedProminent)
+                                .tint(.orange)
+                            }
                         }
-                        .buttonStyle(.bordered)
-                        
-                        if viewModel.confirmedWeight == nil {
+                    } else {
+                        HStack(spacing: 12) {
+                            Button("Scan Ulang") {
+                                viewModel.resetScan()
+                            }
+                            .buttonStyle(.bordered)
+                            
                             Button("Konfirmasi") {
                                 viewModel.confirmWeight()
                             }
                             .buttonStyle(.borderedProminent)
-                        } else {
-                            Button("Selesai") {
-                                viewModel.finishScan()
-                                dismiss()
-                            }
-                            .buttonStyle(.borderedProminent)
                         }
                     }
-                    .padding(.top, 4)
                 }
                 .padding()
                 .frame(maxWidth: 320)
