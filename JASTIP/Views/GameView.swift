@@ -16,10 +16,6 @@ struct GameView: View {
     @State private var isShowingScanner = false
     @State private var isShowingRevealedWeights = false
     @State private var lastScannedPiece: PieceModel? = nil
-    @State private var lockHostToggle: Bool
-    
-//    @State private var suitWeight: Int = 0
-//    @State private var carryWeight: Int = 0
     
     private var suitWeight: Int {
         viewModel.suitWeight
@@ -59,7 +55,6 @@ struct GameView: View {
         let initViewModel = viewModel ?? GameSessionViewModel(airlineCard: airlineCard)
         _viewModel = State(initialValue: initViewModel)
         self.onOpenCamera = onOpenCamera
-        self.lockHostToggle = lockHostToggle
     }
     
     var body: some View {
@@ -85,7 +80,7 @@ struct GameView: View {
                         }
                         .buttonStyle(PrimaryButtonStyle())
                         .disabled(viewModel.currentEvent != nil)
-                        .disabled(!lockHostToggle)
+                        .disabled(!viewModel.lockHostToggle)
                         
                         Button("SCAN QR") {
                             isShowingScanner = true

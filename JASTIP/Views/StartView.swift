@@ -10,11 +10,9 @@ import SwiftUI
 struct StartView: View {
     // Menggunakan @Bindable karena ViewModel kalian menggunakan @Observable macro terbaru
     @Bindable var viewModel: GameSessionViewModel
-    @State var lockHostToggle: Bool
     
     init(viewModel: GameSessionViewModel, lockHostToggle: Bool) {
         self.viewModel = viewModel
-        self.lockHostToggle = lockHostToggle
     }
     
     var body: some View {
@@ -43,13 +41,14 @@ struct StartView: View {
             
             Button("START") {
                 viewModel.triggerStartGame()
+                
             }
             .buttonStyle(PrimaryButtonStyle())
-            .disabled(!lockHostToggle)
+            .disabled(!viewModel.lockHostToggle)
             
             Spacer()
             
-            Toggle("Host", isOn: $lockHostToggle)
+            Toggle("Host", isOn: $viewModel.lockHostToggle)
                 .padding()
                 .background(Color(.systemGroupedBackground))
                 .cornerRadius(10)

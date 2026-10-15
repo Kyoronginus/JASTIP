@@ -8,10 +8,9 @@ struct MyApp: App {
         WindowGroup {
             Group {
                 if gameSessionVM.isGameStarted {
-                    // Cukup panggil GameView dan oper airlineCard dari gameSessionVM yang sudah ada
-                    GameView(viewModel: gameSessionVM, lockHostToggle: false)
+                    GameView(viewModel: gameSessionVM, lockHostToggle: gameSessionVM.lockHostToggle)
                 } else {
-                    StartView(viewModel: gameSessionVM, lockHostToggle: false)
+                    StartView(viewModel: gameSessionVM, lockHostToggle: gameSessionVM.lockHostToggle)
                 }
             }
         }
