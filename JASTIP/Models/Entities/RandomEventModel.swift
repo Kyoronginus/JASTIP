@@ -10,7 +10,7 @@ import SwiftUI
 // Random Events
 enum RandomEventType: String, CaseIterable {
     case flightDelay
-    case zeroWeight
+//    case zeroWeight
     case relativeCanceled
     case storesClosed
     case reshuffleStore

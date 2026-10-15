@@ -39,7 +39,7 @@ class GameSessionViewModel {
     private var eventCount: Int = 0
     private var lastEventHour: Int? = nil
     
-    init(airlineCard: AirlineCardModel = AirlineCardCatalog.dummy) {
+    init(airlineCard: AirlineCardModel = AirlineCardCatalog.getRandomCard()) {
         self.airlineCard = airlineCard
         generateRandomizedWeights()
         
