@@ -26,7 +26,8 @@ class NetworkSessionManager: NSObject {
     
     // Callback ketika sinyal START_GAME diterima
     var onStartGameReceived: (() -> Void)?
-    
+    var onNextHourReceived: (() -> Void)?
+
     override init() {
         super.init()
         setupMultipeer()
@@ -70,6 +71,8 @@ class NetworkSessionManager: NSObject {
     }
 }
 
+
+
 // MARK: - MCSessionDelegate
 extension NetworkSessionManager: MCSessionDelegate {
     func session(_ session: MCSession, peer peerID: MCPeerID, didChange state: MCSessionState) {
@@ -92,10 +95,23 @@ extension NetworkSessionManager: MCSessionDelegate {
     }
     
     func session(_ session: MCSession, didReceive data: Data, fromPeer peerID: MCPeerID) {
-        if let message = String(data: data, encoding: .utf8), message == "START_GAME" {
+        if let message = String(data: data, encoding: .utf8) {
             DispatchQueue.main.async {
-                self.onStartGameReceived?()
+                if message == "START_GAME" {
+                    self.onStartGameReceived?()
+                } else if message == "NEXT_HOUR" {
+                    self.onNextHourReceived?()
+                }
             }
+        }
+    }
+
+    func sendNextHourTrigger() {
+        let message = "NEXT_HOUR"
+        guard let data = message.data(using: .utf8) else { return }
+        
+        if !session.connectedPeers.isEmpty {
+            try? session.send(data, toPeers: session.connectedPeers, with: .reliable)
         }
     }
     

@@ -47,6 +47,11 @@ class GameSessionViewModel {
         networkManager.onStartGameReceived = { [weak self] in
             self?.isGameStarted = true
         }
+
+        // Setup callback ketika pemain lain memencet Next Hour
+        networkManager.onNextHourReceived = { [weak self] in
+            self?.advanceHour(broadcast: false)
+        }
     }
         
         func startNewGame() {
@@ -131,6 +136,15 @@ class GameSessionViewModel {
         
         // MARK: - Business Logic Methods
         func nextHour() {
+            advanceHour(broadcast: true)
+        }
+
+        private func advanceHour(broadcast: Bool) {
+            // Jika dipencet sendiri, sebarkan ke pemain lain
+            if broadcast {
+                networkManager.sendNextHourTrigger()
+            }
+            
             if currentHour >= boardingHour {
                 isGameOver = true
             } else {
@@ -141,7 +155,7 @@ class GameSessionViewModel {
         
         func dismissEvent() {
             currentEvent = nil
-        }
+        }   
         
         private func checkForRandomEvent() {
             // 1. Kocok RNG dengan probabilitas 40%
