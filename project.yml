@@ -30,3 +30,10 @@ targets:
     platform: iOS
     sources:
       - path: JASTIP
+
+    info: 
+      properties: 
+        NSBonjourServices: 
+          - _jastip-game._tcp
+          - _jastip-game._udp
+        NSLocalNetworkUsageDescription: "This app uses Bonjour to find other devices on the local network"
