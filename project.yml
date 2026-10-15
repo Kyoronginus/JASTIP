@@ -32,6 +32,7 @@ targets:
       - path: JASTIP
 
     info: 
+      path: JASTIP/Info.plist
       properties: 
         NSBonjourServices: 
           - _jastip-game._tcp
