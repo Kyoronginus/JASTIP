@@ -27,6 +27,7 @@ class NetworkSessionManager: NSObject {
     // Callback ketika sinyal START_GAME diterima
     var onStartGameReceived: (() -> Void)?
     var onNextHourReceived: (() -> Void)?
+    var onNextHourPayloadReceived: ((NextHourPayload) -> Void)?
 
     override init() {
         super.init()
@@ -99,15 +100,22 @@ extension NetworkSessionManager: MCSessionDelegate {
             DispatchQueue.main.async {
                 if message == "START_GAME" {
                     self.onStartGameReceived?()
-                } else if message == "NEXT_HOUR" {
-                    self.onNextHourReceived?()
+                } else if message.hasPrefix("NEXT_HOUR") {
+                    let jsonString = String(message.dropFirst("NEXT_HOUR:".count))
+                    if let jsonData = jsonString.data(using: .utf8),
+                       let payload = try? JSONDecoder().decode(NextHourPayload.self, from: jsonData) {
+                        self.onNextHourPayloadReceived?(payload)
+                    }
                 }
             }
         }
     }
 
-    func sendNextHourTrigger() {
-        let message = "NEXT_HOUR"
+    func sendNextHourTrigger(payload: NextHourPayload) {
+        guard let jsonData = try? JSONEncoder().encode(payload),
+              let jsonString = String(data: jsonData, encoding: .utf8) else { return }
+        
+        let message = "NEXT_HOUR:\(jsonString)"
         guard let data = message.data(using: .utf8) else { return }
         
         if !session.connectedPeers.isEmpty {

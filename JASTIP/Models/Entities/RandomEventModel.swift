@@ -8,7 +8,7 @@
 import SwiftUI
 
 // Random Events
-enum RandomEventType: String, CaseIterable {
+enum RandomEventType: String, CaseIterable, Codable {
     case flightDelay
     case zeroWeight
     case relativeCanceled
@@ -16,9 +16,16 @@ enum RandomEventType: String, CaseIterable {
     case reshuffleStore
 }
 
-struct RandomEventModel: Identifiable, Equatable {
+struct RandomEventModel: Identifiable, Equatable, Codable {
     var id: String = UUID().uuidString
     var type: RandomEventType = .storesClosed
     let title: String
     let message: String
+}
+
+struct NextHourPayload: Codable {
+    let newHour: Int
+    let delayHour: Int
+    let event: RandomEventModel?
+    let isGameOver: Bool
 }

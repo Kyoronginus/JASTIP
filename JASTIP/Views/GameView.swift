@@ -73,12 +73,14 @@ struct GameView: View {
                             viewModel.nextHour()
                         }
                         .buttonStyle(PrimaryButtonStyle())
+                        .disabled(viewModel.currentEvent != nil)
                         
                         Button("SCAN QR") {
                             isShowingScanner = true
                             onOpenCamera()
                         }
                         .buttonStyle(PrimaryButtonStyle())
+                        .disabled(viewModel.currentEvent != nil)
                     }
                 }
                 // Middle Part
@@ -141,7 +143,7 @@ struct GameView: View {
             }
             .padding(.horizontal,20)
             
-            if let event = viewModel.currentEvent {
+            if let event = viewModel.currentEvent, !viewModel.isGameOver {
                 Color.black.opacity(0.4)
                     .ignoresSafeArea()
                     .onTapGesture {
@@ -185,7 +187,9 @@ struct GameView: View {
             }
         }
         .fullScreenCover(isPresented: $viewModel.isGameOver) {
-            EndView()
+            EndView {
+                viewModel.resetToLobby()
+            }
         }
     }
 }

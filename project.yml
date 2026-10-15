@@ -15,12 +15,12 @@ settings:
     GENERATE_INFOPLIST_FILE: YES
     INFOPLIST_KEY_CFBundleDisplayName: JASTIP
 
-    # iPhone: Portrait & Landscape Right
-    INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeRight"
-    # iPad: Portrait, Upside Down, Landscape Left, Landscape Right
+    # iphone portrait
+    INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait"
     INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
     
     INFOPLIST_KEY_NSCameraUsageDescription: "The app requires camera access to scan board game pieces"
+    INFOPLIST_KEY_NSLocalNetworkUsageDescription: "This app uses Bonjour to find other devices on the local network"
     INFOPLIST_KEY_UILaunchScreen_Generation: YES
 
 
@@ -33,8 +33,7 @@ targets:
 
     info: 
       path: JASTIP/Info.plist
-      properties: 
-        NSBonjourServices: 
+      properties:
+        NSBonjourServices:
           - _jastip-game._tcp
           - _jastip-game._udp
-        NSLocalNetworkUsageDescription: "This app uses Bonjour to find other devices on the local network"

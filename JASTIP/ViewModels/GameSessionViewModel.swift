@@ -49,8 +49,8 @@ class GameSessionViewModel {
         }
 
         // Setup callback ketika pemain lain memencet Next Hour
-        networkManager.onNextHourReceived = { [weak self] in
-            self?.advanceHour(broadcast: false)
+        networkManager.onNextHourPayloadReceived = { [weak self] payload in
+            self?.applyRemoteNextHour(payload: payload)
         }
     }
         
@@ -136,27 +136,66 @@ class GameSessionViewModel {
         
         // MARK: - Business Logic Methods
         func nextHour() {
-            advanceHour(broadcast: true)
-        }
-
-        private func advanceHour(broadcast: Bool) {
-            // Jika dipencet sendiri, sebarkan ke pemain lain
-            if broadcast {
-                networkManager.sendNextHourTrigger()
-            }
-            
             if currentHour >= boardingHour {
                 isGameOver = true
-            } else {
-                currentHour += 1
-                checkForRandomEvent()
+                return
             }
+            
+            currentHour += 1
+            
+            let event = rollForRandomEvent()
+            currentEvent = event
+            
+            if event?.type == .flightDelay {
+                delayHours += 1
+            }
+            
+            let gameOverStatus = currentHour >= boardingHour
+            self.isGameOver = gameOverStatus
+
+            // kirim payload ke pemain lain
+            let payload = NextHourPayload(
+                newHour: currentHour, delayHour: delayHours, event: event, isGameOver: gameOverStatus
+            )
+            networkManager.sendNextHourTrigger(payload: payload)
         }
         
         func dismissEvent() {
             currentEvent = nil
-        }   
+        }
+    
+    func applyRemoteNextHour(payload: NextHourPayload) {
+        self.currentHour = payload.newHour
+        self.delayHours = payload.delayHour
+        self.currentEvent = payload.event
+        self.isGameOver = payload.isGameOver
+    }
         
+        
+        // pengganti checkForRandomEvent()
+        private func rollForRandomEvent() -> RandomEventModel? {
+            let roll = Int.random(in: 1...100)
+            guard roll <= 40 else { return nil }
+            
+            let availableTypes = RandomEventType.allCases.filter { type in
+                if type == .flightDelay || type == .relativeCanceled {
+                    return !triggeredUniqueEvents.contains(type)
+                }
+                return true
+            }
+            guard !availableTypes.isEmpty else { return nil }
+            
+            if let event = RandomEventCatalog.getRandomEvent(from: availableTypes) {
+                if event.type == .flightDelay || event.type == .relativeCanceled {
+                    triggeredUniqueEvents.insert(event.type)
+                }
+                return event
+            }
+            return nil
+        }
+    
+    
+        // gapake lagi
         private func checkForRandomEvent() {
             // 1. Kocok RNG dengan probabilitas 40%
             let roll = Int.random(in: 1...100)
@@ -189,5 +228,11 @@ class GameSessionViewModel {
                     delayHours += 1
                 }
             }
+        }
+    
+        func resetToLobby() {
+            isGameOver = false
+            isGameStarted = false
+            startNewGame()
         }
     }
