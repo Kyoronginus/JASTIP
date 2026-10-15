@@ -21,12 +21,12 @@ enum RandomEventCatalog {
                 message: "Boarding time is postponed by 1 hour. Game duration extended!"
             )
              
-//        case .zeroWeight:
-//            return RandomEventModel(
-//                type: .zeroWeight,
-//                title: "Free Items!",
-//                message: "All items collected during this hour have a weight of 0 kg."
-//            )
+        case .zeroWeight:
+            return RandomEventModel(
+                type: .zeroWeight,
+                title: "Free Items!",
+                message: "All items collected during this hour have a weight of 0 kg."
+            )
              
         case .relativeCanceled:
             return RandomEventModel(
@@ -63,7 +63,7 @@ enum RandomEventCatalog {
             switch type {
             case .storesClosed: return 30
             case .flightDelay: return 20
-//            case .zeroWeight: return 20
+            case .zeroWeight: return 20
             case .relativeCanceled: return 10
             case .reshuffleStore: return 20
             }
