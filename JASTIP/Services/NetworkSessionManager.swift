@@ -9,8 +9,10 @@ import Foundation
 import Network
 import Combine
 import UIKit
+import Observation
 
-class NetworkSessionManager: ObservableObject {
+@Observable
+class NetworkSessionManager {
     // Bonjour Service Type
     private let serviceType = "_jastip-game._tcp"
     
@@ -18,8 +20,8 @@ class NetworkSessionManager: ObservableObject {
     private var browser: NWBrowser?
     
     // Nyimpen daftar connection yg aktif dgn peer lain
-    @Published var activeConnections: [NWConnection] = []
-    @Published var connectedPeersCount: Int = 0
+    var activeConnections: [NWConnection] = []
+    var connectedPeersCount: Int = 0
     
     // Callback ketika nerima pesan "START_GAME"
     var onStartGameReceived: (() -> Void)?
