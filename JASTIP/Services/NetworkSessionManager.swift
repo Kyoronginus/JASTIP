@@ -9,161 +9,240 @@ import Foundation
 import MultipeerConnectivity
 import Observation
 import UIKit
-import Observation
 
 @Observable
 class NetworkSessionManager: NSObject {
     // Bonjour Service Type: max 15 karakter, huruf kecil, angka, tanda strip
     private let serviceType = "jastip-game"
-    
-    private let myPeerID = MCPeerID(displayName: UIDevice.current.name)
+    private let maxOtherPlayers = 5 // 6 pemain total (3 teman + diri sendiri)
+
+    // Identitas disimpan, jadi tetap sama setelah app ditutup / reconnect
+    private let myPeerID: MCPeerID = NetworkSessionManager.loadOrCreatePeerID()
     private var session: MCSession!
     private var advertiser: MCNearbyServiceAdvertiser!
     private var browser: MCNearbyServiceBrowser!
-    
-    // Status yang dipantau StartView
+
+    // MARK: - State untuk UI
     var connectedPeersCount: Int = 1 // Termasuk device ini sendiri
     var connectedPeerNames: [String] = []
-    
-    // Callback ketika sinyal START_GAME diterima
+    var isReconnecting: Bool = false      // true kalau ada pemain putus di tengah game
+    var missingPeerNames: [String] = []   // pemain yang sedang putus
+    var isHost: Bool = false              // sementara: yang menekan START
+
+    // MARK: - Callbacks
     var onStartGameReceived: ((AirlineCardModel) -> Void)?
     var onNextHourReceived: (() -> Void)?
     var onNextHourPayloadReceived: ((NextHourPayload) -> Void)?
     var onScannedItemReceived: ((RevealedPiece, Int) -> Void)?
+    var snapshotProvider: (() -> Data?)?       // host: encode state game saat ini
+    var onSnapshotReceived: ((Data) -> Void)?  // client: terapkan state dari host
+
+    // MARK: - Bookkeeping
+    private var gameInProgress = false
+    private var knownPeers: Set<String> = []   // displayName semua pemain saat game mulai
+    private var wasBackgrounded = false
 
     override init() {
         super.init()
-        setupMultipeer()
+        buildSession()
+        startDiscovery()
     }
-    
-    private func setupMultipeer() {
-        // 1. Setup Session
+
+    // MARK: - Persistent identity
+    private static let peerIDKey = "jastip.peerID"
+
+    private static func loadOrCreatePeerID() -> MCPeerID {
+        let defaults = UserDefaults.standard
+        if let data = defaults.data(forKey: peerIDKey),
+           let saved = try? NSKeyedUnarchiver.unarchivedObject(ofClass: MCPeerID.self, from: data) {
+            return saved
+        }
+        // Suffix acak supaya dua HP yang sama-sama bernama "iPhone" tidak bentrok
+        let shortID = String(UUID().uuidString.prefix(4))
+        let name = "\(String(UIDevice.current.name.prefix(40)))-\(shortID)"
+        let peerID = MCPeerID(displayName: name)
+        if let data = try? NSKeyedArchiver.archivedData(withRootObject: peerID, requiringSecureCoding: true) {
+            defaults.set(data, forKey: peerIDKey)
+        }
+        return peerID
+    }
+
+    // MARK: - Session & discovery
+    private func buildSession() {
         session = MCSession(peer: myPeerID, securityIdentity: nil, encryptionPreference: .none)
         session.delegate = self
-        
-        // 2. Setup Advertiser (Membuka diri agar bisa ditemukan HP lain)
+    }
+
+    private func startDiscovery() {
         advertiser = MCNearbyServiceAdvertiser(peer: myPeerID, discoveryInfo: nil, serviceType: serviceType)
         advertiser.delegate = self
         advertiser.startAdvertisingPeer()
-        
-        // 3. Setup Browser (Mencari HP lain yang sedang membuka app)
+
         browser = MCNearbyServiceBrowser(peer: myPeerID, serviceType: serviceType)
         browser.delegate = self
         browser.startBrowsingForPeers()
     }
-    
-    // MARK: - Broadcast Start Game
+
+    private func stopDiscovery() {
+        advertiser?.stopAdvertisingPeer()
+        advertiser?.delegate = nil
+        browser?.stopBrowsingForPeers()
+        browser?.delegate = nil
+    }
+
+    // MARK: - App lifecycle
+    /// Panggil saat scenePhase == .background (layar terkunci / pindah app).
+    func appDidEnterBackground() {
+        wasBackgrounded = true
+        stopDiscovery()
+        session.disconnect() // peer lain langsung tahu kita pergi
+    }
+
+    /// Panggil saat scenePhase == .active. Bangun ulang session lalu gabung lagi.
+    func appDidBecomeActive() {
+        guard wasBackgrounded else { return }
+        wasBackgrounded = false
+        stopDiscovery()
+        session.delegate = nil
+        session.disconnect()
+        buildSession()
+        startDiscovery()
+    }
+
+    // MARK: - Game bookkeeping
+    private func lockInPlayers() {
+        gameInProgress = true
+        knownPeers = Set(session.connectedPeers.map { $0.displayName } + [myPeerID.displayName])
+    }
+
+    func endGame() {
+        gameInProgress = false
+        knownPeers = []
+        missingPeerNames = []
+        isReconnecting = false
+    }
+
+    // MARK: - Sending
+    private func send(_ message: String, to peers: [MCPeerID]) {
+        guard !peers.isEmpty, let data = message.data(using: .utf8) else { return }
+        try? session.send(data, toPeers: peers, with: .reliable)
+    }
+
+    private func broadcast(_ message: String) {
+        send(message, to: session.connectedPeers)
+    }
+
     func sendStartGameTrigger(card: AirlineCardModel) {
         guard let jsonData = try? JSONEncoder().encode(card),
               let jsonString = String(data: jsonData, encoding: .utf8) else { return }
-        
-        let message = "START_GAME:\(jsonString)"
-        guard let data = message.data(using: .utf8) else { return }
-        
-        if !session.connectedPeers.isEmpty {
-            try? session.send(data, toPeers: session.connectedPeers, with: .reliable)
-        }
-        
+
+        isHost = true // sementara: yang menekan START jadi host
+        lockInPlayers()
+        broadcast("START_GAME:\(jsonString)")
+
         // Trigger untuk device yang memencet tombol START
-        DispatchQueue.main.async {
-            self.onStartGameReceived?(card)
-        }
+        DispatchQueue.main.async { self.onStartGameReceived?(card) }
     }
-    
+
     func sendScannedItem(piece: RevealedPiece, weight: Int) {
         struct ScanPayload: Codable {
             let piece: PieceModel
             let weight: Int
         }
-        
-        // Kirim piece.piece karena bertipe PieceModel
         let payload = ScanPayload(piece: piece.piece, weight: weight)
         guard let jsonData = try? JSONEncoder().encode(payload),
               let jsonString = String(data: jsonData, encoding: .utf8) else { return }
-        
-        let message = "SCAN_ITEM:\(jsonString)"
-        guard let data = message.data(using: .utf8) else { return }
-        
-        if !session.connectedPeers.isEmpty {
-            try? session.send(data, toPeers: session.connectedPeers, with: .reliable)
-        }
-    }
-    
-    deinit {
-        advertiser?.stopAdvertisingPeer()
-        browser?.stopBrowsingForPeers()
-        session?.disconnect()
-    }
-}
-
-
-
-// MARK: - MCSessionDelegate
-extension NetworkSessionManager: MCSessionDelegate {
-    func session(_ session: MCSession, peer peerID: MCPeerID, didChange state: MCSessionState) {
-        DispatchQueue.main.async {
-            switch state {
-            case .connected:
-                print("🟢 Connected to \(peerID.displayName)")
-            case .notConnected:
-                print("🔴 Disconnected from \(peerID.displayName)")
-            case .connecting:
-                print("🟡 Connecting to \(peerID.displayName)")
-            @unknown default:
-                break
-            }
-            
-            // Hitung akurat: jumlah teman terhubung + 1 (diri sendiri)
-            self.connectedPeersCount = session.connectedPeers.count + 1
-            self.connectedPeerNames = session.connectedPeers.map { $0.displayName }
-        }
-    }
-    
-    func session(_ session: MCSession, didReceive data: Data, fromPeer peerID: MCPeerID) {
-        if let message = String(data: data, encoding: .utf8) {
-            DispatchQueue.main.async {
-                if message.hasPrefix("START_GAME:") {
-                    let jsonString = String(message.dropFirst("START_GAME:".count))
-                    if let jsonData = jsonString.data(using: .utf8),
-                       let card = try? JSONDecoder().decode(AirlineCardModel.self, from: jsonData) {
-                        self.onStartGameReceived?(card)
-                    }
-                } else if message.hasPrefix("NEXT_HOUR") {
-                    let jsonString = String(message.dropFirst("NEXT_HOUR:".count))
-                    if let jsonData = jsonString.data(using: .utf8),
-                       let payload = try? JSONDecoder().decode(NextHourPayload.self, from: jsonData) {
-                        self.onNextHourPayloadReceived?(payload)
-                    }
-                } else if message.hasPrefix("SCAN_ITEM:") {
-                    let jsonString = String(message.dropFirst("SCAN_ITEM:".count))
-                    struct ScanPayload: Codable {
-                        let piece: PieceModel
-                        let weight: Int
-                    }
-                    if let jsonData = jsonString.data(using: .utf8),
-                       let payload = try? JSONDecoder().decode(ScanPayload.self, from: jsonData) {
-                        // Bungkus kembali ke RevealedPiece saat diterima
-                        let revealed = RevealedPiece(piece: payload.piece, weight: payload.weight)
-                        self.onScannedItemReceived?(revealed, payload.weight)
-                    }
-                }
-            }
-        }
+        broadcast("SCAN_ITEM:\(jsonString)")
     }
 
     func sendNextHourTrigger(payload: NextHourPayload) {
         guard let jsonData = try? JSONEncoder().encode(payload),
               let jsonString = String(data: jsonData, encoding: .utf8) else { return }
-        
-        let message = "NEXT_HOUR:\(jsonString)"
-        guard let data = message.data(using: .utf8) else { return }
-        
-        if !session.connectedPeers.isEmpty {
-            try? session.send(data, toPeers: session.connectedPeers, with: .reliable)
+        broadcast("NEXT_HOUR:\(jsonString)")
+    }
+
+    private func sendSnapshot(to peerID: MCPeerID) {
+        guard let data = snapshotProvider?(),
+              let json = String(data: data, encoding: .utf8) else { return }
+        send("SNAPSHOT:\(json)", to: [peerID])
+    }
+
+    deinit {
+        stopDiscovery()
+        session?.disconnect()
+    }
+}
+
+// MARK: - MCSessionDelegate
+extension NetworkSessionManager: MCSessionDelegate {
+    func session(_ session: MCSession, peer peerID: MCPeerID, didChange state: MCSessionState) {
+        DispatchQueue.main.async {
+            // Abaikan callback dari session lama yang sudah dibuang
+            guard session === self.session else { return }
+
+            let name = peerID.displayName
+            let isKnownPlayer = self.gameInProgress && self.knownPeers.contains(name)
+
+            switch state {
+            case .connected:
+                print("🟢 Connected to \(name)")
+                if isKnownPlayer {
+                    self.missingPeerNames.removeAll { $0 == name }
+                    // Host mengejar ulang state untuk pemain yang kembali
+                    if self.isHost { self.sendSnapshot(to: peerID) }
+                }
+            case .notConnected:
+                print("🔴 Disconnected from \(name)")
+                if isKnownPlayer && !self.missingPeerNames.contains(name) {
+                    self.missingPeerNames.append(name)
+                }
+            case .connecting:
+                print("🟡 Connecting to \(name)")
+            @unknown default:
+                break
+            }
+
+            self.connectedPeersCount = session.connectedPeers.count + 1
+            self.connectedPeerNames = session.connectedPeers.map { $0.displayName }
+            self.isReconnecting = !self.missingPeerNames.isEmpty
         }
     }
-    
-    // Delegate methods wajib (kosongkan saja untuk kebutuhan message string)
+
+    func session(_ session: MCSession, didReceive data: Data, fromPeer peerID: MCPeerID) {
+        guard let message = String(data: data, encoding: .utf8) else { return }
+        DispatchQueue.main.async {
+            if message.hasPrefix("START_GAME:") {
+                let jsonString = String(message.dropFirst("START_GAME:".count))
+                if let jsonData = jsonString.data(using: .utf8),
+                   let card = try? JSONDecoder().decode(AirlineCardModel.self, from: jsonData) {
+                    self.lockInPlayers()
+                    self.onStartGameReceived?(card)
+                }
+            } else if message.hasPrefix("NEXT_HOUR:") {
+                let jsonString = String(message.dropFirst("NEXT_HOUR:".count))
+                if let jsonData = jsonString.data(using: .utf8),
+                   let payload = try? JSONDecoder().decode(NextHourPayload.self, from: jsonData) {
+                    self.onNextHourPayloadReceived?(payload)
+                }
+            } else if message.hasPrefix("SCAN_ITEM:") {
+                let jsonString = String(message.dropFirst("SCAN_ITEM:".count))
+                struct ScanPayload: Codable {
+                    let piece: PieceModel
+                    let weight: Int
+                }
+                if let jsonData = jsonString.data(using: .utf8),
+                   let payload = try? JSONDecoder().decode(ScanPayload.self, from: jsonData) {
+                    let revealed = RevealedPiece(piece: payload.piece, weight: payload.weight)
+                    self.onScannedItemReceived?(revealed, payload.weight)
+                }
+            } else if message.hasPrefix("SNAPSHOT:") {
+                let json = String(message.dropFirst("SNAPSHOT:".count))
+                if !self.gameInProgress { self.lockInPlayers() }
+                self.onSnapshotReceived?(Data(json.utf8))
+            }
+        }
+    }
+
     func session(_ session: MCSession, didReceive stream: InputStream, withName streamName: String, fromPeer peerID: MCPeerID) {}
     func session(_ session: MCSession, didStartReceivingResourceWithName resourceName: String, fromPeer peerID: MCPeerID, with progress: Progress) {}
     func session(_ session: MCSession, didFinishReceivingResourceWithName resourceName: String, fromPeer peerID: MCPeerID, at localURL: URL?, withError error: Error?) {}
@@ -171,25 +250,43 @@ extension NetworkSessionManager: MCSessionDelegate {
 
 // MARK: - MCNearbyServiceAdvertiserDelegate
 extension NetworkSessionManager: MCNearbyServiceAdvertiserDelegate {
-    // Menerima undangan join dari player lain
     func advertiser(_ advertiser: MCNearbyServiceAdvertiser, didReceiveInvitationFromPeer peerID: MCPeerID, withContext context: Data?, invitationHandler: @escaping (Bool, MCSession?) -> Void) {
-        // Otomatis terima jika player belum mencapai maksimal 4 orang (3 teman + 1 diri sendiri)
-        let shouldAccept = session.connectedPeers.count < 5
-        invitationHandler(shouldAccept, session)
+        DispatchQueue.main.async {
+            let isReturningPlayer = self.knownPeers.contains(peerID.displayName)
+            let hasRoom = self.session.connectedPeers.count < self.maxOtherPlayers
+            // Setelah game mulai, hanya pemain yang sama yang boleh masuk lagi
+            let accept = self.gameInProgress ? isReturningPlayer : hasRoom
+            invitationHandler(accept, self.session)
+        }
+    }
+
+    func advertiser(_ advertiser: MCNearbyServiceAdvertiser, didNotStartAdvertisingPeer error: Error) {
+        print("Advertiser error: \(error.localizedDescription)")
     }
 }
 
 // MARK: - MCNearbyServiceBrowserDelegate
 extension NetworkSessionManager: MCNearbyServiceBrowserDelegate {
     func browser(_ browser: MCNearbyServiceBrowser, foundPeer peerID: MCPeerID, withDiscoveryInfo info: [String : String]?) {
-        // Tie-breaking: hanya kirim invite jika nama device kita lebih besar secara alfabet.
-        // Ini mencegah HP A dan HP B saling kirim invite bersamaan (anti-double connection)
-        if myPeerID.displayName > peerID.displayName && session.connectedPeers.count < 3 {
-            browser.invitePeer(peerID, to: session, withContext: nil, timeout: 10)
+        DispatchQueue.main.async {
+            // Tie-breaking: hanya satu sisi yang mengundang
+            guard self.myPeerID.displayName > peerID.displayName else { return }
+            guard !self.session.connectedPeers.contains(peerID) else { return }
+
+            let allowed = self.gameInProgress
+                ? self.knownPeers.contains(peerID.displayName)
+                : self.session.connectedPeers.count < self.maxOtherPlayers
+            guard allowed else { return }
+
+            browser.invitePeer(peerID, to: self.session, withContext: nil, timeout: 10)
         }
     }
-    
+
     func browser(_ browser: MCNearbyServiceBrowser, lostPeer peerID: MCPeerID) {
         print("Lost peer: \(peerID.displayName)")
+    }
+
+    func browser(_ browser: MCNearbyServiceBrowser, didNotStartBrowsingForPeers error: Error) {
+        print("Browser error: \(error.localizedDescription)")
     }
 }

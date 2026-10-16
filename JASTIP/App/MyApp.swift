@@ -11,6 +11,7 @@ struct MyApp: App {
                     GameView(viewModel: gameSessionVM, lockHostToggle: gameSessionVM.lockHostToggle)
                 } else {
                     StartView(viewModel: gameSessionVM, lockHostToggle: gameSessionVM.lockHostToggle)
+                        .onAppear { UIApplication.shared.isIdleTimerDisabled = true }
                 }
             }
         }
