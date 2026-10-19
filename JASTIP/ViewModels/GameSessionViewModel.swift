@@ -88,7 +88,7 @@ class GameSessionViewModel {
     
         private func generateRandomizedWeights() {
             var weights: [String: Int] = [:]
-            let deltas = [-2, -1, 1, 2]
+            let deltas = [1, 1, 2, 2, 3]
             
             let allColors: [PieceColor] = [.red, .yellow, .green, .blue, .pink]
             
@@ -152,7 +152,7 @@ class GameSessionViewModel {
         
         // MARK: - Business Logic Methods
         func nextHour() {
-            if currentHour >= boardingHour {
+            if currentHour > boardingHour {
                 isGameOver = true
                 return
             }
