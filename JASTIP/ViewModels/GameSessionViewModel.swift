@@ -36,7 +36,7 @@ class GameSessionViewModel {
     }
     
     func triggerStartGame() {
-        networkManager.sendStartGameTrigger(card: airlineCard)
+        networkManager.sendStartGameTrigger(card: airlineCard, pieceWeights: pieceWeights)
     }
     
     init(airlineCard: AirlineCardModel = AirlineCardCatalog.getRandomCard()) {
@@ -44,8 +44,11 @@ class GameSessionViewModel {
         generateRandomizedWeights()
         
         // Setup callback ketika sinyal START_GAME diterima dari device lain
-        networkManager.onStartGameReceived = { [weak self] card in
+        networkManager.onStartGameReceived = { [weak self] card, weights in
             self?.airlineCard = card
+            if !weights.isEmpty {
+                self?.pieceWeights = weights
+            }
             self?.isGameStarted = true
         }
 
@@ -55,9 +58,53 @@ class GameSessionViewModel {
         }
         
         networkManager.onScannedItemReceived = { [weak self] revealedPiece, weight in
-            if !(self?.revealedPieces.contains(where: { $0.id == revealedPiece.id }) ?? false) {
-                self?.revealedPieces.append(revealedPiece)
+            guard let self = self else { return }
+            self.pieceWeights[revealedPiece.piece.id] = weight
+            if !self.revealedPieces.contains(where: { $0.id == revealedPiece.id }) {
+                self.revealedPieces.append(revealedPiece)
             }
+        }
+        
+        // Setup snapshot untuk sinkronisasi pemain yang reconnect
+        networkManager.snapshotProvider = { [weak self] in
+            guard let self = self else { return nil }
+            struct Snapshot: Codable {
+                let card: AirlineCardModel
+                let pieceWeights: [String: Int]
+                let currentHour: Int
+                let delayHours: Int
+                let revealedPieces: [RevealedPiece]
+                let isGameOver: Bool
+            }
+            let snapshot = Snapshot(
+                card: self.airlineCard,
+                pieceWeights: self.pieceWeights,
+                currentHour: self.currentHour,
+                delayHours: self.delayHours,
+                revealedPieces: self.revealedPieces,
+                isGameOver: self.isGameOver
+            )
+            return try? JSONEncoder().encode(snapshot)
+        }
+        
+        networkManager.onSnapshotReceived = { [weak self] data in
+            struct Snapshot: Codable {
+                let card: AirlineCardModel
+                let pieceWeights: [String: Int]
+                let currentHour: Int
+                let delayHours: Int
+                let revealedPieces: [RevealedPiece]
+                let isGameOver: Bool
+            }
+            guard let self = self,
+                  let snapshot = try? JSONDecoder().decode(Snapshot.self, from: data) else { return }
+            self.airlineCard = snapshot.card
+            self.pieceWeights = snapshot.pieceWeights
+            self.currentHour = snapshot.currentHour
+            self.delayHours = snapshot.delayHours
+            self.revealedPieces = snapshot.revealedPieces
+            self.isGameOver = snapshot.isGameOver
+            self.isGameStarted = true
         }
     }
         
@@ -75,10 +122,37 @@ class GameSessionViewModel {
         }
     
         func weight(for pieceId: String) -> Int {
-            return pieceWeights[pieceId] ?? PieceCatalog.findPiece(by: pieceId)?.gridCount ?? 1
+            // 1. Cek apakah piece ini (atau kembarannya) sudah pernah direveal di carousel
+            if let revealed = revealedPieces.first(where: { $0.id == pieceId }) {
+                return revealed.weight
+            }
+            
+            // 2. Cek apakah ada bobot terdaftar di dictionary pieceWeights
+            if let weight = pieceWeights[pieceId] {
+                return weight
+            }
+            
+            // 3. Fallback konsistensi: jika ada piece dengan bentuk dan warna sama
+            if let piece = PieceCatalog.findPiece(by: pieceId) {
+                if let matchingRevealed = revealedPieces.first(where: { $0.piece.color == piece.color && $0.piece.shape == piece.shape }) {
+                    return matchingRevealed.weight
+                }
+                if let matchingId = pieceWeights.keys.first(where: { id in
+                    if let other = PieceCatalog.findPiece(by: id) {
+                        return other.color == piece.color && other.shape == piece.shape
+                    }
+                    return false
+                }), let matchingWeight = pieceWeights[matchingId] {
+                    return matchingWeight
+                }
+                return piece.gridCount
+            }
+            
+            return 1
         }
         
         func recordScannedPiece(_ piece: PieceModel, weight: Int) {
+            pieceWeights[piece.id] = weight
             if !revealedPieces.contains(where: { $0.id == piece.id }) {
                 revealedPieces.append(RevealedPiece(piece: piece, weight: weight))
             }
@@ -214,6 +288,9 @@ class GameSessionViewModel {
         // Fungsi untuk mencatat item sekaligus memilih tempat (Suitcase / Carry-On)
         func recordItemPlacement(piece: PieceModel, weight: Int, isSuitcase: Bool) {
             let revealed = RevealedPiece(piece: piece, weight: weight)
+
+            // Simpan bobot ke dictionary agar konsisten
+            pieceWeights[piece.id] = weight
 
             // 1. Masukin ke carousel HP sendiri kalau belum ada
             if !revealedPieces.contains(where: { $0.id == piece.id }) {

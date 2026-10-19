@@ -30,7 +30,7 @@ class NetworkSessionManager: NSObject {
     var isHost: Bool = false              // sementara: yang menekan START
 
     // MARK: - Callbacks
-    var onStartGameReceived: ((AirlineCardModel) -> Void)?
+    var onStartGameReceived: ((AirlineCardModel, [String: Int]) -> Void)?
     var onNextHourReceived: (() -> Void)?
     var onNextHourPayloadReceived: ((NextHourPayload) -> Void)?
     var onScannedItemReceived: ((RevealedPiece, Int) -> Void)?
@@ -132,8 +132,14 @@ class NetworkSessionManager: NSObject {
         send(message, to: session.connectedPeers)
     }
 
-    func sendStartGameTrigger(card: AirlineCardModel) {
-        guard let jsonData = try? JSONEncoder().encode(card),
+    struct StartGamePayload: Codable {
+        let card: AirlineCardModel
+        let pieceWeights: [String: Int]
+    }
+
+    func sendStartGameTrigger(card: AirlineCardModel, pieceWeights: [String: Int] = [:]) {
+        let payload = StartGamePayload(card: card, pieceWeights: pieceWeights)
+        guard let jsonData = try? JSONEncoder().encode(payload),
               let jsonString = String(data: jsonData, encoding: .utf8) else { return }
 
         isHost = true // sementara: yang menekan START jadi host
@@ -141,7 +147,7 @@ class NetworkSessionManager: NSObject {
         broadcast("START_GAME:\(jsonString)")
 
         // Trigger untuk device yang memencet tombol START
-        DispatchQueue.main.async { self.onStartGameReceived?(card) }
+        DispatchQueue.main.async { self.onStartGameReceived?(card, pieceWeights) }
     }
 
     func sendScannedItem(piece: RevealedPiece, weight: Int) {
@@ -213,10 +219,13 @@ extension NetworkSessionManager: MCSessionDelegate {
         DispatchQueue.main.async {
             if message.hasPrefix("START_GAME:") {
                 let jsonString = String(message.dropFirst("START_GAME:".count))
-                if let jsonData = jsonString.data(using: .utf8),
-                   let card = try? JSONDecoder().decode(AirlineCardModel.self, from: jsonData) {
+                if let jsonData = jsonString.data(using: .utf8) {
                     self.lockInPlayers()
-                    self.onStartGameReceived?(card)
+                    if let payload = try? JSONDecoder().decode(StartGamePayload.self, from: jsonData) {
+                        self.onStartGameReceived?(payload.card, payload.pieceWeights)
+                    } else if let card = try? JSONDecoder().decode(AirlineCardModel.self, from: jsonData) {
+                        self.onStartGameReceived?(card, [:])
+                    }
                 }
             } else if message.hasPrefix("NEXT_HOUR:") {
                 let jsonString = String(message.dropFirst("NEXT_HOUR:".count))
