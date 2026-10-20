@@ -17,15 +17,20 @@ class GameSessionViewModel {
     var currentHour: Int = 8
     var delayHours: Int = 0
     var currentEvent: RandomEventModel? = nil
+    var activeHourEvent: RandomEventModel? = nil
+    var isZeroWeightHour: Bool {
+        activeHourEvent?.type == .zeroWeight
+    }
+    
     var isGameOver: Bool = false
     var lockHostToggle: Bool = false
     
     // MARK: - Weight Tracking Properties
-        var suitWeight: Int = 0
-        var carryWeight: Int = 0
+    var suitWeight: Int = 0
+    var carryWeight: Int = 0
     
     // MARK: - Private State Tracking
-        private var triggeredUniqueEvents: Set<RandomEventType> = []
+    private var triggeredUniqueEvents: Set<RandomEventType> = []
     
     // MARK: - Network Integration Properties
     var networkManager = NetworkSessionManager()
@@ -113,6 +118,7 @@ class GameSessionViewModel {
             currentHour = 8
             delayHours = 0
             currentEvent = nil
+            activeHourEvent = nil
             isGameOver = false
             triggeredUniqueEvents.removeAll() // Reset event unik saat game baru dimulai
             suitWeight = 0
@@ -235,6 +241,7 @@ class GameSessionViewModel {
             
             let event = rollForRandomEvent()
             currentEvent = event
+            activeHourEvent = event
             
             if event?.type == .flightDelay {
                 delayHours += 1
@@ -254,13 +261,14 @@ class GameSessionViewModel {
             currentEvent = nil
         }
     
-    func applyRemoteNextHour(payload: NextHourPayload) {
-        self.currentHour = payload.newHour
-        self.delayHours = payload.delayHour
-        self.currentEvent = payload.event
-        self.isGameOver = payload.isGameOver
-    }
-        
+        func applyRemoteNextHour(payload: NextHourPayload) {
+            self.currentHour = payload.newHour
+            self.delayHours = payload.delayHour
+            self.currentEvent = payload.event
+            self.activeHourEvent = payload.event
+            self.isGameOver = payload.isGameOver
+        }
+            
         
         // pengganti checkForRandomEvent()
         private func rollForRandomEvent() -> RandomEventModel? {
@@ -301,10 +309,11 @@ class GameSessionViewModel {
             networkManager.sendScannedItem(piece: revealed, weight: weight)
 
             // 3. Tambahin bobot HANYA ke tracker HP ini sendiri (berat suitcase/carry-on gak digabung ke HP lain)
+            let effectiveWeight = isZeroWeightHour ? 0 : weight
             if isSuitcase {
-                suitWeight += weight
+                suitWeight += effectiveWeight
             } else {
-                carryWeight += weight
+                carryWeight += effectiveWeight
             }
         }
     

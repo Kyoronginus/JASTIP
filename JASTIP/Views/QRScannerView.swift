@@ -106,9 +106,20 @@ struct QRScannerView: View {
                     // Tombol & Teks Pilihan
                     if let weight = viewModel.confirmedWeight {
                         VStack(spacing: 12) {
-                            Text("Bobot: \(weight) kg")
-                                .font(.headline)
-                                .foregroundColor(.green)
+                            if viewModel.session.isZeroWeightHour {
+                                VStack {
+                                    Text("Bobot: 0 kg")
+                                        .font(.headline.bold())
+                                        .foregroundColor(.green)
+                                    Text("Free Items Event! (Asli: \(weight) kg)")
+                                        .font(.caption2.bold())
+                                        .foregroundColor(.orange)
+                                }
+                            } else {
+                                Text("Bobot: \(weight) kg")
+                                    .font(.headline)
+                                    .foregroundColor(.green)
+                            }
                             
                             Text("Where do u want to put it in?")
                                 .font(.subheadline.bold())
