@@ -19,12 +19,17 @@ struct GameView: View {
     @Environment(\.dismiss) private var dismiss
     
     @State private var viewModel: GameSessionViewModel
+    @State private var nfcManager = NFCReaderManager()
     var onOpenCamera: () -> Void
     
     @State private var isShowingScanner = false
     @State private var isShowingLeaderboard = false
     @State private var isShowingRevealedWeights = false
     @State private var lastScannedPiece: PieceModel? = nil
+    
+    @State private var nfcDetectedPiece: PieceModel? = nil
+    @State private var nfcConfirmedWeight: Int? = nil
+    @State private var isShowingNFCPopup = false
     
     private var suitWeight: Int {
         viewModel.suitWeight
@@ -109,6 +114,27 @@ struct GameView: View {
                         .disabled(viewModel.currentEvent != nil)
                         .disabled(!viewModel.lockHostToggle)
                         
+                        Button("TAP NFC") {
+                            nfcManager.startScan()
+                        }
+                        .buttonStyle(PrimaryButtonStyle())
+                        .disabled(viewModel.currentEvent != nil)
+                        .onAppear {
+                            nfcManager.onTagScanned = { tagContent in
+                                // 1. Cari piece di PieceCatalog berdasarkan tag NFC (misal: "P01")
+                                if let piece = PieceCatalog.findPiece(by: tagContent) {
+                                    let weight = viewModel.weight(for: piece.id)
+                                    self.nfcDetectedPiece = piece
+                                    self.nfcConfirmedWeight = weight
+                                    withAnimation {
+                                        self.isShowingNFCPopup = true
+                                    }
+                                } else {
+                                    print("❌ Piece tidak ditemukan di katalog untuk ID: \(tagContent)")
+                                }
+                            }
+                        }
+                        
                         Button("SCAN QR") {
                             isShowingScanner = true
                             onOpenCamera()
@@ -124,11 +150,7 @@ struct GameView: View {
                                 .clipShape(Capsule())
                         }
                     }
-                    .offset(y: -30)
-                    
                 }
-                // Middle Part
-                
                 
                 // CAROUSEL
                 Text("Revealed Pieces")
@@ -219,8 +241,69 @@ struct GameView: View {
                 }
                 .transition(.scale.combined(with: .opacity))
             }
+            
+            // Pop-up Konfirmasi Hasil Tap NFC
+            if isShowingNFCPopup, let piece = nfcDetectedPiece, let weight = nfcConfirmedWeight {
+                Color.black.opacity(0.4)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        withAnimation { isShowingNFCPopup = false }
+                    }
+                
+                VStack(spacing: 16) {
+                    Text("NFC ITEM DETECTED")
+                        .font(.caption)
+                        .fontWeight(.bold)
+                        .foregroundColor(.secondary)
+                    
+                    Text(piece.shape.rawValue)
+                        .font(.title2.bold())
+                    
+                    // Cek jika sedang ada Event Free Items (0 kg)
+                    if viewModel.isZeroWeightHour {
+                        VStack(spacing: 2) {
+                            Text("Bobot: 0 kg")
+                                .font(.title3.bold())
+                                .foregroundColor(.green)
+                            Text("Free Items Event! (Asli: \(weight) kg)")
+                                .font(.caption2.bold())
+                                .foregroundColor(.orange)
+                        }
+                    } else {
+                        Text("Bobot: \(weight) kg")
+                            .font(.title3.bold())
+                            .foregroundColor(.green)
+                    }
+                    
+                    Text("Where do you want to put it in?")
+                        .font(.subheadline.bold())
+                        .foregroundColor(.primary)
+                    
+                    HStack(spacing: 14) {
+                        Button("Suitcase") {
+                            viewModel.recordItemPlacement(piece: piece, weight: weight, isSuitcase: true)
+                            withAnimation { isShowingNFCPopup = false }
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.blue)
+                        
+                        Button("Carry-On") {
+                            viewModel.recordItemPlacement(piece: piece, weight: weight, isSuitcase: false)
+                            withAnimation { isShowingNFCPopup = false }
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.orange)
+                    }
+                }
+                .padding(20)
+                .frame(maxWidth: 320)
+                .background(Color(uiColor: .systemBackground))
+                .cornerRadius(16)
+                .shadow(radius: 10)
+                .transition(.scale.combined(with: .opacity))
+            }
         }
-        .animation(.easeInOut(duration: 0.2), value: viewModel.currentEvent != nil || isShowingRevealedWeights)
+        .animation(.easeInOut(duration: 0.2), value: viewModel.currentEvent != nil || isShowingRevealedWeights || isShowingNFCPopup)
         .navigationBarBackButtonHidden(true)
         .fullScreenCover(isPresented: $isShowingScanner) {
             QRScannerView(session: viewModel) { piece, code, weight in
