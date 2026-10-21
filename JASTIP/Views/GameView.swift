@@ -14,6 +14,7 @@ struct GameView: View {
     var onOpenCamera: () -> Void
     
     @State private var isShowingScanner = false
+    @State private var isShowingLeaderboard = false
     @State private var isShowingRevealedWeights = false
     @State private var lastScannedPiece: PieceModel? = nil
     
@@ -70,6 +71,20 @@ struct GameView: View {
                     Spacer()
                     
                     VStack{
+                        HStack{
+                            Spacer()
+                            Button("", systemImage: "person.2.fill"){
+                                isShowingLeaderboard = true
+                            }
+                        }
+                        .sheet(isPresented: $isShowingLeaderboard) {
+                            LeaderboardCard(
+                                isModal: true,
+                                players: viewModel.leaderboardPlayers
+                            )
+                            .presentationDetents([.medium, .large])
+                        }
+                        
                         Text("Current Time")
                             .font(.title2.bold())
                         Text("\(viewModel.currentTimeString)")
@@ -89,6 +104,8 @@ struct GameView: View {
                         .buttonStyle(PrimaryButtonStyle())
                         .disabled(viewModel.currentEvent != nil)
                     }
+                    .offset(y: -30)
+                    
                 }
                 // Middle Part
                 
@@ -100,7 +117,7 @@ struct GameView: View {
                     .foregroundStyle(.primary)
                 GameCarouselView(pieces: viewModel.revealedPieces)
                     .padding(.vertical,8)
-
+                
                 
                 
                 // Bottom Part
@@ -165,6 +182,7 @@ struct GameView: View {
                 .transition(.scale.combined(with: .opacity))
             }
             
+            
             if isShowingRevealedWeights {
                 Color.black.opacity(0.4)
                     .ignoresSafeArea()
@@ -193,11 +211,10 @@ struct GameView: View {
             }
         }
         .fullScreenCover(isPresented: $viewModel.isGameOver) {
-            EndView {
+            EndView(players: viewModel.leaderboardPlayers) {
                 viewModel.resetToLobby()
             }
-        }
-    }
+        }    }
 }
 
 #Preview("Light") {

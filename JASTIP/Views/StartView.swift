@@ -39,6 +39,19 @@ struct StartView: View {
             
             Spacer()
             
+            TextField("Username", text: $viewModel.playerName)
+                .textFieldStyle(.plain)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled(true)
+                .padding()
+                .background(Color(.systemGray6))
+                .cornerRadius(10)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(Color.gray, lineWidth: 0.5)
+                )
+                .padding(.horizontal, 40)
+            
             Button("START") {
                 viewModel.triggerStartGame()
                 

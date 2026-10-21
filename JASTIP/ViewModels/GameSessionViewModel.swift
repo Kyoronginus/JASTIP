@@ -12,7 +12,7 @@ import Observation
 class GameSessionViewModel {
     var pieceWeights: [String: Int] = [:]
     var revealedPieces: [RevealedPiece] = []
-
+    
     var airlineCard: AirlineCardModel
     var currentHour: Int = 8
     var delayHours: Int = 0
@@ -29,6 +29,67 @@ class GameSessionViewModel {
     var suitWeight: Int = 0
     var carryWeight: Int = 0
     
+    // MARK: - Player & Leaderboard Properties
+    var playerName: String = UIDevice.current.name
+    
+    // Status real-time pemain ini (auto-sync dengan berat koper & kapasitas maskapai)
+    var currentPlayerStatus: PlayerStatusModel {
+        // Kalau player sengaja ngehapus sampai kosong, tetap fallback aman ke nama device
+        let finalName = playerName.trimmingCharacters(in: .whitespaces).isEmpty ? UIDevice.current.name : playerName
+        
+        return PlayerStatusModel(
+            id: "local_player",
+            name: finalName,
+            isCurrentDevice: true,
+            suitcaseWeight: suitWeight,
+            suitcaseMax: displayedAirlineCard.maxCapacityKg,
+            carryOnWeight: carryWeight,
+            carryOnMax: displayedAirlineCard.maxCarryOnKg,
+            isBoarded: isGameOver
+        )
+    }
+    
+    // Dictionary untuk menampung data live dari pemain lain (Key: peerId)
+    var remotePlayers: [String: PlayerSyncPayload] = [:]
+    
+    // List player untuk ditampilkan di Leaderboard
+    var leaderboardPlayers: [PlayerStatusModel] {
+        var list = [currentPlayerStatus]
+        
+        // Loop teman-teman yang connect via network
+        for peerName in networkManager.connectedPeerNames {
+            if let synced = remotePlayers[peerName] {
+                list.append(
+                    PlayerStatusModel(
+                        id: synced.peerId,
+                        name: synced.name,
+                        isCurrentDevice: false,
+                        suitcaseWeight: synced.suitcaseWeight,
+                        suitcaseMax: displayedAirlineCard.maxCapacityKg,
+                        carryOnWeight: synced.carryOnWeight,
+                        carryOnMax: displayedAirlineCard.maxCarryOnKg,
+                        isBoarded: synced.isBoarded
+                    )
+                )
+            } else {
+                // Fallback sementara jika peer belum kirim sync pertama
+                list.append(
+                    PlayerStatusModel(
+                        id: peerName,
+                        name: peerName,
+                        isCurrentDevice: false,
+                        suitcaseWeight: 0,
+                        suitcaseMax: displayedAirlineCard.maxCapacityKg,
+                        carryOnWeight: 0,
+                        carryOnMax: displayedAirlineCard.maxCarryOnKg,
+                        isBoarded: isGameOver
+                    )
+                )
+            }
+        }
+        return list
+    }
+    
     // MARK: - Private State Tracking
     private var triggeredUniqueEvents: Set<RandomEventType> = []
     
@@ -42,6 +103,9 @@ class GameSessionViewModel {
     
     func triggerStartGame() {
         networkManager.sendStartGameTrigger(card: airlineCard, pieceWeights: pieceWeights)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            self.broadcastMyStatus()
+        }
     }
     
     init(airlineCard: AirlineCardModel = AirlineCardCatalog.getRandomCard()) {
@@ -55,8 +119,11 @@ class GameSessionViewModel {
                 self?.pieceWeights = weights
             }
             self?.isGameStarted = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                self?.broadcastMyStatus()
+            }
         }
-
+        
         // Setup callback ketika pemain lain memencet Next Hour
         networkManager.onNextHourPayloadReceived = { [weak self] payload in
             self?.applyRemoteNextHour(payload: payload)
@@ -92,6 +159,11 @@ class GameSessionViewModel {
             return try? JSONEncoder().encode(snapshot)
         }
         
+        // Setup listener sync data player lain
+        networkManager.onPlayerSyncReceived = { [weak self] senderPeerName, payload in
+            self?.remotePlayers[senderPeerName] = payload
+        }
+        
         networkManager.onSnapshotReceived = { [weak self] data in
             struct Snapshot: Codable {
                 let card: AirlineCardModel
@@ -112,214 +184,226 @@ class GameSessionViewModel {
             self.isGameStarted = true
         }
     }
-        
-        func startNewGame() {
-            revealedPieces.removeAll()
-            currentHour = 8
-            delayHours = 0
-            currentEvent = nil
-            activeHourEvent = nil
-            isGameOver = false
-            triggeredUniqueEvents.removeAll() // Reset event unik saat game baru dimulai
-            suitWeight = 0
-            carryWeight = 0
-            generateRandomizedWeights()
-            self.airlineCard = AirlineCardCatalog.getRandomCard()
-        }
     
-        func weight(for pieceId: String) -> Int {
-            // 1. Cek apakah piece ini (atau kembarannya) sudah pernah direveal di carousel
-            if let revealed = revealedPieces.first(where: { $0.id == pieceId }) {
-                return revealed.weight
+    func startNewGame() {
+        revealedPieces.removeAll()
+        currentHour = 8
+        delayHours = 0
+        currentEvent = nil
+        activeHourEvent = nil
+        isGameOver = false
+        triggeredUniqueEvents.removeAll() // Reset event unik saat game baru dimulai
+        suitWeight = 0
+        carryWeight = 0
+        generateRandomizedWeights()
+        self.airlineCard = AirlineCardCatalog.getRandomCard()
+    }
+    
+    
+    func weight(for pieceId: String) -> Int {
+        // 1. Cek apakah piece ini (atau kembarannya) sudah pernah direveal di carousel
+        if let revealed = revealedPieces.first(where: { $0.id == pieceId }) {
+            return revealed.weight
+        }
+        
+        // 2. Cek apakah ada bobot terdaftar di dictionary pieceWeights
+        if let weight = pieceWeights[pieceId] {
+            return weight
+        }
+        
+        // 3. Fallback konsistensi: jika ada piece dengan bentuk dan warna sama
+        if let piece = PieceCatalog.findPiece(by: pieceId) {
+            if let matchingRevealed = revealedPieces.first(where: { $0.piece.color == piece.color && $0.piece.shape == piece.shape }) {
+                return matchingRevealed.weight
             }
-            
-            // 2. Cek apakah ada bobot terdaftar di dictionary pieceWeights
-            if let weight = pieceWeights[pieceId] {
-                return weight
-            }
-            
-            // 3. Fallback konsistensi: jika ada piece dengan bentuk dan warna sama
-            if let piece = PieceCatalog.findPiece(by: pieceId) {
-                if let matchingRevealed = revealedPieces.first(where: { $0.piece.color == piece.color && $0.piece.shape == piece.shape }) {
-                    return matchingRevealed.weight
+            if let matchingId = pieceWeights.keys.first(where: { id in
+                if let other = PieceCatalog.findPiece(by: id) {
+                    return other.color == piece.color && other.shape == piece.shape
                 }
-                if let matchingId = pieceWeights.keys.first(where: { id in
-                    if let other = PieceCatalog.findPiece(by: id) {
-                        return other.color == piece.color && other.shape == piece.shape
-                    }
-                    return false
-                }), let matchingWeight = pieceWeights[matchingId] {
-                    return matchingWeight
-                }
-                return piece.gridCount
+                return false
+            }), let matchingWeight = pieceWeights[matchingId] {
+                return matchingWeight
             }
-            
-            return 1
+            return piece.gridCount
         }
         
-        func recordScannedPiece(_ piece: PieceModel, weight: Int) {
-            pieceWeights[piece.id] = weight
-            if !revealedPieces.contains(where: { $0.id == piece.id }) {
-                revealedPieces.append(RevealedPiece(piece: piece, weight: weight))
-            }
-        }
-        
+        return 1
+    }
     
-    
-        private func generateRandomizedWeights() {
-            var weights: [String: Int] = [:]
-            let deltas = [1, 1, 2, 2, 3]
-            
-            let allColors: [PieceColor] = [.red, .yellow, .green, .blue, .pink]
-            
-            for color in allColors {
-                let piecesOfColor = PieceCatalog.allPieces.filter { $0.color == color }
-                
-                let normalPieces = piecesOfColor.filter{ !$0.isAnomaly }
-                let uniquePieces = piecesOfColor.filter{ $0.isAnomaly }
-                
-                for piece in uniquePieces {
-                    weights[piece.id] = piece.gridCount
-                }
-                
-                // shuffle normal pieces
-                let shuffledNormalPieces = normalPieces.shuffled()
-                
-                for (index, piece) in shuffledNormalPieces.enumerated() {
-                    if index < deltas.count {
-                        let delta = deltas[index]
-                        
-                        // bnobot minimal 1 kg
-                        let finalWeight = max(1, piece.gridCount + delta)
-                        weights[piece.id] = finalWeight
-                    } else {
-                        weights[piece.id] = piece.gridCount
-                    }
-                }
-            }
-            
-            self.pieceWeights = weights
-        }
-
-        var currentTimeString: String {
-            String(format: "%02d:00", currentHour)
-        }
-        
-        var boardingHour: Int {
-            let clean = airlineCard.departureTime.replacingOccurrences(of: ".", with: ":")
-            let hourStr = clean.split(separator: ":").first ?? "15"
-            return (Int(hourStr) ?? 15) + delayHours
-        }
-        
-        var displayedAirlineCard: AirlineCardModel {
-            if delayHours == 0 {
-                return airlineCard
-            } else {
-                return AirlineCardModel(
-                    id: airlineCard.id,
-                    airlineName: airlineCard.airlineName,
-                    maxCapacityKg: airlineCard.maxCapacityKg,
-                    maxCarryOnKg: airlineCard.maxCarryOnKg,
-                    departureTime: String(format: "%02d:00", boardingHour)
-                )
-            }
-        }
-    
-        
-    
-    
-    
-        
-        // MARK: - Business Logic Methods
-        func nextHour() {
-            if currentHour > boardingHour {
-                isGameOver = true
-                return
-            }
-            
-            currentHour += 1
-            
-            let event = rollForRandomEvent()
-            currentEvent = event
-            activeHourEvent = event
-            
-            if event?.type == .flightDelay {
-                delayHours += 1
-            }
-            
-            let gameOverStatus = currentHour >= boardingHour
-            self.isGameOver = gameOverStatus
-
-            // kirim payload ke pemain lain
-            let payload = NextHourPayload(
-                newHour: currentHour, delayHour: delayHours, event: event, isGameOver: gameOverStatus
-            )
-            networkManager.sendNextHourTrigger(payload: payload)
-        }
-        
-        func dismissEvent() {
-            currentEvent = nil
-        }
-    
-        func applyRemoteNextHour(payload: NextHourPayload) {
-            self.currentHour = payload.newHour
-            self.delayHours = payload.delayHour
-            self.currentEvent = payload.event
-            self.activeHourEvent = payload.event
-            self.isGameOver = payload.isGameOver
-        }
-            
-        
-        // pengganti checkForRandomEvent()
-        private func rollForRandomEvent() -> RandomEventModel? {
-            let roll = Int.random(in: 1...100)
-            guard roll <= 40 else { return nil }
-            
-            let availableTypes = RandomEventType.allCases.filter { type in
-                if type == .flightDelay || type == .relativeCanceled {
-                    return !triggeredUniqueEvents.contains(type)
-                }
-                return true
-            }
-            guard !availableTypes.isEmpty else { return nil }
-            
-            if let event = RandomEventCatalog.getRandomEvent(from: availableTypes) {
-                if event.type == .flightDelay || event.type == .relativeCanceled {
-                    triggeredUniqueEvents.insert(event.type)
-                }
-                return event
-            }
-            return nil
-        }
-    
-    
-        // Fungsi untuk mencatat item sekaligus memilih tempat (Suitcase / Carry-On)
-        func recordItemPlacement(piece: PieceModel, weight: Int, isSuitcase: Bool) {
-            let revealed = RevealedPiece(piece: piece, weight: weight)
-
-            // Simpan bobot ke dictionary agar konsisten
-            pieceWeights[piece.id] = weight
-
-            // 1. Masukin ke carousel HP sendiri kalau belum ada
-            if !revealedPieces.contains(where: { $0.id == piece.id }) {
-                revealedPieces.append(revealed)
-            }
-
-            // 2. Kirim datanya ke HP player lain via Multipeer
-            networkManager.sendScannedItem(piece: revealed, weight: weight)
-
-            // 3. Tambahin bobot HANYA ke tracker HP ini sendiri (berat suitcase/carry-on gak digabung ke HP lain)
-            let effectiveWeight = isZeroWeightHour ? 0 : weight
-            if isSuitcase {
-                suitWeight += effectiveWeight
-            } else {
-                carryWeight += effectiveWeight
-            }
-        }
-    
-        func resetToLobby() {
-            isGameOver = false
-            isGameStarted = false
-            startNewGame()
+    func recordScannedPiece(_ piece: PieceModel, weight: Int) {
+        pieceWeights[piece.id] = weight
+        if !revealedPieces.contains(where: { $0.id == piece.id }) {
+            revealedPieces.append(RevealedPiece(piece: piece, weight: weight))
         }
     }
+    
+    func broadcastMyStatus() {
+        let payload = PlayerSyncPayload(
+            peerId: networkManager.myDisplayName,
+            name: currentPlayerStatus.name,
+            suitcaseWeight: suitWeight,
+            carryOnWeight: carryWeight,
+            isBoarded: isGameOver
+        )
+        networkManager.sendPlayerSync(payload: payload)
+    }
+    
+    private func generateRandomizedWeights() {
+        var weights: [String: Int] = [:]
+        let deltas = [1, 1, 2, 2, 3]
+        
+        let allColors: [PieceColor] = [.red, .yellow, .green, .blue, .pink]
+        
+        for color in allColors {
+            let piecesOfColor = PieceCatalog.allPieces.filter { $0.color == color }
+            
+            let normalPieces = piecesOfColor.filter{ !$0.isAnomaly }
+            let uniquePieces = piecesOfColor.filter{ $0.isAnomaly }
+            
+            for piece in uniquePieces {
+                weights[piece.id] = piece.gridCount
+            }
+            
+            // shuffle normal pieces
+            let shuffledNormalPieces = normalPieces.shuffled()
+            
+            for (index, piece) in shuffledNormalPieces.enumerated() {
+                if index < deltas.count {
+                    let delta = deltas[index]
+                    
+                    // bnobot minimal 1 kg
+                    let finalWeight = max(1, piece.gridCount + delta)
+                    weights[piece.id] = finalWeight
+                } else {
+                    weights[piece.id] = piece.gridCount
+                }
+            }
+        }
+        
+        self.pieceWeights = weights
+    }
+    
+    var currentTimeString: String {
+        String(format: "%02d:00", currentHour)
+    }
+    
+    var boardingHour: Int {
+        let clean = airlineCard.departureTime.replacingOccurrences(of: ".", with: ":")
+        let hourStr = clean.split(separator: ":").first ?? "15"
+        return (Int(hourStr) ?? 15) + delayHours
+    }
+    
+    var displayedAirlineCard: AirlineCardModel {
+        if delayHours == 0 {
+            return airlineCard
+        } else {
+            return AirlineCardModel(
+                id: airlineCard.id,
+                airlineName: airlineCard.airlineName,
+                maxCapacityKg: airlineCard.maxCapacityKg,
+                maxCarryOnKg: airlineCard.maxCarryOnKg,
+                departureTime: String(format: "%02d:00", boardingHour)
+            )
+        }
+    }
+    
+    
+    
+    
+    
+    
+    // MARK: - Business Logic Methods
+    func nextHour() {
+        if currentHour > boardingHour {
+            isGameOver = true
+            return
+        }
+        
+        currentHour += 1
+        
+        let event = rollForRandomEvent()
+        currentEvent = event
+        activeHourEvent = event
+        
+        if event?.type == .flightDelay {
+            delayHours += 1
+        }
+        
+        let gameOverStatus = currentHour >= boardingHour
+        self.isGameOver = gameOverStatus
+        
+        // kirim payload ke pemain lain
+        let payload = NextHourPayload(
+            newHour: currentHour, delayHour: delayHours, event: event, isGameOver: gameOverStatus
+        )
+        networkManager.sendNextHourTrigger(payload: payload)
+    }
+    
+    func dismissEvent() {
+        currentEvent = nil
+    }
+    
+    func applyRemoteNextHour(payload: NextHourPayload) {
+        self.currentHour = payload.newHour
+        self.delayHours = payload.delayHour
+        self.currentEvent = payload.event
+        self.activeHourEvent = payload.event
+        self.isGameOver = payload.isGameOver
+    }
+    
+    
+    // pengganti checkForRandomEvent()
+    private func rollForRandomEvent() -> RandomEventModel? {
+        let roll = Int.random(in: 1...100)
+        guard roll <= 40 else { return nil }
+        
+        let availableTypes = RandomEventType.allCases.filter { type in
+            if type == .flightDelay || type == .relativeCanceled {
+                return !triggeredUniqueEvents.contains(type)
+            }
+            return true
+        }
+        guard !availableTypes.isEmpty else { return nil }
+        
+        if let event = RandomEventCatalog.getRandomEvent(from: availableTypes) {
+            if event.type == .flightDelay || event.type == .relativeCanceled {
+                triggeredUniqueEvents.insert(event.type)
+            }
+            return event
+        }
+        return nil
+    }
+    
+    
+    // Fungsi untuk mencatat item sekaligus memilih tempat (Suitcase / Carry-On)
+    func recordItemPlacement(piece: PieceModel, weight: Int, isSuitcase: Bool) {
+        let revealed = RevealedPiece(piece: piece, weight: weight)
+        
+        // Simpan bobot ke dictionary agar konsisten
+        pieceWeights[piece.id] = weight
+        
+        // 1. Masukin ke carousel HP sendiri kalau belum ada
+        if !revealedPieces.contains(where: { $0.id == piece.id }) {
+            revealedPieces.append(revealed)
+        }
+        
+        // 2. Kirim datanya ke HP player lain via Multipeer
+        networkManager.sendScannedItem(piece: revealed, weight: weight)
+        
+        // 3. Tambahin bobot HANYA ke tracker HP ini sendiri (berat suitcase/carry-on gak digabung ke HP lain)
+        let effectiveWeight = isZeroWeightHour ? 0 : weight
+        if isSuitcase {
+            suitWeight += effectiveWeight
+        } else {
+            carryWeight += effectiveWeight
+        }
+        
+        broadcastMyStatus()
+    }
+    
+    func resetToLobby() {
+        isGameOver = false
+        isGameStarted = false
+        startNewGame()
+    }
+}
