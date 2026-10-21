@@ -118,10 +118,9 @@ struct GameView: View {
                             nfcManager.startScan()
                         }
                         .buttonStyle(PrimaryButtonStyle())
-                        .disabled(viewModel.currentEvent != nil)
+                        .disabled(viewModel.currentEvent != nil || viewModel.isBoarded)
                         .onAppear {
                             nfcManager.onTagScanned = { tagContent in
-                                // 1. Cari piece di PieceCatalog berdasarkan tag NFC (misal: "P01")
                                 if let piece = PieceCatalog.findPiece(by: tagContent) {
                                     let weight = viewModel.weight(for: piece.id)
                                     self.nfcDetectedPiece = piece
@@ -242,7 +241,6 @@ struct GameView: View {
                 .transition(.scale.combined(with: .opacity))
             }
             
-            // Pop-up Konfirmasi Hasil Tap NFC
             if isShowingNFCPopup, let piece = nfcDetectedPiece, let weight = nfcConfirmedWeight {
                 Color.black.opacity(0.4)
                     .ignoresSafeArea()
