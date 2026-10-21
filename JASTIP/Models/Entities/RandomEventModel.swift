@@ -14,6 +14,9 @@ enum RandomEventType: String, CaseIterable, Codable {
     case relativeCanceled
     case storesClosed
     case reshuffleStore
+    case mindYourManners
+    case reverseMadness
+    case customsIssue
 }
 
 struct RandomEventModel: Identifiable, Equatable, Codable {

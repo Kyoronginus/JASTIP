@@ -79,6 +79,7 @@ class GameSessionViewModel {
     
     // MARK: - Private State Tracking
     private var triggeredUniqueEvents: Set<RandomEventType> = []
+    private var lastRoundEventType: RandomEventType?
     
     // MARK: - Network Integration Properties
     var networkManager = NetworkSessionManager()
@@ -183,6 +184,7 @@ class GameSessionViewModel {
         isGameOver = false
         isBoarded = false
         triggeredUniqueEvents.removeAll() // Reset event unik saat game baru dimulai
+            lastRoundEventType = nil
         suitWeight = 0
         carryWeight = 0
         generateRandomizedWeights()
@@ -312,6 +314,7 @@ class GameSessionViewModel {
         currentHour += 1
         
         let event = rollForRandomEvent()
+            lastRoundEventType = event?.type
         currentEvent = event
         activeHourEvent = event
         
@@ -333,36 +336,51 @@ class GameSessionViewModel {
         currentEvent = nil
     }
     
-    func applyRemoteNextHour(payload: NextHourPayload) {
-        self.currentHour = payload.newHour
-        self.delayHours = payload.delayHour
-        self.currentEvent = payload.event
-        self.activeHourEvent = payload.event
-        self.isGameOver = payload.isGameOver
-    }
-    
-    
-    // pengganti checkForRandomEvent()
-    private func rollForRandomEvent() -> RandomEventModel? {
-        let roll = Int.random(in: 1...100)
-        guard roll <= 40 else { return nil }
-        
-        let availableTypes = RandomEventType.allCases.filter { type in
-            if type == .flightDelay || type == .relativeCanceled {
-                return !triggeredUniqueEvents.contains(type)
-            }
-            return true
+        func applyRemoteNextHour(payload: NextHourPayload) {
+            self.currentHour = payload.newHour
+            self.delayHours = payload.delayHour
+            self.lastRoundEventType = payload.event?.type
+            self.currentEvent = payload.event
+            self.activeHourEvent = payload.event
+            self.isGameOver = payload.isGameOver
         }
-        guard !availableTypes.isEmpty else { return nil }
+            
         
-        if let event = RandomEventCatalog.getRandomEvent(from: availableTypes) {
+        // pengganti checkForRandomEvent()
+        private func rollForRandomEvent() -> RandomEventModel? {
+            let roll = Int.random(in: 1...100)
+            guard roll <= 40 else { return nil }
+
+            let nonConsecutiveEvents: Set<RandomEventType> = [
+                .zeroWeight,
+                .mindYourManners,
+                .reverseMadness
+            ]
+
+            let availableTypes = RandomEventType.allCases.filter { type in
+                if type == .flightDelay || type == .relativeCanceled {
+                    guard !triggeredUniqueEvents.contains(type) else {
+                        return false
+                    }
+                }
+
+                if nonConsecutiveEvents.contains(type), lastRoundEventType == type {
+                    return false
+                }
+
+                return true
+            }
+
+            guard let event = RandomEventCatalog.getRandomEvent(from: availableTypes) else {
+                return nil
+            }
+
             if event.type == .flightDelay || event.type == .relativeCanceled {
                 triggeredUniqueEvents.insert(event.type)
             }
+
             return event
         }
-        return nil
-    }
     
     
     // Fungsi untuk mencatat item sekaligus memilih tempat (Suitcase / Carry-On)

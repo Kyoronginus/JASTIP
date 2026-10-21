@@ -52,6 +52,27 @@ enum RandomEventCatalog {
                 title: "Reshuffle Store!",
                 message: "The \(targetStore) store must reshuffle its displayed pieces back into the supply and draw new ones!"
             )
+            
+        case .mindYourManners:
+            return RandomEventModel(
+                type: .mindYourManners,
+                title: "Mind Your Manners!",
+                message: "No one can point their finger during this round. Anyone who does can only do 1 action in the next round."
+            )
+
+        case .reverseMadness:
+            return RandomEventModel(
+                type: .reverseMadness,
+                title: "Reverse Madness!",
+                message: "For this round, you may only interact with physical components using their non-dominant hand. If you violate this rule, you can only do 1 action in the next round."
+            )
+
+        case .customsIssue:
+            return RandomEventModel(
+                type: .customsIssue,
+                title: "Customs Issue!",
+                message: "For this round, each player may perform only 1 action instead of 2."
+            )
         }
     }
 
@@ -61,11 +82,22 @@ enum RandomEventCatalog {
 
         func weight(for type: RandomEventType) -> Int {
             switch type {
-            case .storesClosed: return 30
-            case .flightDelay: return 20
-            case .zeroWeight: return 20
-            case .relativeCanceled: return 10
-            case .reshuffleStore: return 20
+            case .storesClosed:
+                return 18
+            case .flightDelay:
+                return 8
+            case .zeroWeight:
+                return 12
+            case .relativeCanceled:
+                return 5
+            case .reshuffleStore:
+                return 10
+            case .mindYourManners:
+                return 17
+            case .reverseMadness:
+                return 15
+            case .customsIssue:
+                return 15
             }
         }
 
