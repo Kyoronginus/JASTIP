@@ -82,6 +82,7 @@ struct GameView: View {
                         HStack{
                             Spacer()
                             Button("", systemImage: "person.2.fill"){
+                                viewModel.broadcastMyStatus()
                                 isShowingLeaderboard = true
                             }
                         }

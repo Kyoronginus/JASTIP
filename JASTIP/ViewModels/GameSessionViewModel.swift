@@ -72,20 +72,6 @@ class GameSessionViewModel {
                         isBoarded: synced.isBoarded
                     )
                 )
-            } else {
-                // Fallback sementara jika peer belum kirim sync pertama
-                list.append(
-                    PlayerStatusModel(
-                        id: peerName,
-                        name: peerName,
-                        isCurrentDevice: false,
-                        suitcaseWeight: 0,
-                        suitcaseMax: displayedAirlineCard.maxCapacityKg,
-                        carryOnWeight: 0,
-                        carryOnMax: displayedAirlineCard.maxCarryOnKg,
-                        isBoarded: isGameOver
-                    )
-                )
             }
         }
         return list
@@ -163,6 +149,7 @@ class GameSessionViewModel {
         // Setup listener sync data player lain
         networkManager.onPlayerSyncReceived = { [weak self] senderPeerName, payload in
             self?.remotePlayers[senderPeerName] = payload
+            self?.checkAllPlayersBoarded()
         }
         
         networkManager.onSnapshotReceived = { [weak self] data in
@@ -380,6 +367,8 @@ class GameSessionViewModel {
     
     // Fungsi untuk mencatat item sekaligus memilih tempat (Suitcase / Carry-On)
     func recordItemPlacement(piece: PieceModel, weight: Int, isSuitcase: Bool) {
+        guard !isBoarded && !isGameOver else { return }
+        
         let revealed = RevealedPiece(piece: piece, weight: weight)
         
         // Simpan bobot ke dictionary agar konsisten
@@ -415,8 +404,18 @@ class GameSessionViewModel {
     }
     
     private func checkAllPlayersBoarded() {
-        let allBoarded = leaderboardPlayers.allSatisfy { $0.isBoarded }
-        if allBoarded {
+        guard isBoarded else { return }
+        
+        let connectedPeers = networkManager.connectedPeerNames
+        if !connectedPeers.isEmpty {
+            let allRemoteBoarded = connectedPeers.allSatisfy { peerName in
+                remotePlayers[peerName]?.isBoarded == true
+            }
+            if allRemoteBoarded {
+                isGameOver = true
+            }
+        } else {
+            // Solo play
             isGameOver = true
         }
     }
@@ -424,6 +423,7 @@ class GameSessionViewModel {
     func resetToLobby() {
         isGameOver = false
         isGameStarted = false
+        networkManager.endGame()
         startNewGame()
     }
 }
