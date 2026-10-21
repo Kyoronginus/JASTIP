@@ -12,6 +12,11 @@ struct LeaderboardCard: View {
     @Environment(\.dismiss) private var dismiss
     var isModal: Bool = true
     var players: [PlayerStatusModel]
+    var onBoard: (() -> Void)? = nil
+    
+    private var currentPlayer: PlayerStatusModel? {
+        players.first(where: { $0.isCurrentDevice })
+    }
     
     var body: some View {
         NavigationStack {
@@ -19,6 +24,21 @@ struct LeaderboardCard: View {
                 VStack(spacing: 16) {
                     ForEach(players) { player in
                         PlayerStatusCard(player: player)
+                    }
+                    
+                    // Button only appears for the current device if not yet boarded
+                    if isModal, let currentPlayer, !currentPlayer.isBoarded {
+                        Button {
+                            onBoard?()
+                        } label: {
+                            HStack {
+                                Text("Board Flight")
+                                    .fontWeight(.bold)
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(PrimaryButtonStyle(backgroundColor: .blue))
+                        .padding(.top, 8)
                     }
                 }
                 .padding(20)
@@ -39,6 +59,7 @@ struct LeaderboardCard: View {
         }
     }
 }
+
 
 struct PlayerStatusCard: View {
     let player: PlayerStatusModel
@@ -125,6 +146,8 @@ struct PlayerStatusCard: View {
         .shadow(color: .black.opacity(0.04), radius: 6, x: 0, y: 3)
     }
 }
+
+
 
 #Preview("Light") {
     LeaderboardCard(

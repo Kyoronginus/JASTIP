@@ -2,6 +2,14 @@
 //  GameView.swift
 //  JASTIP
 //
+//  Created by Tohru Djunaedi Sato on 21/10/26.
+//
+
+
+//
+//  GameView.swift
+//  JASTIP
+//
 //  Created by Feivel Qutby on 10/10/26.
 //
 
@@ -80,7 +88,10 @@ struct GameView: View {
                         .sheet(isPresented: $isShowingLeaderboard) {
                             LeaderboardCard(
                                 isModal: true,
-                                players: viewModel.leaderboardPlayers
+                                players: viewModel.leaderboardPlayers,
+                                onBoard: {
+                                    viewModel.boardFlight()
+                                }
                             )
                             .presentationDetents([.medium, .large])
                         }
@@ -102,7 +113,15 @@ struct GameView: View {
                             onOpenCamera()
                         }
                         .buttonStyle(PrimaryButtonStyle())
-                        .disabled(viewModel.currentEvent != nil)
+                        .disabled(viewModel.currentEvent != nil || viewModel.isBoarded)
+                        
+                        if viewModel.isBoarded {
+                            Label("Boarded", systemImage: "checkmark.circle.fill")
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 4)
+                                .foregroundStyle(.green)
+                                .clipShape(Capsule())
+                        }
                     }
                     .offset(y: -30)
                     
@@ -214,11 +233,13 @@ struct GameView: View {
             EndView(players: viewModel.leaderboardPlayers) {
                 viewModel.resetToLobby()
             }
-        }    }
+        }
+    }
 }
 
 #Preview("Light") {
     let mockViewModel = GameSessionViewModel()
+    mockViewModel.isBoarded = true
     mockViewModel.revealedPieces = [
         RevealedPiece(piece: PieceCatalog.allPieces[0], weight: 3),
         RevealedPiece(piece: PieceCatalog.allPieces[1], weight: 4),

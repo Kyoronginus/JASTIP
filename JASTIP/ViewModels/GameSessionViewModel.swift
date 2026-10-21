@@ -31,6 +31,7 @@ class GameSessionViewModel {
     
     // MARK: - Player & Leaderboard Properties
     var playerName: String = UIDevice.current.name
+    var isBoarded: Bool = false
     
     // Status real-time pemain ini (auto-sync dengan berat koper & kapasitas maskapai)
     var currentPlayerStatus: PlayerStatusModel {
@@ -45,7 +46,7 @@ class GameSessionViewModel {
             suitcaseMax: displayedAirlineCard.maxCapacityKg,
             carryOnWeight: carryWeight,
             carryOnMax: displayedAirlineCard.maxCarryOnKg,
-            isBoarded: isGameOver
+            isBoarded: isBoarded || isGameOver
         )
     }
     
@@ -187,11 +188,13 @@ class GameSessionViewModel {
     
     func startNewGame() {
         revealedPieces.removeAll()
+        remotePlayers.removeAll()
         currentHour = 8
         delayHours = 0
         currentEvent = nil
         activeHourEvent = nil
         isGameOver = false
+        isBoarded = false
         triggeredUniqueEvents.removeAll() // Reset event unik saat game baru dimulai
         suitWeight = 0
         carryWeight = 0
@@ -243,7 +246,7 @@ class GameSessionViewModel {
             name: currentPlayerStatus.name,
             suitcaseWeight: suitWeight,
             carryOnWeight: carryWeight,
-            isBoarded: isGameOver
+            isBoarded: isBoarded || isGameOver
         )
         networkManager.sendPlayerSync(payload: payload)
     }
@@ -399,6 +402,23 @@ class GameSessionViewModel {
         }
         
         broadcastMyStatus()
+    }
+    
+    func boardFlight() {
+        guard !isBoarded && !isGameOver else { return }
+        
+        isBoarded = true
+        broadcastMyStatus()
+        
+        // check if all players have boarded. if yes -> trigger game over
+        checkAllPlayersBoarded()
+    }
+    
+    private func checkAllPlayersBoarded() {
+        let allBoarded = leaderboardPlayers.allSatisfy { $0.isBoarded }
+        if allBoarded {
+            isGameOver = true
+        }
     }
     
     func resetToLobby() {
