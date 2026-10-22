@@ -21,6 +21,8 @@ settings:
     
     INFOPLIST_KEY_NSCameraUsageDescription: "The app requires camera access to scan board game pieces"
     INFOPLIST_KEY_NSLocalNetworkUsageDescription: "This app uses Bonjour to find other devices on the local network"
+    INFOPLIST_KEY_NFCReaderUsageDescription: "The app requires NFC access to scan board game items"
+
     INFOPLIST_KEY_UILaunchScreen_Generation: YES
 
 
@@ -30,6 +32,12 @@ targets:
     platform: iOS
     sources:
       - path: JASTIP
+    entitlements:
+      path: JASTIP/JASTIP.entitlements
+      properties: 
+        com.apple.developer.nfc.readersession.formats:
+          - NDEF
+          - TAG
 
     info: 
       path: JASTIP/Info.plist
