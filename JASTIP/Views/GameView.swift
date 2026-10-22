@@ -30,6 +30,7 @@ struct GameView: View {
     @State private var nfcDetectedPiece: PieceModel? = nil
     @State private var nfcConfirmedWeight: Int? = nil
     @State private var isShowingNFCPopup = false
+    @State private var isShowingHowTo = false
     
     private var suitWeight: Int {
         viewModel.suitWeight
@@ -84,12 +85,22 @@ struct GameView: View {
                     Spacer()
                     
                     VStack{
-                        HStack{
+                        HStack() {
                             Spacer()
-                            Button("", systemImage: "person.2.fill"){
+                            Button("", systemImage: "questionmark.circle") {
+                                isShowingHowTo = true
+                            }
+                            .font(.title3)
+                            
+                            Button("", systemImage: "person.2.fill") {
                                 viewModel.broadcastMyStatus()
                                 isShowingLeaderboard = true
                             }
+                            .font(.title3)
+                        }
+                        .sheet(isPresented: $isShowingHowTo) {
+                            HowToSheets()
+                                .presentationDetents([.medium, .large])
                         }
                         .sheet(isPresented: $isShowingLeaderboard) {
                             LeaderboardCard(

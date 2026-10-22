@@ -49,7 +49,7 @@ struct LeaderboardCard: View {
             .toolbar {
                 if isModal {
                     ToolbarItem(placement: .topBarTrailing) {
-                        Button("Tutup") {
+                        Button("Close") {
                             dismiss()
                         }
                         .fontWeight(.semibold)
@@ -77,8 +77,8 @@ struct PlayerStatusCard: View {
                             .font(.caption2.bold())
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
-                            .background(Color.blue.opacity(0.15))
-                            .foregroundStyle(.blue)
+                            .background(.gray.opacity(0.15))
+                            .foregroundStyle(.secondary)
                             .clipShape(Capsule())
                     }
                 }
