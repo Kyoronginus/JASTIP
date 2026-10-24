@@ -88,13 +88,6 @@ struct GameView: View {
                                 isShowingHowTo = true
                             }
                             .font(.title3)
-                            
-                            Button("", systemImage: "person.2.fill") {
-                                viewModel.broadcastMyStatus()
-                                isShowingLeaderboard = true
-                            }
-                            .buttonStyle(PrimaryButtonStyle())
-                            .font(.title3)
                         }
                         .sheet(isPresented: $isShowingHowTo) {
                             HowToSheets()
@@ -170,20 +163,29 @@ struct GameView: View {
                 
                 // Bottom Part
                 Spacer()
-                HStack(alignment: .bottom, spacing: 24) {
+                HStack(alignment: .bottom, spacing: 12) {
                     ProgressBar(
                         luggage: .suitcase,
                         weight: suitWeight,
                         maxWeight: maxSuitCapacity,
                         width: 155
                     )
+                    VStack{
+                        Button("Leaderboard") {
+                            viewModel.broadcastMyStatus()
+                            isShowingLeaderboard = true
+                        }
+                        .buttonStyle(PrimaryButtonStyle())
+                        
+                        ProgressBar(
+                            luggage: .carryOn,
+                            weight: carryWeight,
+                            maxWeight: maxCarryCapacity,
+                            width: 120
+                        )
+                    }
 
-                    ProgressBar(
-                        luggage: .carryOn,
-                        weight: carryWeight,
-                        maxWeight: maxCarryCapacity,
-                        width: 120
-                    )
+                    
                 }
             }
             .padding(.horizontal,20)
