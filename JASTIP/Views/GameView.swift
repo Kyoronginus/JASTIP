@@ -176,18 +176,13 @@ struct GameView: View {
             .padding(.horizontal,20)
             
             if let event = viewModel.currentEvent, !viewModel.isGameOver {
-                Color.black.opacity(0.4)
-                    .ignoresSafeArea()
-                    .onTapGesture {
-                        viewModel.dismissEvent()
-                    }
-                
                 EventAlertView(event: event) {
                     withAnimation {
                         viewModel.dismissEvent()
                     }
                 }
-                .transition(.scale.combined(with: .opacity))
+                .transition(.opacity)
+                .zIndex(100)
             }
             
             
