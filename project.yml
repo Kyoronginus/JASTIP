@@ -45,3 +45,11 @@ targets:
         NSBonjourServices:
           - _jastip-game._tcp
           - _jastip-game._udp
+        UIAppFonts:
+          - PlusJakartaSans-Regular.ttf
+          - PlusJakartaSans-Medium.ttf
+          - PlusJakartaSans-SemiBold.ttf
+          - PlusJakartaSans-Bold.ttf
+          - PlusJakartaSans-ExtraBold.ttf
+          - SpaceGrotesk-Regular.ttf
+          - SpaceGrotesk-Bold.ttf
