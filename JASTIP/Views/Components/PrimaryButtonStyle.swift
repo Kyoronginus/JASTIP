@@ -16,6 +16,10 @@ struct PrimaryButtonStyle: ButtonStyle {
     
     // Apakah tombol memenuhi lebar layar (Full Width) atau wrap content
     var isFullWidth: Bool = false
+    
+    
+    var paddingVertical: CGFloat = 16
+    var paddingHorizontal: CGFloat = 33
 
     // Membaca state apakah tombol sedang di-disable atau aktif
     @Environment(\.isEnabled) private var isEnabled
@@ -28,8 +32,8 @@ struct PrimaryButtonStyle: ButtonStyle {
         }
         .font(.plusJakarta(16, .bold))
         .foregroundStyle(isEnabled ? foregroundColor : Color(uiColor: .systemGray))
-        .padding(.vertical, 16)
-        .padding(.horizontal, 33)
+        .padding(.vertical, paddingVertical)
+        .padding(.horizontal, paddingHorizontal)
         .frame(maxWidth: isFullWidth ? .infinity : nil)
         // 1. LAYER DEPAN (Permukaan Tombol)
         .background(

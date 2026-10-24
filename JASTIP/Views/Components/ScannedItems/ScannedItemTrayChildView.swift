@@ -2,7 +2,7 @@ import SwiftUI
 
 struct ScannedItemTrayChildView: View {
     let item: RevealedPiece
-    var traySize: CGFloat = 135
+    var traySize: CGFloat = 200
     
     // Cek piece lurus yang perlu di-tilt
     private var isLinearPiece: Bool {
@@ -55,7 +55,7 @@ struct ScannedItemTrayChildView: View {
                         .foregroundStyle(.primary)
                 }
             }
-            .padding(.top, -30)
+            .padding(.top, -50)
         }
         .frame(width: traySize)
     }
