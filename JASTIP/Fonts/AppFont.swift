@@ -34,13 +34,13 @@ enum AppFont {
     }
 }
 
-// Extension biar bisa dipanggil langsung: .font(.appPlusJakarta(16, .bold))
+// Extension biar bisa dipanggil langsung: .font(.plusJakarta(16, .bold)) atau .font(.spaceGrotesk(16, .bold))
 extension Font {
-    static func appPlusJakarta(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
+    static func plusJakarta(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
         AppFont.plusJakarta(size: size, weight: weight)
     }
     
-    static func appSpaceGrotesk(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
+    static func spaceGrotesk(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
         AppFont.spaceGrotesk(size: size, weight: weight)
     }
 }
