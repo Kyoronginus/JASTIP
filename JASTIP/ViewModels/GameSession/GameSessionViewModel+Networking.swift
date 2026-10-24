@@ -6,7 +6,7 @@
 //
 
 
-
+import SwiftUI
 import Foundation
 
 extension GameSessionViewModel {
@@ -18,7 +18,9 @@ extension GameSessionViewModel {
             if !weights.isEmpty {
                 self?.pieceWeights = weights
             }
-            self?.isGameStarted = true
+            withAnimation {
+                self?.isGameStarted = true
+            }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 self?.broadcastMyStatus()
             }
