@@ -74,9 +74,6 @@ struct GameView: View {
     
     var body: some View {
         ZStack {
-            Color(uiColor: .systemGroupedBackground)
-                .ignoresSafeArea()
-            
             VStack{
                 // Top Part
                 HStack{
@@ -327,6 +324,7 @@ struct GameView: View {
                 viewModel.resetToLobby()
             }
         }
+        .appBackground()
     }
 }
 
