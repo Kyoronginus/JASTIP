@@ -24,7 +24,7 @@ struct ScannedItemView: View {
             // Carousel
             if pieces.isEmpty {
                 VStack() {
-                    Text("Belum ada piece yang discan")
+                    Text("There is no revealed piece")
                         .font(.spaceGrotesk(14, .medium))
                         .foregroundStyle(.white.opacity(0.6))
                 }
