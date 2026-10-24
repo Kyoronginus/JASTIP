@@ -23,7 +23,6 @@ struct EndView: View {
             .padding(.horizontal, 24)
             .padding(.bottom, 20)
         }
-        .background(Color(uiColor: .systemGroupedBackground))
     }
 }
 #Preview("Light") {

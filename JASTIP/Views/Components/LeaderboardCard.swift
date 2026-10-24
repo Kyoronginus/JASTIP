@@ -60,6 +60,53 @@ struct LeaderboardCard: View {
     
     var body: some View {
         NavigationStack {
+            // MARK: - Header Bar
+            HStack {
+                // Back Button
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 16, weight: .bold))
+                }
+                .buttonStyle(PrimaryButtonStyle(
+                    backgroundColor: .black,
+                    borderColor: Color("TaxiYellow"),
+                    foregroundColor: Color("TaxiYellow"),
+                    cornerRadius: 14,
+                    paddingVertical: 14,
+                    paddingHorizontal: 15
+                ))
+                .padding(.trailing, 10)
+                
+                // Title Banner
+                ZStack(alignment: .trailing) {
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(.black)
+                    
+                    // Watermark Asterisk
+                    Image("AsteriskYellow")
+                        .resizable()
+                        .renderingMode(.template)
+                        .foregroundStyle(Color.white.opacity(0.12))
+                        .scaledToFit()
+                        .frame(width: 155, height: 155)
+                        .offset(x: 52, y: 27)
+                    
+                    HStack {
+                        Text("Leaderboard")
+                            .font(.spaceGrotesk(18, .bold))
+                            .foregroundStyle(Color("TaxiYellow"))
+                        Spacer()
+                    }
+                    .padding(.horizontal, 16)
+                }
+                .frame(height: 52)
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
+
             ScrollView {
                 VStack(spacing: 12) {
                     ForEach(Array(players.enumerated()), id: \.element.id) { index, player in
@@ -68,19 +115,6 @@ struct LeaderboardCard: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 16)
-            }
-            .background(Color(uiColor: .systemGroupedBackground))
-            .navigationTitle("Leaderboard")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                if isModal {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button("Close") {
-                            dismiss()
-                        }
-                        .font(.plusJakarta(14, .semibold))
-                    }
-                }
             }
         }
     }
