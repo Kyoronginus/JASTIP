@@ -68,6 +68,7 @@ struct StartView: View {
                 .tint(.blue)
         }
         .padding()
+        .appBackground()
     }
 }
 
@@ -76,7 +77,7 @@ struct StartView: View {
         .preferredColorScheme(.light)
 }
 
-#Preview("Dark") {
-    StartView(viewModel: GameSessionViewModel(), lockHostToggle: false)
-        .preferredColorScheme(.dark)
-}
+//#Preview("Dark") {
+//    StartView(viewModel: GameSessionViewModel(), lockHostToggle: false)
+//        .preferredColorScheme(.dark)
+//}
