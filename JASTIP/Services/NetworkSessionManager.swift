@@ -157,8 +157,9 @@ class NetworkSessionManager: NSObject {
         struct ScanPayload: Codable {
             let piece: PieceModel
             let weight: Int
+            let scannedBy: String
         }
-        let payload = ScanPayload(piece: piece.piece, weight: weight)
+        let payload = ScanPayload(piece: piece.piece, weight: weight, scannedBy: piece.scannedBy)
         guard let jsonData = try? JSONEncoder().encode(payload),
               let jsonString = String(data: jsonData, encoding: .utf8) else { return }
         broadcast("SCAN_ITEM:\(jsonString)")
@@ -253,6 +254,7 @@ extension NetworkSessionManager: MCSessionDelegate {
                 struct ScanPayload: Codable {
                     let piece: PieceModel
                     let weight: Int
+                    let scannedBy: String
                 }
                 if let jsonData = jsonString.data(using: .utf8),
                    let payload = try? JSONDecoder().decode(ScanPayload.self, from: jsonData) {

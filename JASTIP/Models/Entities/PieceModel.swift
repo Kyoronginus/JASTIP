@@ -36,6 +36,16 @@ enum PieceColor: String, CaseIterable, Codable {
         case .pink: return .pink
         }
     }
+    
+    var categoryName: String {
+        switch self {
+            case .red: return "Books"
+            case .yellow: return "Delicacy"
+            case .green: return "Boutique"
+            case .blue: return "Antique"
+            case .pink: return "Kids"
+        }
+    }
 }
 
 struct PieceModel: Codable, Identifiable {
@@ -45,11 +55,16 @@ struct PieceModel: Codable, Identifiable {
     let gridCount: Int
     let isAnomaly: Bool
     var imageName: String = "" //placeholder
+    
+    var assetName: String {
+        id.replacingOccurrences(of: "JASTIP", with: "")
+    }
 }
 
 struct RevealedPiece: Codable, Identifiable {
     let piece: PieceModel
     let weight: Int
+    var scannedBy: String = ""
     
     var id: String { piece.id }
     

@@ -167,7 +167,7 @@ class GameSessionViewModel {
     func recordItemPlacement(piece: PieceModel, weight: Int, isSuitcase: Bool) {
         guard !isBoarded && !isGameOver else { return }
         
-        let revealed = RevealedPiece(piece: piece, weight: weight)
+        let revealed = RevealedPiece(piece: piece, weight: weight, scannedBy: currentPlayerStatus.name)
         
         // Simpan bobot ke dictionary agar konsisten
         pieceWeights[piece.id] = weight
