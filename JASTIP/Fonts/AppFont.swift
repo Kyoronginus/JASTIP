@@ -41,7 +41,7 @@ enum AppFont {
         default:
             return .custom("SpaceGrotesk-Regular", size: size)
         }
-    }
+}
 }
 
 // Extension biar bisa dipanggil langsung: .font(.plusJakarta(16, .bold)) atau .font(.spaceGrotesk(16, .bold))

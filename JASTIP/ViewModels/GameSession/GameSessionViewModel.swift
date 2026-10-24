@@ -15,6 +15,7 @@ class GameSessionViewModel {
     var delayHours: Int = 0
     var isGameOver: Bool = false
     var isGameStarted: Bool = false
+    var hasProceededToGame: Bool = false // <-- TAMBAHKAN INI
     var lockHostToggle: Bool = false
     
     var currentTimeString: String {
@@ -82,6 +83,7 @@ class GameSessionViewModel {
         activeHourEvent = nil
         isGameOver = false
         isBoarded = false
+        hasProceededToGame = false // <-- TAMBAHKAN INI
         triggeredUniqueEvents.removeAll()
         lastRoundEventType = nil
         suitWeight = 0
@@ -167,7 +169,7 @@ class GameSessionViewModel {
     func recordItemPlacement(piece: PieceModel, weight: Int, isSuitcase: Bool) {
         guard !isBoarded && !isGameOver else { return }
         
-        let revealed = RevealedPiece(piece: piece, weight: weight)
+        let revealed = RevealedPiece(piece: piece, weight: weight, scannedBy: currentPlayerStatus.name)
         
         // Simpan bobot ke dictionary agar konsisten
         pieceWeights[piece.id] = weight

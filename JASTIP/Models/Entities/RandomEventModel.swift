@@ -17,6 +17,19 @@ enum RandomEventType: String, CaseIterable, Codable {
     case mindYourManners
     case reverseMadness
     case customsIssue
+    
+    var imageName: String? {
+        switch self {
+        case .flightDelay: return "FlightDelayed"
+        case .relativeCanceled: return "OrderCancelled"
+        case .storesClosed: return "StoresClosed"
+        case .reshuffleStore: return "RestockStore"
+        case .mindYourManners: return "MindYourManners"
+        case .reverseMadness: return "ReverseMadness"
+        case .customsIssue: return "CustomsIssue"
+        case .zeroWeight: return nil
+        }
+    }
 }
 
 struct RandomEventModel: Identifiable, Equatable, Codable {
