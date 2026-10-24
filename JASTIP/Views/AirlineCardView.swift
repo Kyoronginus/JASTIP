@@ -8,19 +8,14 @@
 import SwiftUI
 
 struct AirlineCardView: View {
-    let airlineCard: AirlineCardModel
-    var onProceedToGame: () -> Void = {}
+    @State private var viewModel: AirlineCardViewModel
 
-    // State untuk Animasi 3D Flip
-    @State private var isFlipped: Bool = false
-    @State private var rotationDegrees: Double = 0
-    @State private var showButton: Bool = false
+    init(viewModel: AirlineCardViewModel) {
+        _viewModel = State(initialValue: viewModel)
+    }
 
-    // Hitung total ronde (Boarding Hour - Jam 8 pagi)
-    private var totalRounds: Int {
-        let clean = airlineCard.departureTime.replacingOccurrences(of: ".", with: ":")
-        let hour = Int(clean.split(separator: ":").first ?? "15") ?? 15
-        return max(hour - 8, 1)
+    init(airlineCard: AirlineCardModel, onProceedToGame: @escaping () -> Void = {}) {
+        _viewModel = State(initialValue: AirlineCardViewModel(airlineCard: airlineCard, onProceedToGame: onProceedToGame))
     }
 
     var body: some View {
@@ -29,7 +24,7 @@ struct AirlineCardView: View {
 
             // MARK: - KARTU 3D FLIP CONTAINER
             ZStack {
-                if !isFlipped {
+                if !viewModel.isFlipped {
                     // SISI BELAKANG (Back Card)
                     cardBackView
                 } else {
@@ -39,7 +34,7 @@ struct AirlineCardView: View {
                 }
             }
             .rotation3DEffect(
-                .degrees(rotationDegrees),
+                .degrees(viewModel.rotationDegrees),
                 axis: (x: 0, y: 1, z: 0),
                 perspective: 0.5
             )
@@ -48,30 +43,17 @@ struct AirlineCardView: View {
 
             // MARK: - TOMBOL PROCEED TO GAME
             Button("Proceed to Game") {
-                onProceedToGame()
+                viewModel.proceed()
             }
             .buttonStyle(PrimaryButtonStyle(isFullWidth: true))
             .padding(.horizontal, 24)
-            .opacity(showButton ? 1 : 0) // Fade in setelah kartu nge-flip
-            .animation(.easeInOut(duration: 0.3), value: showButton)
+            .opacity(viewModel.showButton ? 1 : 0) // Fade in setelah kartu nge-flip
+            .animation(.easeInOut(duration: 0.3), value: viewModel.showButton)
         }
         .padding(.vertical, 20)
         .appBackground()
         .onAppear {
-            // Mulai animasi flip setelah 0.4 detik
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                withAnimation(.spring(response: 0.8, dampingFraction: 0.75)) {
-                    rotationDegrees = 180
-                }
-                // Ganti ke sisi depan tepat saat kartu vertikal (90 derajat)
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                    isFlipped = true
-                }
-                // Tampilkan tombol setelah flip selesai
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                    showButton = true
-                }
-            }
+            viewModel.triggerFlipAnimation()
         }
     }
 
@@ -106,8 +88,8 @@ struct AirlineCardView: View {
                     AirlineDetailBlock(
                         icon: "clock.fill",
                         title: "BOARDING TIME",
-                        subtitle: "Game Length:\n\(totalRounds) Rounds",
-                        value: airlineCard.departureTime,
+                        subtitle: "Game Length:\n\(viewModel.totalRounds) Rounds",
+                        value: viewModel.airlineCard.departureTime,
                         backgroundColor: Color("TaxiYellow"),
                         foregroundColor: Color("PassportBlue"),
                         watermarkImageName: "WatermarkYellow"
@@ -117,7 +99,7 @@ struct AirlineCardView: View {
                         icon: "suitcase.fill",
                         title: "MAX BAGGAGE",
                         subtitle: "Suitcase:\n15 Slots (5x3)",
-                        value: "\(airlineCard.maxCapacityKg)",
+                        value: "\(viewModel.airlineCard.maxCapacityKg)",
                         unit: "KG",
                         backgroundColor: Color("PassportBlue"),
                         foregroundColor: Color("PassportBlue150"),
@@ -128,7 +110,7 @@ struct AirlineCardView: View {
                         icon: "bag.fill",
                         title: "MAX CARRY-ON",
                         subtitle: "Carry-on:\n4 Slots (2x2)",
-                        value: "\(airlineCard.maxCarryOnKg)",
+                        value: "\(viewModel.airlineCard.maxCarryOnKg)",
                         unit: "KG",
                         backgroundColor: Color("TransitTangerine"),
                         foregroundColor: Color(red: 0xF4 / 255.0, green: 0xCF / 255.0, blue: 0xE0 / 255.0),
@@ -159,11 +141,11 @@ struct AirlineCardView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(airlineCard.airlineName.uppercased())
+                    Text(viewModel.airlineCard.airlineName.uppercased())
                         .font(.spaceGrotesk(20, .bold))
                         .foregroundStyle(Color(red: 0x0F / 255.0, green: 0x17 / 255.0, blue: 0x2A / 255.0))
 
-                    Text("AIRLINE CARD #\(airlineCard.id.prefix(3))")
+                    Text("AIRLINE CARD #\(viewModel.airlineCard.id.prefix(3))")
                         .font(.plusJakarta(9, .semibold))
                         .foregroundStyle(.secondary)
                 }
@@ -187,7 +169,7 @@ struct AirlineCardView: View {
                             .font(.spaceGrotesk(32, .bold))
                             .foregroundStyle(Color("PassportBlue850"))
                     }
-                    Spacer() // Cuma butuh 1 Spacer untuk memisahkan kiri dan kanan
+                    Spacer()
                     VStack(alignment: .trailing, spacing: 2) {
                         Text("JAKARTA")
                             .font(.plusJakarta(10, .bold))
@@ -199,49 +181,6 @@ struct AirlineCardView: View {
                 }
             }
         }
-    }
-
-    // MARK: - SUBVIEW: GARIS PERFORASI TIKET
-    private var ticketPerforationView: some View {
-        HStack(spacing: 0) {
-            // Lekukan setengah lingkaran kiri
-            Circle()
-                .fill(Color.clear)
-                .frame(width: 20, height: 20)
-                .overlay(
-                    Circle()
-                        .stroke(Color("PassportBlue850").opacity(0.25), lineWidth: 1.5)
-                )
-                .offset(x: -10)
-
-            // Garis Putus-Putus
-            Line()
-                .stroke(style: StrokeStyle(lineWidth: 1.5, dash: [5, 5]))
-                .foregroundStyle(Color.gray.opacity(0.35))
-                .frame(height: 1)
-
-            // Lekukan setengah lingkaran kanan
-            Circle()
-                .fill(Color.clear)
-                .frame(width: 20, height: 20)
-                .overlay(
-                    Circle()
-                        .stroke(Color("PassportBlue850").opacity(0.25), lineWidth: 1.5)
-                )
-                .offset(x: 10)
-        }
-        .frame(height: 20)
-        .clipped()
-    }
-}
-
-// Helper Garis Horizontal
-private struct Line: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        path.move(to: CGPoint(x: 0, y: rect.midY))
-        path.addLine(to: CGPoint(x: rect.width, y: rect.midY))
-        return path
     }
 }
 
