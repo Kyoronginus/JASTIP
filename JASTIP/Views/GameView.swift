@@ -93,6 +93,7 @@ struct GameView: View {
                                 viewModel.broadcastMyStatus()
                                 isShowingLeaderboard = true
                             }
+                            .buttonStyle(PrimaryButtonStyle())
                             .font(.title3)
                         }
                         .sheet(isPresented: $isShowingHowTo) {
@@ -161,57 +162,28 @@ struct GameView: View {
                 
                 // CAROUSEL
                 Text("Revealed Pieces")
-                    .padding(8)
                     .font(.headline.bold())
                     .foregroundStyle(.primary)
                 GameCarouselView(pieces: viewModel.revealedPieces)
-                    .padding(.vertical,8)
                 
                 
                 
                 // Bottom Part
                 Spacer()
-                VStack(spacing: 20) {
-                    HStack(alignment: .bottom, spacing: 24) {
-                        ProgressBar(progress: suitProgress, x: 180, y: 220)
-                            .overlay {
-                                VStack(spacing: 8) {
-                                    Text("Suitcase")
-                                        .font(.headline.bold())
-                                        .foregroundStyle(.primary)
-                                    
-                                    Spacer()
-                                    
-                                    // Teks Berat yang Sync
-                                    Text("\(suitWeight) / \(maxSuitCapacity) kg")
-                                        .font(.subheadline.bold())
-                                        .padding(.horizontal, 10)
-                                        .padding(.vertical, 4)
-                                        .background(Color(uiColor: .systemBackground).opacity(0.85))
-                                        .clipShape(Capsule())
-                                }
-                                .padding(.vertical, 16)
-                            }
-                        
-                        ProgressBar(progress: carryProgress, x: 140, y: 140)
-                            .overlay {
-                                VStack(spacing: 8) {
-                                    Text("Carry-on")
-                                        .font(.subheadline.bold())
-                                        .foregroundStyle(.primary)
-                                    
-                                    Spacer()
-                                    
-                                    Text("\(carryWeight) / \(maxCarryCapacity) kg")
-                                        .font(.caption.bold())
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 4)
-                                        .background(Color(uiColor: .systemBackground).opacity(0.85))
-                                        .clipShape(Capsule())
-                                }
-                                .padding(.vertical, 14)
-                            }
-                    }
+                HStack(alignment: .bottom, spacing: 24) {
+                    ProgressBar(
+                        luggage: .suitcase,
+                        weight: suitWeight,
+                        maxWeight: maxSuitCapacity,
+                        width: 155
+                    )
+
+                    ProgressBar(
+                        luggage: .carryOn,
+                        weight: carryWeight,
+                        maxWeight: maxCarryCapacity,
+                        width: 120
+                    )
                 }
             }
             .padding(.horizontal,20)
