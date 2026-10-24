@@ -1,0 +1,109 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function validPlayer(player, uid) {
+      return player.keys().hasOnly(['uid', 'name'])
+        && player.uid == uid
+        && player.name is string
+        && player.name.size() > 0
+        && player.name.size() <= 30;
+    }
+
+    function isLobbyMember(code) {
+      return signedIn()
+        && get(/databases/$(database)/documents/lobbies/$(code)).data.players.keys()
+          .hasAny([request.auth.uid]);
+    }
+
+    match /lobbies/{code} {
+      allow get: if signedIn();
+      allow list: if false;
+
+      allow create: if signedIn()
+        && code.matches('^[A-Z]{4}$')
+        && request.resource.data.keys().hasOnly(['hostUID', 'status', 'players', 'createdAt', 'updatedAt'])
+        && request.resource.data.hostUID == request.auth.uid
+        && request.resource.data.status == 'waiting'
+        && request.resource.data.players.keys().hasOnly([request.auth.uid])
+        && request.resource.data.players.size() == 1
+        && validPlayer(request.resource.data.players[request.auth.uid], request.auth.uid);
+
+      allow update: if signedIn() && (
+        (
+          resource.data.status == 'waiting'
+          && request.resource.data.status == 'waiting'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['players', 'updatedAt'])
+          && request.resource.data.players.size() <= 5
+          && request.resource.data.players.diff(resource.data.players).affectedKeys().hasOnly([request.auth.uid])
+          && validPlayer(request.resource.data.players[request.auth.uid], request.auth.uid)
+        )
+        || (
+          resource.data.hostUID == request.auth.uid
+          && resource.data.status == 'waiting'
+          && request.resource.data.status == 'playing'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'game', 'updatedAt'])
+          && request.resource.data.game.keys().hasOnly([
+            'card', 'pieceWeights', 'currentHour', 'delayHours', 'isGameOver',
+            'currentEvent', 'activeHourEvent', 'triggeredUniqueEvents', 'lastRoundEventType'
+          ])
+        )
+        || (
+          resource.data.hostUID == request.auth.uid
+          && resource.data.status == 'playing'
+          && request.resource.data.status == 'playing'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['game', 'updatedAt'])
+          && request.resource.data.game.keys().hasOnly([
+            'card', 'pieceWeights', 'currentHour', 'delayHours', 'isGameOver',
+            'currentEvent', 'activeHourEvent', 'triggeredUniqueEvents', 'lastRoundEventType'
+          ])
+        )
+        || (
+          resource.data.players.keys().hasAny([request.auth.uid])
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['players', 'updatedAt'])
+          && resource.data.players.diff(request.resource.data.players).affectedKeys().hasOnly([request.auth.uid])
+          && !request.resource.data.players.keys().hasAny([request.auth.uid])
+        )
+      );
+
+      allow delete: if signedIn() && resource.data.hostUID == request.auth.uid;
+
+      match /playerStates/{uid} {
+        allow read: if isLobbyMember(code);
+        allow create, update: if isLobbyMember(code)
+          && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly([
+            'peerId', 'name', 'suitcaseWeight', 'carryOnWeight', 'isBoarded', 'updatedAt'
+          ])
+          && request.resource.data.peerId == uid
+          && request.resource.data.name is string
+          && request.resource.data.name.size() > 0
+          && request.resource.data.name.size() <= 30
+          && request.resource.data.suitcaseWeight is int
+          && request.resource.data.carryOnWeight is int
+          && request.resource.data.isBoarded is bool;
+        allow delete: if isLobbyMember(code)
+          && (
+            request.auth.uid == uid
+            || get(/databases/$(database)/documents/lobbies/$(code)).data.hostUID == request.auth.uid
+          );
+      }
+
+      match /scans/{pieceID} {
+        allow read: if isLobbyMember(code);
+        allow create, update: if isLobbyMember(code)
+          && request.resource.data.keys().hasOnly(['piece', 'weight', 'scannedBy'])
+          && request.resource.data.piece is map
+          && request.resource.data.weight is int
+          && request.resource.data.scannedBy is string
+          && request.resource.data.scannedBy.size() <= 30;
+        allow delete: if isLobbyMember(code)
+          && get(/databases/$(database)/documents/lobbies/$(code)).data.hostUID == request.auth.uid;
+      }
+    }
+  }
+}

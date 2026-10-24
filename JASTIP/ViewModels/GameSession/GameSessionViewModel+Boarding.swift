@@ -15,7 +15,7 @@ extension GameSessionViewModel {
         let finalName = playerName.trimmingCharacters(in: .whitespaces).isEmpty ? UIDevice.current.name : playerName
         
         return PlayerStatusModel(
-            id: "local_player",
+            id: lobbyService.currentPlayerID ?? "local_player",
             name: finalName,
             isCurrentDevice: true,
             suitcaseWeight: suitWeight,
@@ -30,22 +30,19 @@ extension GameSessionViewModel {
     var leaderboardPlayers: [PlayerStatusModel] {
         var list = [currentPlayerStatus]
         
-        // Loop teman-teman yang connect via network
-        for peerName in networkManager.connectedPeerNames {
-            if let synced = remotePlayers[peerName] {
-                list.append(
-                    PlayerStatusModel(
-                        id: synced.peerId,
-                        name: synced.name,
-                        isCurrentDevice: false,
-                        suitcaseWeight: synced.suitcaseWeight,
-                        suitcaseMax: displayedAirlineCard.maxCapacityKg,
-                        carryOnWeight: synced.carryOnWeight,
-                        carryOnMax: displayedAirlineCard.maxCarryOnKg,
-                        isBoarded: synced.isBoarded
-                    )
+        for synced in remotePlayers.values {
+            list.append(
+                PlayerStatusModel(
+                    id: synced.peerId,
+                    name: synced.name,
+                    isCurrentDevice: false,
+                    suitcaseWeight: synced.suitcaseWeight,
+                    suitcaseMax: displayedAirlineCard.maxCapacityKg,
+                    carryOnWeight: synced.carryOnWeight,
+                    carryOnMax: displayedAirlineCard.maxCarryOnKg,
+                    isBoarded: synced.isBoarded
                 )
-            }
+            )
         }
         return list
     }
@@ -62,19 +59,15 @@ extension GameSessionViewModel {
     }
     
     func checkAllPlayersBoarded() {
-        guard isBoarded else { return }
-        
-        let connectedPeers = networkManager.connectedPeerNames
-        if !connectedPeers.isEmpty {
-            let allRemoteBoarded = connectedPeers.allSatisfy { peerName in
-                remotePlayers[peerName]?.isBoarded == true
-            }
-            if allRemoteBoarded {
-                isGameOver = true
-            }
-        } else {
-            // Solo play
-            isGameOver = true
+        guard isBoarded, !isGameOver else { return }
+        let currentPlayerID = lobbyService.currentPlayerID
+        let otherPlayers = lobbyService.lobby?.players.filter { $0.id != currentPlayerID } ?? []
+        guard otherPlayers.allSatisfy({ remotePlayers[$0.id]?.isBoarded == true }) else { return }
+
+        isGameOver = true
+        broadcastMyStatus()
+        if lobbyService.lobby?.isHost == true {
+            Task { await publishCloudGameState() }
         }
     }
     

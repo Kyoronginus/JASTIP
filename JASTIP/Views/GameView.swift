@@ -65,11 +65,9 @@ struct GameView: View {
     init(
         viewModel: GameSessionViewModel? = nil,
         airlineCard: AirlineCardModel = AirlineCardCatalog.dummy,
-        onOpenCamera: @escaping () -> Void = {},
-        lockHostToggle: Bool
+        onOpenCamera: @escaping () -> Void = {}
     ) {
         let initViewModel = viewModel ?? GameSessionViewModel(airlineCard: airlineCard)
-        initViewModel.lockHostToggle = lockHostToggle
         _viewModel = State(initialValue: initViewModel)
         self.onOpenCamera = onOpenCamera
     }
@@ -79,17 +77,17 @@ struct GameView: View {
             VStack{
                 // Top Part
                 VStack {
-                  BoardingCard(
-                    departureTime: viewModel.displayedAirlineCard.departureTime,
-                    currentTimeString: viewModel.currentTimeString,
-                    isHost: viewModel.lockHostToggle,
-                    isNextHourDisabled: viewModel.currentEvent != nil,
-                    onNextHour: {
-                        viewModel.nextHour()
-                    }
-                  )
-                  .padding(.horizontal)
-                
+                    BoardingCard(
+                        departureTime: viewModel.displayedAirlineCard.departureTime,
+                        currentTimeString: viewModel.currentTimeString,
+                        isHost: viewModel.lobbyService.lobby?.isHost == true,
+                        isNextHourDisabled: viewModel.currentEvent != nil || viewModel.lobbyService.lobby?.isHost != true,
+                        onNextHour: {
+                            viewModel.nextHour()
+                        }
+                    )
+                    .padding(.horizontal)
+                    
                     HStack {
                         Spacer() // Mendorong tombol ke sisi kanan (trailing)
                         
@@ -124,7 +122,7 @@ struct GameView: View {
                 .fullScreenCover(isPresented: $isShowingScannedItems) {
                     ScannedItemChildView(pieces: viewModel.revealedPieces)
                 }
-                    .padding(.vertical,8)
+                .padding(.vertical,8)
                 
                 
                 
@@ -137,7 +135,7 @@ struct GameView: View {
                         maxWeight: maxSuitCapacity,
                         width: 155
                     )
-                    VStack{
+                    VStack(spacing: 50){
                         Button("Leaderboard") {
                             viewModel.broadcastMyStatus()
                             isShowingLeaderboard = true
@@ -151,7 +149,16 @@ struct GameView: View {
                             width: 120
                         )
                     }
-
+                    .sheet(isPresented: $isShowingLeaderboard) {
+                        LeaderboardCard(
+                            isModal: true,
+                            players: viewModel.leaderboardPlayers,
+                            onBoard: {
+                                viewModel.boardFlight()
+                            }
+                        )
+                        .presentationDetents([.medium, .large])
+                    }
                     
                 }
             }
@@ -266,7 +273,6 @@ struct GameView: View {
 
 #Preview("Host View") {
     let mockViewModel = GameSessionViewModel(airlineCard: AirlineCardCatalog.dummy)
-    mockViewModel.lockHostToggle = true
     mockViewModel.isBoarded = false
     mockViewModel.revealedPieces = [
         RevealedPiece(
@@ -287,12 +293,11 @@ struct GameView: View {
     ]
     mockViewModel.suitWeight = 12
     mockViewModel.carryWeight = 4
-    return GameView(viewModel: mockViewModel, lockHostToggle: true)
+    return GameView(viewModel: mockViewModel)
 }
 
 #Preview("Non-Host View") {
     let mockViewModel = GameSessionViewModel(airlineCard: AirlineCardCatalog.dummy)
-    mockViewModel.lockHostToggle = false
     mockViewModel.isBoarded = false
     mockViewModel.revealedPieces = [
         RevealedPiece(
@@ -308,5 +313,5 @@ struct GameView: View {
     ]
     mockViewModel.suitWeight = 8
     mockViewModel.carryWeight = 3
-    return GameView(viewModel: mockViewModel, lockHostToggle: false)
+    return GameView(viewModel: mockViewModel)
 }

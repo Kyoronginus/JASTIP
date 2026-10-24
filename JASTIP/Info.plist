@@ -18,11 +18,6 @@
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
-	<key>NSBonjourServices</key>
-	<array>
-		<string>_jastip-game._tcp</string>
-		<string>_jastip-game._udp</string>
-	</array>
 	<key>UIAppFonts</key>
 	<array>
 		<string>PlusJakartaSans-Regular.ttf</string>
