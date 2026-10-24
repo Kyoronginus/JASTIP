@@ -25,6 +25,7 @@ struct GameView: View {
     @State private var isShowingScanner = false
     @State private var isShowingLeaderboard = false
     @State private var isShowingRevealedWeights = false
+    @State private var isShowingScannedItems = false
     @State private var lastScannedPiece: PieceModel? = nil
     
     @State private var nfcDetectedPiece: PieceModel? = nil
@@ -65,9 +66,10 @@ struct GameView: View {
         viewModel: GameSessionViewModel? = nil,
         airlineCard: AirlineCardModel = AirlineCardCatalog.dummy,
         onOpenCamera: @escaping () -> Void = {},
-        lockHostToggle: Bool
+        lockHostToggle: Bool = true
     ) {
         let initViewModel = viewModel ?? GameSessionViewModel(airlineCard: airlineCard)
+        initViewModel.lockHostToggle = lockHostToggle
         _viewModel = State(initialValue: initViewModel)
         self.onOpenCamera = onOpenCamera
     }
@@ -164,7 +166,12 @@ struct GameView: View {
                     .padding(8)
                     .font(.headline.bold())
                     .foregroundStyle(.primary)
-                GameCarouselView(pieces: viewModel.revealedPieces)
+                ScannedItemView(pieces: viewModel.revealedPieces) {
+                    isShowingScannedItems = true
+                }
+                .fullScreenCover(isPresented: $isShowingScannedItems) {
+                    ScannedItemChildView(pieces: viewModel.revealedPieces)
+                }
                     .padding(.vertical,8)
                 
                 
@@ -328,28 +335,47 @@ struct GameView: View {
     }
 }
 
-#Preview("Light") {
-    let mockViewModel = GameSessionViewModel()
-    mockViewModel.isBoarded = true
-    mockViewModel.revealedPieces = [
-        RevealedPiece(piece: PieceCatalog.allPieces[0], weight: 3),
-        RevealedPiece(piece: PieceCatalog.allPieces[1], weight: 4),
-        RevealedPiece(piece: PieceCatalog.allPieces[0], weight: 3),
-        RevealedPiece(piece: PieceCatalog.allPieces[1], weight: 4),
-        RevealedPiece(piece: PieceCatalog.allPieces[0], weight: 3),
-        RevealedPiece(piece: PieceCatalog.allPieces[1], weight: 4),
-        RevealedPiece(piece: PieceCatalog.allPieces[1], weight: 4)
-    ]
-    
-    return GameView(viewModel: mockViewModel, lockHostToggle: false)
-        .preferredColorScheme(.light)
+#Preview("Host Active Game") {
+    GameView(
+        viewModel: {
+            let vm = GameSessionViewModel(airlineCard: AirlineCardCatalog.dummy)
+            vm.lockHostToggle = true
+            vm.isBoarded = false
+            vm.revealedPieces = [
+                RevealedPiece(
+                    piece: PieceCatalog.allPieces.first(where: { $0.id == "JASTIP1-5" }) ?? PieceCatalog.allPieces[0],
+                    weight: 4,
+                    scannedBy: "quincy"
+                ),
+                RevealedPiece(
+                    piece: PieceCatalog.allPieces.first(where: { $0.id == "JASTIP4-6" }) ?? PieceCatalog.allPieces[1],
+                    weight: 4,
+                    scannedBy: "emily"
+                ),
+                RevealedPiece(
+                    piece: PieceCatalog.allPieces.first(where: { $0.id == "JASTIP4-9" }) ?? PieceCatalog.allPieces[2],
+                    weight: 5,
+                    scannedBy: "david"
+                )
+            ]
+            // Sample luggage placement
+            vm.recordItemPlacement(piece: PieceCatalog.allPieces[0], weight: 4, isSuitcase: true)
+            vm.recordItemPlacement(piece: PieceCatalog.allPieces[1], weight: 4, isSuitcase: false)
+            return vm
+        }(),
+        lockHostToggle: true
+    )
 }
 
-#Preview("Dark") {
-    let mockViewModel = GameSessionViewModel()
-    mockViewModel.revealedPieces = [
-    ]
-    
-    return GameView(viewModel: mockViewModel, lockHostToggle: false)
-        .preferredColorScheme(.dark)
+#Preview("Empty State") {
+    GameView(
+        viewModel: {
+            let vm = GameSessionViewModel(airlineCard: AirlineCardCatalog.dummy)
+            vm.lockHostToggle = false
+            vm.isBoarded = false
+            vm.revealedPieces = []
+            return vm
+        }(),
+        lockHostToggle: false
+    )
 }

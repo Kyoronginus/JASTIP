@@ -1,5 +1,5 @@
 //
-//  GameCarouselView.swift
+//  ScannedItemView.swift
 //  JASTIP
 //
 //  Created by Tohru Djunaedi Sato on 14/10/26.
@@ -7,15 +7,7 @@
 
 import SwiftUI
 
-//struct CarouselItem {
-//    let id = UUID()
-//    let imageName: String
-//    let weight: Int
-//}
-//
-import SwiftUI
-
-struct GameCarouselView: View {
+struct ScannedItemView: View {
     let pieces: [RevealedPiece]
     var onViewAll: () -> Void = {}
     
@@ -89,5 +81,5 @@ struct GameCarouselView: View {
         )
     ]
     
-    GameCarouselView(pieces: sample)
+    ScannedItemView(pieces: sample)
 }
