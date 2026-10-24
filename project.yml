@@ -47,9 +47,13 @@ targets:
           - _jastip-game._udp
         UIAppFonts:
           - PlusJakartaSans-Regular.ttf
+          - PlusJakartaSans-Light.ttf
           - PlusJakartaSans-Medium.ttf
           - PlusJakartaSans-SemiBold.ttf
           - PlusJakartaSans-Bold.ttf
           - PlusJakartaSans-ExtraBold.ttf
           - SpaceGrotesk-Regular.ttf
+          - SpaceGrotesk-Light.ttf
+          - SpaceGrotesk-Medium.ttf
+          - SpaceGrotesk-SemiBold.ttf
           - SpaceGrotesk-Bold.ttf

@@ -11,13 +11,17 @@ import SwiftUI
 enum AppFont {
     // Plus Jakarta Sans
     static func plusJakarta(size: CGFloat, weight: Font.Weight = .regular) -> Font {
-    switch weight {
-    case .bold:
-        return .custom("PlusJakartaSans-Bold", size: size)
+        switch weight {
+        case .heavy:
+            return .custom("PlusJakartaSans-ExtraBold", size: size)
+        case .bold:
+            return .custom("PlusJakartaSans-Bold", size: size)
         case .semibold:
             return .custom("PlusJakartaSans-SemiBold", size: size)
         case .medium:
             return .custom("PlusJakartaSans-Medium", size: size)
+        case .light:
+            return .custom("PlusJakartaSans-Light", size: size)
         default:
             return .custom("PlusJakartaSans-Regular", size: size)
         }
@@ -28,6 +32,12 @@ enum AppFont {
         switch weight {
         case .bold:
             return .custom("SpaceGrotesk-Bold", size: size)
+        case .semibold:
+            return .custom("SpaceGrotesk-SemiBold", size: size)
+        case .medium:
+            return .custom("SpaceGrotesk-Medium", size: size)
+        case .light:
+            return .custom("SpaceGrotesk-Light", size: size)
         default:
             return .custom("SpaceGrotesk-Regular", size: size)
         }
