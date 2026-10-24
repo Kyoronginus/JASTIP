@@ -48,7 +48,7 @@ enum PlayerCardColor {
 }
 
 // MARK: - Main Leaderboard Card / View
-struct LeaderboardCard: View {
+struct LeaderboardView: View {
     @Environment(\.dismiss) private var dismiss
     var isModal: Bool = false
     var players: [PlayerStatusModel] = []
@@ -60,8 +60,9 @@ struct LeaderboardCard: View {
     
     var body: some View {
         NavigationStack {
-            // MARK: - Header Bar
-            HStack {
+            VStack(spacing: 0) {
+                // MARK: - Header Bar
+                HStack {
                 // Back Button
                 Button {
                     dismiss()
@@ -103,20 +104,67 @@ struct LeaderboardCard: View {
                 }
                 .frame(height: 52)
                 .clipShape(RoundedRectangle(cornerRadius: 14))
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 16)
-
-            ScrollView {
-                VStack(spacing: 12) {
-                    ForEach(Array(players.enumerated()), id: \.element.id) { index, player in
-                        PlayerStatusCard(player: player, index: index)
-                    }
                 }
                 .padding(.horizontal, 20)
-                .padding(.vertical, 16)
+                .padding(.top, 16)
+
+                LeaderboardPlayerCardList(players: players)
+
+                if let currentPlayer {
+                    LeaderboardProgressFooter(
+                        suitcaseWeight: currentPlayer.suitcaseWeight,
+                        suitcaseMax: currentPlayer.suitcaseMax,
+                        carryOnWeight: currentPlayer.carryOnWeight,
+                        carryOnMax: currentPlayer.carryOnMax
+                    )
+                }
             }
+            .appBackground()
         }
+    }
+}
+
+struct LeaderboardPlayerCardList: View {
+    let players: [PlayerStatusModel]
+
+    var body: some View {
+        ScrollView {
+            LazyVStack(spacing: 12) {
+                ForEach(Array(players.enumerated()), id: \.element.id) { index, player in
+                    PlayerStatusCard(player: player, index: index)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+        }
+    }
+}
+
+struct LeaderboardProgressFooter: View {
+    let suitcaseWeight: Int
+    let suitcaseMax: Int
+    let carryOnWeight: Int
+    let carryOnMax: Int
+
+    var body: some View {
+        HStack(alignment: .bottom, spacing: 32) {
+            ProgressBar(
+                luggage: .suitcase,
+                weight: suitcaseWeight,
+                maxWeight: suitcaseMax,
+                width: 155
+            )
+
+            ProgressBar(
+                luggage: .carryOn,
+                weight: carryOnWeight,
+                maxWeight: carryOnMax,
+                width: 120
+            )
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 20)
+        .padding(.bottom, 16)
     }
 }
 
@@ -130,50 +178,53 @@ struct PlayerStatusCard: View {
     }
     
     var body: some View {
-        HStack(spacing: 8) {
-            // 1. Kolom Nama Pemain
+        ZStack{
             HStack(spacing: 8) {
-                Image(systemName: "person.fill")
-                    .font(.system(size: 20))
+                // 1. Kolom Nama Pemain
+                HStack(spacing: 8) {
+                    Image(systemName: "person.fill")
+                        .font(.system(size: 20))
+                    
+                    Text(player.name)
+                        .font(.spaceGrotesk(16, .bold))
+                        .lineLimit(1)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 
-                Text(player.name)
-                    .font(.spaceGrotesk(16, .bold))
-                    .lineLimit(1)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            HStack(spacing: 5) {
-                Image(systemName: "person.fill")
-                    .font(.system(size: 20))
-                    .opacity(0.85)
+                HStack(spacing: 5) {
+                    Image(systemName: "suitcase.rolling.fill")
+                        .font(.system(size: 20))
+                        .opacity(0.85)
+                    
+                    weightFraction(current: player.suitcaseWeight, max: player.suitcaseMax)
+                }
+                .frame(minWidth: 80, alignment: .center)
                 
-                weightFraction(current: player.suitcaseWeight, max: player.suitcaseMax)
+                HStack(spacing: 5) {
+                    Image(systemName: "suitcase.fill")
+                        .font(.system(size: 20))
+                        .opacity(0.85)
+                    
+                    weightFraction(current: player.carryOnWeight, max: player.carryOnMax)
+                }
+                .frame(minWidth: 72, alignment: .trailing)
             }
-            .frame(minWidth: 80, alignment: .center)
-
-            HStack(spacing: 5) {
-                Image(systemName: "person.fill")
-                    .font(.system(size: 20))
-                    .opacity(0.85)
-                
-                weightFraction(current: player.carryOnWeight, max: player.carryOnMax)
-            }
-            .frame(minWidth: 72, alignment: .trailing)
+            .foregroundStyle(colorScheme.foreground)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(colorScheme.background)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(colorScheme.border, lineWidth: colorScheme.border == .clear ? 0 : 2)
+            )
+            .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
         }
-        .foregroundStyle(colorScheme.foreground)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(colorScheme.background)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(colorScheme.border, lineWidth: colorScheme.border == .clear ? 0 : 2)
-        )
-        .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
     }
-
+    
+    
     @ViewBuilder
     private func weightFraction(current: Int, max: Int) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 1) {
@@ -187,10 +238,10 @@ struct PlayerStatusCard: View {
 }
 
 #Preview("Leaderboard") {
-    LeaderboardCard(
+    LeaderboardView(
         isModal: true,
         players: [
-            PlayerStatusModel(id: "1", name: "Denzel", isCurrentDevice: true, suitcaseWeight: 22, suitcaseMax: 20, carryOnWeight: 8, carryOnMax: 7, isBoarded: false),
+            PlayerStatusModel(id: "1", name: "Denzel", isCurrentDevice: true, suitcaseWeight: 10, suitcaseMax: 20, carryOnWeight: 8, carryOnMax: 7, isBoarded: false),
             PlayerStatusModel(id: "2", name: "Feivel", isCurrentDevice: false, suitcaseWeight: 16, suitcaseMax: 20, carryOnWeight: 3, carryOnMax: 7, isBoarded: false),
             PlayerStatusModel(id: "3", name: "Tohru", isCurrentDevice: false, suitcaseWeight: 8, suitcaseMax: 20, carryOnWeight: 4, carryOnMax: 7, isBoarded: false),
             PlayerStatusModel(id: "4", name: "Priska", isCurrentDevice: false, suitcaseWeight: 19, suitcaseMax: 20, carryOnWeight: 5, carryOnMax: 7, isBoarded: false),

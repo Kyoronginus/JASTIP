@@ -44,6 +44,8 @@ private var startView: some View {
 
         Text("JASTIP")
             .font(.system(size: 64, weight: .bold, design: .rounded))
+        
+        Spacer()
 
         TextField("Username", text: $viewModel.playerName)
             .textFieldStyle(.plain)

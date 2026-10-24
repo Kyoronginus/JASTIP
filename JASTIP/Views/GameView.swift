@@ -149,17 +149,15 @@ struct GameView: View {
                             width: 120
                         )
                     }
-                    .sheet(isPresented: $isShowingLeaderboard) {
-                        LeaderboardCard(
+                    .fullScreenCover(isPresented: $isShowingLeaderboard) {
+                        LeaderboardView(
                             isModal: true,
                             players: viewModel.leaderboardPlayers,
                             onBoard: {
                                 viewModel.boardFlight()
                             }
                         )
-                        .presentationDetents([.medium, .large])
                     }
-                    
                 }
             }
             .padding(.horizontal,20)
