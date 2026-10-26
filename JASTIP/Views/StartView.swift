@@ -18,12 +18,22 @@ init(viewModel: GameSessionViewModel) {
 var body: some View {
     Group {
         if let lobby = viewModel.lobbyService.lobby {
-            lobbyView(lobby)
+            LobbyView(
+                lobby: lobby,
+                isLoading: viewModel.lobbyService.isLoading,
+                onStartGame: {
+                    Task { await viewModel.startCloudGame() }
+                },
+                onLeaveLobby: {
+                    Task { await viewModel.lobbyService.leaveLobby() }
+                }
+            )
         } else {
             startView
+                .padding()
+                .appBackground()
         }
     }
-    .padding()
     .appBackground()
     .alert(
         "Lobby",

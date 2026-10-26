@@ -96,8 +96,8 @@ struct BoardingCard: View {
     private var flipClockView: some View {
         let (d1, d2, d3, d4) = digits
         return HStack(spacing: 5) {
-            flipTile(d1)
-            flipTile(d2)
+            FlipTile(character: d1)
+            FlipTile(character: d2)
             
             Image("ClockColon")
                 .resizable()
@@ -105,10 +105,11 @@ struct BoardingCard: View {
                 .frame(width: 8, height: 20)
                 .padding(.horizontal, 3)
             
-            flipTile(d3)
-            flipTile(d4)
+            FlipTile(character: d3)
+            FlipTile(character: d4)
         }
     }
+
     
     // MARK: - Flip Tile Satuan
     private func flipTile(_ digit: Character) -> some View {
