@@ -20,7 +20,6 @@ struct AppBackgroundModifier: ViewModifier {
             )
     }
 }
-
 // MARK: - View Extension (Agar mudah dipanggil)
 extension View {
     func appBackground() -> some View {

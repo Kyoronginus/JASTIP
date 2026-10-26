@@ -20,7 +20,6 @@ settings:
     INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
     
     INFOPLIST_KEY_NSCameraUsageDescription: "The app requires camera access to scan board game pieces"
-    INFOPLIST_KEY_NSLocalNetworkUsageDescription: "This app uses Bonjour to find other devices on the local network"
     INFOPLIST_KEY_NFCReaderUsageDescription: "The app requires NFC access to scan board game items"
 
     INFOPLIST_KEY_UILaunchScreen_Generation: YES
@@ -30,6 +29,13 @@ targets:
   JASTIP:
     type: application
     platform: iOS
+    dependencies:
+      - package: Firebase
+        product: FirebaseCore
+      - package: Firebase
+        product: FirebaseFirestore
+      - package: Firebase
+        product: FirebaseAuth
     sources:
       - path: JASTIP
     entitlements:
@@ -42,9 +48,6 @@ targets:
     info: 
       path: JASTIP/Info.plist
       properties:
-        NSBonjourServices:
-          - _jastip-game._tcp
-          - _jastip-game._udp
         UIAppFonts:
           - PlusJakartaSans-Regular.ttf
           - PlusJakartaSans-Light.ttf
@@ -57,3 +60,8 @@ targets:
           - SpaceGrotesk-Medium.ttf
           - SpaceGrotesk-SemiBold.ttf
           - SpaceGrotesk-Bold.ttf
+
+packages:
+  Firebase:
+    url: https://github.com/firebase/firebase-ios-sdk
+    from: 13.1.1

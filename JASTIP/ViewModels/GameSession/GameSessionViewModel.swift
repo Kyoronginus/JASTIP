@@ -16,7 +16,6 @@ class GameSessionViewModel {
     var isGameOver: Bool = false
     var isGameStarted: Bool = false
     var hasProceededToGame: Bool = false // <-- TAMBAHKAN INI
-    var lockHostToggle: Bool = false
     
     var currentTimeString: String {
         String(format: "%02d:00", currentHour)
@@ -59,18 +58,36 @@ class GameSessionViewModel {
     var triggeredUniqueEvents: Set<RandomEventType> = []
     var lastRoundEventType: RandomEventType?
     
-    // MARK: - Networking
-    var networkManager = NetworkSessionManager()
-    
-    var connectedPlayersCount: Int {
-        networkManager.connectedPeersCount
-    }
+    // MARK: - Firebase Lobby
+    var lobbyService = FirebaseLobbyService()
     
     // MARK: - Initialization
     init(airlineCard: AirlineCardModel = AirlineCardCatalog.getRandomCard()) {
         self.airlineCard = airlineCard
         generateRandomizedWeights()
-        setupNetworkCallbacks()
+        lobbyService.onGameStarted = { [weak self] card, weights in
+            guard let self else { return }
+            self.airlineCard = card
+            self.pieceWeights = weights
+            self.isGameStarted = true
+            self.hasProceededToGame = false
+            self.broadcastMyStatus()
+        }
+        lobbyService.onGameStateChanged = { [weak self] state in
+            self?.applyCloudGameState(state)
+        }
+        lobbyService.onPlayerStatusesChanged = { [weak self] statuses in
+            guard let self else { return }
+            self.remotePlayers = statuses.filter { $0.key != self.lobbyService.currentPlayerID }
+            self.checkAllPlayersBoarded()
+        }
+        lobbyService.onScannedPiecesChanged = { [weak self] scans in
+            guard let self else { return }
+            self.revealedPieces = scans
+            for scan in scans {
+                self.pieceWeights[scan.piece.id] = scan.weight
+            }
+        }
     }
     
     // MARK: - Game Lifecycle
@@ -160,8 +177,12 @@ class GameSessionViewModel {
     // mencatat revealed pieces beserta dengan weights
     func recordScannedPiece(_ piece: PieceModel, weight: Int) {
         pieceWeights[piece.id] = weight
+        let revealedPiece = RevealedPiece(piece: piece, weight: weight, scannedBy: currentPlayerStatus.name)
         if !revealedPieces.contains(where: { $0.id == piece.id }) {
-            revealedPieces.append(RevealedPiece(piece: piece, weight: weight))
+            revealedPieces.append(revealedPiece)
+            Task {
+                await lobbyService.publishScannedPiece(revealedPiece)
+            }
         }
     }
 
@@ -179,8 +200,9 @@ class GameSessionViewModel {
             revealedPieces.append(revealed)
         }
         
-        // 2. Kirim datanya ke HP player lain via Multipeer
-        networkManager.sendScannedItem(piece: revealed, weight: weight)
+        Task {
+            await lobbyService.publishScannedPiece(revealed)
+        }
         
         // 3. Tambahin bobot HANYA ke tracker HP ini sendiri (berat suitcase/carry-on gak digabung ke HP lain)
         let effectiveWeight = isZeroWeightHour ? 0 : weight

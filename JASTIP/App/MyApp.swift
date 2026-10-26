@@ -1,15 +1,20 @@
 import SwiftUI
+import FirebaseCore
 
 @main
 struct MyApp: App {
     @State private var gameSessionVM = GameSessionViewModel()
+
+    init() {
+        FirebaseApp.configure()
+    }
     
     var body: some Scene {
         WindowGroup {
             Group {
                 if !gameSessionVM.isGameStarted {
                     // 1. LOBBY (STARTVIEW)
-                    StartView(viewModel: gameSessionVM, lockHostToggle: gameSessionVM.lockHostToggle)
+                    StartView(viewModel: gameSessionVM)
                         .onAppear { UIApplication.shared.isIdleTimerDisabled = true }
                 } else if !gameSessionVM.hasProceededToGame {
                     // 2. REVEAL AIRLINE CARD (FLIP ANIMATION)
@@ -20,7 +25,7 @@ struct MyApp: App {
                     }
                 } else {
                     // 3. MAIN GAMEPLAY
-                    GameView(viewModel: gameSessionVM, lockHostToggle: gameSessionVM.lockHostToggle)
+                    GameView(viewModel: gameSessionVM)
                 }
             }
             

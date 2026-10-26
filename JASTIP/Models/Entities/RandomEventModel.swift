@@ -38,10 +38,3 @@ struct RandomEventModel: Identifiable, Equatable, Codable {
     let title: String
     let message: String
 }
-
-struct NextHourPayload: Codable {
-    let newHour: Int
-    let delayHour: Int
-    let event: RandomEventModel?
-    let isGameOver: Bool
-}

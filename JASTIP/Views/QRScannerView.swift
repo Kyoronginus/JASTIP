@@ -24,36 +24,63 @@ struct QRScannerView: View {
             
             // 2. Viewfinder Target & Header Bar (Hanya saat mencari QR)
             VStack {
+                // MARK: - Header Bar
                 HStack {
-                    Button(action: {
+                    // Back Button
+                    Button {
                         dismiss()
-                    }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.title2)
-                            .foregroundColor(.white)
-                            .padding(8)
-                            .background(Color.black.opacity(0.6))
-                            .clipShape(Circle())
+                    } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 16, weight: .bold))
                     }
+                    .buttonStyle(PrimaryButtonStyle(
+                        backgroundColor: .black,
+                        borderColor: Color("TaxiYellow"),
+                        foregroundColor: Color("TaxiYellow"),
+                        cornerRadius: 14,
+                        paddingVertical: 14,
+                        paddingHorizontal: 15
+                    ))
+                    .padding(.trailing, 10)
                     
-                    Spacer()
-                    
-                    Color.clear
-                        .frame(width: 80, height: 32)
-                    
-                    Button(action: {
-                        viewModel.flipCamera()
-                    }) {
-                        Image(systemName: "camera.rotate.fill")
-                            .font(.title2)
-                            .foregroundColor(.white)
-                            .padding(8)
-                            .background(Color.black.opacity(0.6))
-                            .clipShape(Circle())
+                    // Title Banner
+                    ZStack(alignment: .trailing) {
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(.black)
+                        
+                        // Watermark Asterisk
+                        Image("AsteriskYellow")
+                            .resizable()
+                            .renderingMode(.template)
+                            .foregroundStyle(Color.white.opacity(0.12))
+                            .scaledToFit()
+                            .frame(width: 155, height: 155)
+                            .offset(x: 52, y: 27)
+                        
+                        HStack {
+                            Text("Scan QR")
+                                .font(.spaceGrotesk(18, .bold))
+                                .foregroundStyle(Color("TaxiYellow"))
+                            Spacer()
+                            
+                            Button(action: {
+                                viewModel.flipCamera()
+                            }) {
+                                Image(systemName: "camera.rotate.fill")
+                                    .font(.title2)
+                                    .foregroundColor(.white)
+                                    .padding(8)
+                                    .background(Color.black.opacity(0.6))
+                                    .clipShape(Circle())
+                            }
+                        }
+                        .padding(.horizontal, 16)
                     }
+                    .frame(height: 52)
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
                 }
-                .padding(.top, 16)
                 .padding(.horizontal, 20)
+                .padding(.top, 16)
                 
                 Spacer()
                 
