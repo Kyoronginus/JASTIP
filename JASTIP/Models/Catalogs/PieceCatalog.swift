@@ -97,7 +97,7 @@ struct PieceCatalog {
         PieceModel(id: "JASTIP5-9", shape:.unique, color: .pink, gridCount: 3, isAnomaly: true),
     ]
     
-    static func findPiece(by id: String) -> PieceModel? {
+static func findPiece(by id: String) -> PieceModel? {
         allPieces.first { $0.id == id }
     }
 }

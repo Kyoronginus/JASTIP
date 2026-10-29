@@ -14,8 +14,14 @@ settings:
     CODE_SIGN_STYLE: Automatic
     GENERATE_INFOPLIST_FILE: YES
     INFOPLIST_KEY_CFBundleDisplayName: JASTIP
-    INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationLandscapeRight
+
+    # iphone portrait
+    INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait"
+    INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+    
     INFOPLIST_KEY_NSCameraUsageDescription: "The app requires camera access to scan board game pieces"
+    INFOPLIST_KEY_NFCReaderUsageDescription: "The app requires NFC access to scan board game items"
+
     INFOPLIST_KEY_UILaunchScreen_Generation: YES
 
 
@@ -23,5 +29,39 @@ targets:
   JASTIP:
     type: application
     platform: iOS
+    dependencies:
+      - package: Firebase
+        product: FirebaseCore
+      - package: Firebase
+        product: FirebaseFirestore
+      - package: Firebase
+        product: FirebaseAuth
     sources:
       - path: JASTIP
+    entitlements:
+      path: JASTIP/JASTIP.entitlements
+      properties: 
+        com.apple.developer.nfc.readersession.formats:
+          - NDEF
+          - TAG
+
+    info: 
+      path: JASTIP/Info.plist
+      properties:
+        UIAppFonts:
+          - PlusJakartaSans-Regular.ttf
+          - PlusJakartaSans-Light.ttf
+          - PlusJakartaSans-Medium.ttf
+          - PlusJakartaSans-SemiBold.ttf
+          - PlusJakartaSans-Bold.ttf
+          - PlusJakartaSans-ExtraBold.ttf
+          - SpaceGrotesk-Regular.ttf
+          - SpaceGrotesk-Light.ttf
+          - SpaceGrotesk-Medium.ttf
+          - SpaceGrotesk-SemiBold.ttf
+          - SpaceGrotesk-Bold.ttf
+
+packages:
+  Firebase:
+    url: https://github.com/firebase/firebase-ios-sdk
+    from: 13.1.1

@@ -8,7 +8,7 @@
 import Foundation
 import SwiftUI
 
-enum PieceShape: String {
+enum PieceShape: String, Codable {
     case single = "Single"
     case domino = "Domino"
     case smallL = "Small L"
@@ -20,7 +20,7 @@ enum PieceShape: String {
     case unique = "Unique"
 }
 
-enum PieceColor: String, CaseIterable {
+enum PieceColor: String, CaseIterable, Codable {
     case red = "Red"
     case yellow = "Yellow"
     case green = "Green"
@@ -36,19 +36,35 @@ enum PieceColor: String, CaseIterable {
         case .pink: return .pink
         }
     }
+    
+    var categoryName: String {
+        switch self {
+            case .red: return "Books"
+            case .yellow: return "Delicacy"
+            case .green: return "Boutique"
+            case .blue: return "Antique"
+            case .pink: return "Kids"
+        }
+    }
 }
 
-struct PieceModel: Identifiable {
+struct PieceModel: Codable, Identifiable {
     let id: String
     let shape: PieceShape
     let color: PieceColor
     let gridCount: Int
     let isAnomaly: Bool
+    var imageName: String = "" //placeholder
+    
+    var assetName: String {
+        id.replacingOccurrences(of: "JASTIP", with: "")
+    }
 }
 
-struct RevealedPiece: Identifiable {
+struct RevealedPiece: Codable, Identifiable {
     let piece: PieceModel
     let weight: Int
+    var scannedBy: String = ""
     
     var id: String { piece.id }
     

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import AVFoundation
 
 @Observable
 class QRScannerViewModel {
@@ -17,6 +18,7 @@ class QRScannerViewModel {
     
     var session: GameSessionViewModel
     var onScanned: ((PieceModel?, String, Int?) -> Void)? = nil
+    var audioPlayer: AVAudioPlayer?
     
     var headerTitle: String {
         confirmedWeight != nil ? "PIECE TERKONFIRMASI" : "QR TERDETEKSI"
@@ -44,6 +46,7 @@ class QRScannerViewModel {
     
     func handleDetectedCode(_ code: String) {
         guard scannedCode == nil else { return }
+        playBeep()
         self.scannedCode = code
         self.detectedPiece = PieceCatalog.findPiece(by: code)
         self.confirmedWeight = nil
@@ -66,7 +69,24 @@ class QRScannerViewModel {
         onScanned?(detectedPiece, code, confirmedWeight)
     }
     
+    // Fungsi baru untuk menangani pilihan tempat penyimpanan item
+    func selectDestination(isSuitcase: Bool) {
+        guard let code = scannedCode, let weight = confirmedWeight, let piece = detectedPiece else { return }
+        
+        // Catat ke session (carousel & weight tracker)
+        session.recordItemPlacement(piece: piece, weight: weight, isSuitcase: isSuitcase)
+        
+        // Selesaikan scan dan tutup popup/scanner
+        onScanned?(piece, code, weight)
+    }
+    
     func flipCamera() {
         scanner.flipCamera()
+    }
+    
+    func playBeep() {
+        guard let data = NSDataAsset(name: "cashier-beep")?.data else { return }
+        audioPlayer = try? AVAudioPlayer(data: data)
+        audioPlayer?.play()
     }
 }

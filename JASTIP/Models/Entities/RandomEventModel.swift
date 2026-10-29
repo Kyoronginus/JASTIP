@@ -8,14 +8,31 @@
 import SwiftUI
 
 // Random Events
-enum RandomEventType: String, CaseIterable {
+enum RandomEventType: String, CaseIterable, Codable {
     case flightDelay
     case zeroWeight
     case relativeCanceled
     case storesClosed
+    case reshuffleStore
+    case mindYourManners
+    case reverseMadness
+    case customsIssue
+    
+    var imageName: String? {
+        switch self {
+        case .flightDelay: return "FlightDelayed"
+        case .relativeCanceled: return "OrderCancelled"
+        case .storesClosed: return "StoresClosed"
+        case .reshuffleStore: return "RestockStore"
+        case .mindYourManners: return "MindYourManners"
+        case .reverseMadness: return "ReverseMadness"
+        case .customsIssue: return "CustomsIssue"
+        case .zeroWeight: return nil
+        }
+    }
 }
 
-struct RandomEventModel: Identifiable, Equatable {
+struct RandomEventModel: Identifiable, Equatable, Codable {
     var id: String = UUID().uuidString
     var type: RandomEventType = .storesClosed
     let title: String
