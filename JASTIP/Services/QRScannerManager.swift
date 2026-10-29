@@ -129,7 +129,7 @@ class QRScannerManager: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
         
         request.symbologies = [.microQR, .qr]
         
-        request.regionOfInterest = CGRect(x: 0.375, y: 0.25, width: 0.25, height: 0.5)
+//        request.regionOfInterest = CGRect(x: 0.375, y: 0.25, width: 0.25, height: 0.5)'
         
         let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: .up)
         try? handler.perform([request])

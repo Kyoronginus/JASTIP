@@ -19,8 +19,11 @@ struct QRScannerView: View {
     var body: some View {
         ZStack {
             // 1. Live Camera Preview
-            CameraPreviewView(session: viewModel.scanner.session)
-                .ignoresSafeArea()
+            CameraPreviewView(
+                session: viewModel.scanner.session,
+                cameraPosition: viewModel.scanner.currentPosition
+            )
+            .ignoresSafeArea()
             
             // 2. Viewfinder Target & Header Bar (Hanya saat mencari QR)
             VStack {
@@ -101,34 +104,17 @@ struct QRScannerView: View {
             }
             
             // 3. Popup Konfirmasi (Tampil di tengah saat QR terdeteksi)
-            if let code = viewModel.scannedCode {
+            if let piece = viewModel.detectedPiece, let weight = viewModel.confirmedWeight {
                 Color.black.opacity(0.4)
                     .ignoresSafeArea()
                 
                 VStack(spacing: 12) {
-                    Text(viewModel.headerTitle)
-                        .font(.caption)
-                        .fontWeight(.bold)
-                        .foregroundColor(.secondary)
                     
-                    Text(code)
-                        .font(.title3.bold())
-                    
-                    if let piece = viewModel.detectedPiece {
-                        HStack(spacing: 12) {
-                            Text(piece.shape.rawValue)
-                                .font(.subheadline.bold())
-
-                            Text("\(piece.gridCount) base kg")
-                                .font(.subheadline)
-                            
-                            if piece.isAnomaly {
-                                Text("ANOMALI")
-                                    .font(.caption2.bold())
-                                    .foregroundColor(.orange)
-                            }
-                        }
-                    }
+                    Image(piece.assetName)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 90, height: 90)
+                        .padding(20)
                     
                     // Tombol & Teks Pilihan
                     if let weight = viewModel.confirmedWeight {
@@ -136,16 +122,16 @@ struct QRScannerView: View {
                             if viewModel.session.isZeroWeightHour {
                                 VStack {
                                     Text("Bobot: 0 kg")
-                                        .font(.headline.bold())
-                                        .foregroundColor(.green)
+                                        .font(.spaceGrotesk(32, .bold))
+                                        .foregroundColor(.primary)
                                     Text("Free Items Event! (Asli: \(weight) kg)")
                                         .font(.caption2.bold())
                                         .foregroundColor(.orange)
                                 }
                             } else {
-                                Text("Bobot: \(weight) kg")
-                                    .font(.headline)
-                                    .foregroundColor(.green)
+                                Text("\(weight) KG")
+                                    .font(.spaceGrotesk(32, .bold))
+                                    .foregroundColor(.primary)
                             }
                             
                             Text("Where do u want to put it in?")
@@ -167,18 +153,6 @@ struct QRScannerView: View {
                                 .buttonStyle(.borderedProminent)
                                 .tint(.orange)
                             }
-                        }
-                    } else {
-                        HStack(spacing: 12) {
-                            Button("Scan Ulang") {
-                                viewModel.resetScan()
-                            }
-                            .buttonStyle(.bordered)
-                            
-                            Button("Konfirmasi") {
-                                viewModel.confirmWeight()
-                            }
-                            .buttonStyle(.borderedProminent)
                         }
                     }
                 }

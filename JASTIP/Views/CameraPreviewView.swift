@@ -10,6 +10,7 @@ import AVFoundation
 
 struct CameraPreviewView: UIViewRepresentable {
     let session: AVCaptureSession
+    var cameraPosition: AVCaptureDevice.Position = .front
     
     func makeUIView(context: Context) -> VideoPreviewUIView {
         let view = VideoPreviewUIView()
@@ -41,15 +42,12 @@ class VideoPreviewUIView: UIView {
     func updateOrientation() {
         guard let connection = videoPreviewLayer.connection else { return }
         
-        let device = (videoPreviewLayer.session?.inputs.first as? AVCaptureDeviceInput)?.device
-        let isFrontCamera = (device?.position == .front)
-        
-        
+        // Use AVFoundation's native mirroring logic
         if connection.isVideoMirroringSupported {
-            connection.automaticallyAdjustsVideoMirroring = false
-            connection.isVideoMirrored = isFrontCamera
+            connection.automaticallyAdjustsVideoMirroring = true
         }
         
+        // Update rotation angle for the current active device
         if let device = (videoPreviewLayer.session?.inputs.first as? AVCaptureDeviceInput)?.device {
             let coordinator = AVCaptureDevice.RotationCoordinator(device: device, previewLayer: videoPreviewLayer)
             let angle = coordinator.videoRotationAngleForHorizonLevelPreview

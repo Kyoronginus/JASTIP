@@ -49,7 +49,7 @@ class QRScannerViewModel {
         playBeep()
         self.scannedCode = code
         self.detectedPiece = PieceCatalog.findPiece(by: code)
-        self.confirmedWeight = nil
+        self.confirmedWeight = session.weight(for: code)
     }
     
     func confirmWeight() {
