@@ -32,7 +32,7 @@ class QRScannerManager: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
         session.beginConfiguration()
         session.sessionPreset = .hd1920x1080
         
-        guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back),
+        guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front),
               let input = try? AVCaptureDeviceInput(device: device),
               session.canAddInput(input) else {
             session.commitConfiguration()
@@ -63,6 +63,10 @@ class QRScannerManager: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
         // Tentukan posisi baru
         let newPosition: AVCaptureDevice.Position = (currentPosition == .front) ? .back : .front
         
+
+//        .automaticallyAdjustsVideoMirroring = true
+
+        
         guard let newDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: newPosition),
               let newInput = try? AVCaptureDeviceInput(device: newDevice),
               session.canAddInput(newInput) else {
@@ -76,6 +80,11 @@ class QRScannerManager: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
         session.addInput(newInput)
         self.currentInput = newInput
         self.currentPosition = newPosition
+        
+        if let connection = videoOutput.connection(with: .video), connection.isVideoMirroringSupported {
+            connection.automaticallyAdjustsVideoMirroring = false
+            connection.isVideoMirrored = (newPosition == .front)
+        }
     }
     
     func startScanning() {
