@@ -138,20 +138,32 @@ struct QRScannerView: View {
                                 .font(.subheadline.bold())
                                 .foregroundColor(.primary)
                             
-                            HStack(spacing: 12) {
-                                Button("Suitcase") {
+                            HStack(alignment: .bottom, spacing: 12) {
+                                Button {
                                     viewModel.selectDestination(isSuitcase: true)
                                     dismiss()
+                                } label: {
+                                    ProgressBar(
+                                        luggage: .suitcase,
+                                        weight: viewModel.session.suitWeight,
+                                        maxWeight: viewModel.session.displayedAirlineCard.maxCapacityKg,
+                                        width: 155
+                                    )
                                 }
-                                .buttonStyle(.borderedProminent)
-                                .tint(.blue)
+                                .buttonStyle(.plain)
                                 
-                                Button("Carry-On") {
+                                Button {
                                     viewModel.selectDestination(isSuitcase: false)
                                     dismiss()
+                                } label: {
+                                    ProgressBar(
+                                        luggage: .carryOn,
+                                        weight: viewModel.session.carryWeight,
+                                        maxWeight: viewModel.session.displayedAirlineCard.maxCarryOnKg,
+                                        width: 120
+                                    )
                                 }
-                                .buttonStyle(.borderedProminent)
-                                .tint(.orange)
+                                .buttonStyle(.plain)
                             }
                         }
                     }
