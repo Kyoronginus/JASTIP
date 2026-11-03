@@ -27,6 +27,7 @@ struct GameView: View {
     @State private var isShowingRevealedWeights = false
     @State private var isShowingScannedItems = false
     @State private var lastScannedPiece: PieceModel? = nil
+    @State private var targetIsSuitcase: Bool = true
     
     @State private var nfcDetectedPiece: PieceModel? = nil
     @State private var nfcConfirmedWeight: Int? = nil
@@ -88,29 +89,6 @@ struct GameView: View {
                     )
                     .padding(.horizontal)
                     
-                    HStack {
-                        Spacer() // Mendorong tombol ke sisi kanan (trailing)
-                        
-                        Button {
-                            isShowingScanner = true
-                            onOpenCamera()
-                        } label: {
-                            Image(systemName: "plus")
-                                .foregroundStyle(Color("TaxiYellow"))
-                            Text("Scan Item")
-                        }
-                        .buttonStyle(PrimaryButtonStyle(
-                            backgroundColor: Color("NavyBlack"),
-                            borderColor: Color("TaxiYellow"),
-                            foregroundColor: .white,
-                            cornerRadius: 15,
-                            paddingVertical: 12,
-                            paddingHorizontal: 20
-                        ))
-                        .disabled(viewModel.currentEvent != nil || viewModel.isBoarded)
-                    }
-                    .padding(.horizontal)
-                    .padding(.bottom)
                 }
                 
                 
@@ -128,35 +106,62 @@ struct GameView: View {
                 
                 // Bottom Part
                 Spacer()
+                
                 HStack(alignment: .bottom, spacing: 12) {
-                    ProgressBar(
-                        luggage: .suitcase,
-                        weight: suitWeight,
-                        maxWeight: maxSuitCapacity,
-                        width: 155
-                    )
-                    VStack(spacing: 50){
+                    // 1. SUITCASE + TOMBOL '+' DI TENGAH BAWAH
+                    ZStack(alignment: .bottom) {
+                        ProgressBar(
+                            luggage: .suitcase,
+                            weight: suitWeight,
+                            maxWeight: maxSuitCapacity,
+                            width: 155
+                        )
+                        
+                        Button {
+                            targetIsSuitcase = true
+                            isShowingScanner = true
+                            onOpenCamera()
+                        } label: {
+                            Image(systemName: "plus")
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundStyle(Color("TaxiYellow"))
+                        }
+                        .buttonStyle(PrimaryButtonStyle.square(color: Color("TaxiYellow"), size: 44, cornerRadius: 22))
+                        .disabled(viewModel.currentEvent != nil || viewModel.isBoarded)
+                        .offset(y: 18) // Mengambang pas di tengah batas bawah koper
+                    }
+                    .padding(.bottom, 18) // Memberi ruang ekstra untuk tonjolan tombol
+                    
+                    // 2. CARRY-ON + TOMBOL '+' DI TENGAH BAWAH
+                    VStack(spacing: 50) {
                         Button("Leaderboard") {
                             viewModel.broadcastMyStatus()
                             isShowingLeaderboard = true
                         }
                         .buttonStyle(PrimaryButtonStyle())
                         
-                        ProgressBar(
-                            luggage: .carryOn,
-                            weight: carryWeight,
-                            maxWeight: maxCarryCapacity,
-                            width: 120
-                        )
-                    }
-                    .fullScreenCover(isPresented: $isShowingLeaderboard) {
-                        LeaderboardView(
-                            isModal: true,
-                            players: viewModel.leaderboardPlayers,
-                            onBoard: {
-                                viewModel.boardFlight()
+                        ZStack(alignment: .bottom) {
+                            ProgressBar(
+                                luggage: .carryOn,
+                                weight: carryWeight,
+                                maxWeight: maxCarryCapacity,
+                                width: 120
+                            )
+                            
+                            Button {
+                                targetIsSuitcase = false
+                                isShowingScanner = true
+                                onOpenCamera()
+                            } label: {
+                                Image(systemName: "plus")
+                                    .font(.system(size: 18, weight: .bold))
+                                    .foregroundStyle(Color("TaxiYellow"))
                             }
-                        )
+                            .buttonStyle(PrimaryButtonStyle.square(color: Color("TaxiYellow"), size: 40, cornerRadius: 20))
+                            .disabled(viewModel.currentEvent != nil || viewModel.isBoarded)
+                            .offset(y: 16) // Mengambang pas di tengah batas bawah carry-on
+                        }
+                        .padding(.bottom, 16)
                     }
                 }
             }
@@ -253,10 +258,20 @@ struct GameView: View {
         .animation(.easeInOut(duration: 0.2), value: viewModel.currentEvent != nil || isShowingRevealedWeights || isShowingNFCPopup)
         .navigationBarBackButtonHidden(true)
         .fullScreenCover(isPresented: $isShowingScanner) {
-            QRScannerView(session: viewModel) { piece, code, weight in
+            QRScannerView(session: viewModel, isSuitcase: targetIsSuitcase) { piece, code, weight, isSuitcase in
                 lastScannedPiece = piece
                 if let weight = weight {
                     lastScannedWeight = weight
+                }
+                
+                // Jeda 0.35 detik agar sheet scanner selesai menutup terlebih dahulu,
+                // baru progress bar koper terlihat bergerak bertambah secara visual!
+                if let piece = piece, let weight = weight {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                        withAnimation(.easeInOut(duration: 0.5)) {
+                            viewModel.recordItemPlacement(piece: piece, weight: weight, isSuitcase: isSuitcase)
+                        }
+                    }
                 }
             }
         }
