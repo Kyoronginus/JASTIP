@@ -12,8 +12,8 @@ struct QRScannerView: View {
     
     @State private var viewModel: QRScannerViewModel
     
-    init(session: GameSessionViewModel, onScanned: ((PieceModel?, String, Int?) -> Void)? = nil) {
-        _viewModel = State(initialValue: QRScannerViewModel(session: session, onScanned: onScanned))
+    init(session: GameSessionViewModel, isSuitcase: Bool = true, onScanned: ((PieceModel?, String, Int?, Bool) -> Void)? = nil) {
+        _viewModel = State(initialValue: QRScannerViewModel(session: session, isSuitcase: isSuitcase, onScanned: onScanned))
     }
     
     var body: some View {
@@ -134,37 +134,17 @@ struct QRScannerView: View {
                                     .foregroundColor(.primary)
                             }
                             
-                            Text("Where do u want to put it in?")
+                            Text(viewModel.isSuitcase ? "Adding to Suitcase" : "Adding to Carry-On")
                                 .font(.subheadline.bold())
-                                .foregroundColor(.primary)
-                            
-                            HStack(alignment: .bottom, spacing: 12) {
-                                Button {
-                                    viewModel.selectDestination(isSuitcase: true)
-                                    dismiss()
-                                } label: {
-                                    ProgressBar(
-                                        luggage: .suitcase,
-                                        weight: viewModel.session.suitWeight,
-                                        maxWeight: viewModel.session.displayedAirlineCard.maxCapacityKg,
-                                        width: 155
-                                    )
-                                }
-                                .buttonStyle(.plain)
-                                
-                                Button {
-                                    viewModel.selectDestination(isSuitcase: false)
-                                    dismiss()
-                                } label: {
-                                    ProgressBar(
-                                        luggage: .carryOn,
-                                        weight: viewModel.session.carryWeight,
-                                        maxWeight: viewModel.session.displayedAirlineCard.maxCarryOnKg,
-                                        width: 120
-                                    )
-                                }
-                                .buttonStyle(.plain)
+                                .foregroundColor(.secondary)
+
+                            Button("Continue") {
+                                viewModel.confirmAndContinue()
+                                dismiss()
                             }
+                            .buttonStyle(PrimaryButtonStyle(isFullWidth: true))
+                            .padding(.horizontal, 16)
+                            .padding(.top, 8)
                         }
                     }
                 }

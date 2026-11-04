@@ -7,6 +7,8 @@
 
 import SwiftUI
 import AVFoundation
+import CoreHaptics
+import UIKit
 
 @Observable
 class QRScannerViewModel {
@@ -16,9 +18,12 @@ class QRScannerViewModel {
     var detectedPiece: PieceModel? = nil
     var confirmedWeight: Int? = nil
     
+    var isSuitcase: Bool
+    
     var session: GameSessionViewModel
-    var onScanned: ((PieceModel?, String, Int?) -> Void)? = nil
+    var onScanned: ((PieceModel?, String, Int?, Bool) -> Void)? = nil
     var audioPlayer: AVAudioPlayer?
+    private var hapticEngine: CHHapticEngine?
     
     var headerTitle: String {
         confirmedWeight != nil ? "PIECE TERKONFIRMASI" : "QR TERDETEKSI"
@@ -28,9 +33,12 @@ class QRScannerViewModel {
         scannedCode != nil
     }
     
-    init(session: GameSessionViewModel, onScanned: ((PieceModel?, String, Int?) -> Void)? = nil) {
+    init(session: GameSessionViewModel, isSuitcase: Bool = true, onScanned: ((PieceModel?, String, Int?, Bool) -> Void)? = nil) {
         self.session = session
+        self.isSuitcase = isSuitcase
         self.onScanned = onScanned
+        setupAudioPlayer()
+        setupHaptics()
     }
     
     func startScanning() {
@@ -47,6 +55,7 @@ class QRScannerViewModel {
     func handleDetectedCode(_ code: String) {
         guard scannedCode == nil else { return }
         playBeep()
+        playScanHaptic()
         self.scannedCode = code
         self.detectedPiece = PieceCatalog.findPiece(by: code)
         self.confirmedWeight = session.weight(for: code)
@@ -66,27 +75,77 @@ class QRScannerViewModel {
     
     func finishScan() {
         guard let code = scannedCode else { return }
-        onScanned?(detectedPiece, code, confirmedWeight)
+        onScanned?(detectedPiece, code, confirmedWeight, isSuitcase)
     }
     
-    // Fungsi baru untuk menangani pilihan tempat penyimpanan item
+    // Fungsi lama: tambahkan isSuitcase di onScanned
     func selectDestination(isSuitcase: Bool) {
         guard let code = scannedCode, let weight = confirmedWeight, let piece = detectedPiece else { return }
-        
-        // Catat ke session (carousel & weight tracker)
         session.recordItemPlacement(piece: piece, weight: weight, isSuitcase: isSuitcase)
-        
-        // Selesaikan scan dan tutup popup/scanner
-        onScanned?(piece, code, weight)
+        onScanned?(piece, code, weight, isSuitcase)
+    }
+    
+    func confirmAndContinue() {
+        guard let code = scannedCode, let weight = confirmedWeight, let piece = detectedPiece else { return }
+        // Callback ke GameView membawa piece, code, weight, dan isSuitcase
+        onScanned?(piece, code, weight, isSuitcase)
     }
     
     func flipCamera() {
         scanner.flipCamera()
     }
     
-    func playBeep() {
+    // preload audio ke buffer hardware)
+    private func setupAudioPlayer() {
         guard let data = NSDataAsset(name: "cashier-beep")?.data else { return }
         audioPlayer = try? AVAudioPlayer(data: data)
+        audioPlayer?.currentTime = 0.27 // Langsung arahkan ke titik suara mulai
+        audioPlayer?.prepareToPlay()
+    }
+
+    private func setupHaptics() {
+        guard CHHapticEngine.capabilitiesForHardware().supportsHaptics else { return }
+
+        do {
+            hapticEngine = try CHHapticEngine()
+            try hapticEngine?.start()
+        } catch {
+            hapticEngine = nil
+        }
+    }
+
+    private func playScanHaptic() {
+        guard let hapticEngine else {
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+            return
+        }
+
+        let intensity = CHHapticEventParameter(
+            parameterID: .hapticIntensity,
+            value: 0.8
+        )
+        let sharpness = CHHapticEventParameter(
+            parameterID: .hapticSharpness,
+            value: 0.5
+        )
+        let event = CHHapticEvent(
+            eventType: .hapticContinuous,
+            parameters: [intensity, sharpness],
+            relativeTime: 0,
+            duration: 0.35
+        )
+
+        do {
+            let pattern = try CHHapticPattern(events: [event], parameters: [])
+            let player = try hapticEngine.makePlayer(with: pattern)
+            try player.start(atTime: CHHapticTimeImmediate)
+        } catch {
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+        }
+    }
+
+    func playBeep() {
+        audioPlayer?.currentTime = 0.27 // Reset ke titik suara mulai, bukan ke bagian hening
         audioPlayer?.play()
     }
 }
