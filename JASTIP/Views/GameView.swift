@@ -23,7 +23,6 @@ struct GameView: View {
     var onOpenCamera: () -> Void
     
     @State private var isShowingScanner = false
-    @State private var isShowingLeaderboard = false
     @State private var isShowingRevealedWeights = false
     @State private var isShowingScannedItems = false
     @State private var lastScannedPiece: PieceModel? = nil
@@ -107,7 +106,7 @@ struct GameView: View {
                 // Bottom Part
                 Spacer()
                 
-                HStack(alignment: .bottom, spacing: 12) {
+                HStack(alignment: .bottom, spacing: 48) {
                     // 1. SUITCASE + TOMBOL '+' DI TENGAH BAWAH
                     ZStack(alignment: .bottom) {
                         ProgressBar(
@@ -133,36 +132,28 @@ struct GameView: View {
                     .padding(.bottom, 18) // Memberi ruang ekstra untuk tonjolan tombol
                     
                     // 2. CARRY-ON + TOMBOL '+' DI TENGAH BAWAH
-                    VStack(spacing: 50) {
-                        Button("Leaderboard") {
-                            viewModel.broadcastMyStatus()
-                            isShowingLeaderboard = true
-                        }
-                        .buttonStyle(PrimaryButtonStyle())
+                    ZStack(alignment: .bottom) {
+                        ProgressBar(
+                            luggage: .carryOn,
+                            weight: carryWeight,
+                            maxWeight: maxCarryCapacity,
+                            width: 120
+                        )
                         
-                        ZStack(alignment: .bottom) {
-                            ProgressBar(
-                                luggage: .carryOn,
-                                weight: carryWeight,
-                                maxWeight: maxCarryCapacity,
-                                width: 120
-                            )
-                            
-                            Button {
-                                targetIsSuitcase = false
-                                isShowingScanner = true
-                                onOpenCamera()
-                            } label: {
-                                Image(systemName: "plus")
-                                    .font(.system(size: 18, weight: .bold))
-                                    .foregroundStyle(Color("TaxiYellow"))
-                            }
-                            .buttonStyle(PrimaryButtonStyle.square(color: Color("TaxiYellow"), size: 40, cornerRadius: 20))
-                            .disabled(viewModel.currentEvent != nil || viewModel.isBoarded)
-                            .offset(y: 16) // Mengambang pas di tengah batas bawah carry-on
+                        Button {
+                            targetIsSuitcase = false
+                            isShowingScanner = true
+                            onOpenCamera()
+                        } label: {
+                            Image(systemName: "plus")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundStyle(Color("TaxiYellow"))
                         }
-                        .padding(.bottom, 16)
+                        .buttonStyle(PrimaryButtonStyle.square(color: Color("TaxiYellow"), size: 40, cornerRadius: 20))
+                        .disabled(viewModel.currentEvent != nil || viewModel.isBoarded)
+                        .offset(y: 16) // Mengambang pas di tengah batas bawah carry-on
                     }
+                    .padding(.bottom, 16)
                 }
             }
             .padding(.horizontal,20)
@@ -273,11 +264,6 @@ struct GameView: View {
                         }
                     }
                 }
-            }
-        }
-        .fullScreenCover(isPresented: $viewModel.isGameOver) {
-            EndView(players: viewModel.leaderboardPlayers) {
-                viewModel.resetToLobby()
             }
         }
         .appBackground()
