@@ -11,92 +11,92 @@ enum AirlineCardCatalog {
     static let allCards: [AirlineCardModel] = [
         AirlineCardModel(
             airlineName: "Honu Air",
-            maxCapacityKg: 20,
-            maxCarryOnKg: 6,
+            maxCapacityKg: 17,
+            maxCarryOnKg: 5,
             departureTime: "14:00"
         ),
         AirlineCardModel(
             airlineName: "Sakura Airlines",
-            maxCapacityKg: 20,
-            maxCarryOnKg: 7,
+            maxCapacityKg: 17,
+            maxCarryOnKg: 6,
             departureTime: "15:00"
         ),
         AirlineCardModel(
             airlineName: "Garuda Sky",
-            maxCapacityKg: 21,
-            maxCarryOnKg: 7,
+            maxCapacityKg: 18,
+            maxCarryOnKg: 6,
             departureTime: "15:00"
         ),
         AirlineCardModel(
             airlineName: "Pacific Wings",
-            maxCapacityKg: 19,
-            maxCarryOnKg: 6,
+            maxCapacityKg: 16,
+            maxCarryOnKg: 5,
             departureTime: "15:00"
         ),
         AirlineCardModel(
             airlineName: "Nusantara Jet",
-            maxCapacityKg: 21,
-            maxCarryOnKg: 6,
+            maxCapacityKg: 18,
+            maxCarryOnKg: 5,
             departureTime: "15:00"
         ),
         AirlineCardModel(
             airlineName: "Fuji Express",
-            maxCapacityKg: 24,
-            maxCarryOnKg: 7,
+            maxCapacityKg: 21,
+            maxCarryOnKg: 6,
             departureTime: "16:00"
         ),
         AirlineCardModel(
             airlineName: "Seoul Airways",
-            maxCapacityKg: 21,
-            maxCarryOnKg: 8,
+            maxCapacityKg: 18,
+            maxCarryOnKg: 7,
             departureTime: "16:00"
         ),
         AirlineCardModel(
             airlineName: "Merpati Sky",
-            maxCapacityKg: 22,
-            maxCarryOnKg: 7,
+            maxCapacityKg: 19,
+            maxCarryOnKg: 6,
             departureTime: "15:00"
         ),
         AirlineCardModel(
             airlineName: "Horizon Air",
-            maxCapacityKg: 22,
-            maxCarryOnKg: 8,
+            maxCapacityKg: 19,
+            maxCarryOnKg: 7,
             departureTime: "16:00"
         ),
         AirlineCardModel(
             airlineName: "Singapore Flyer",
-            maxCapacityKg: 23,
-            maxCarryOnKg: 7,
+            maxCapacityKg: 20,
+            maxCarryOnKg: 6,
             departureTime: "16:00"
         ),
         AirlineCardModel(
             airlineName: "Pelican Express",
-            maxCapacityKg: 23,
-            maxCarryOnKg: 8,
+            maxCapacityKg: 20,
+            maxCarryOnKg: 7,
             departureTime: "17:00"
         ),
         AirlineCardModel(
             airlineName: "Batavia Air",
-            maxCapacityKg: 19,
-            maxCarryOnKg: 7,
+            maxCapacityKg: 16,
+            maxCarryOnKg: 6,
             departureTime: "14:00"
         ),
         AirlineCardModel(
             airlineName: "Kiwi Jet",
-            maxCapacityKg: 19,
-            maxCarryOnKg: 7,
+            maxCapacityKg: 16,
+            maxCarryOnKg: 6,
             departureTime: "15:00"
         ),
         AirlineCardModel(
             airlineName: "Maple Wings",
-            maxCapacityKg: 18,
-            maxCarryOnKg: 7,
+            maxCapacityKg: 15,
+            maxCarryOnKg: 6,
             departureTime: "14:00"
         ),
         AirlineCardModel(
             airlineName: "Sunrise Air",
-            maxCapacityKg: 17,
-            maxCarryOnKg: 6,
+            maxCapacityKg: 15,
+            maxCarryOnKg: 5,
             departureTime: "13:00"
         ),
         AirlineCardModel(
@@ -107,13 +107,13 @@ enum AirlineCardCatalog {
         ),
         AirlineCardModel(
             airlineName: "Stellar Airways",
-            maxCapacityKg: 25,
-            maxCarryOnKg: 7,
+            maxCapacityKg: 22,
+            maxCarryOnKg: 6,
             departureTime: "16:00"
         ),
         AirlineCardModel(
             airlineName: "Sky Voyager",
-            maxCapacityKg: 25,
+            maxCapacityKg: 22,
             maxCarryOnKg: 5,
             departureTime: "15:00"
         )
