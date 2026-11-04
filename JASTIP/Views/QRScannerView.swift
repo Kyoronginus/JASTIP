@@ -9,11 +9,13 @@ import SwiftUI
 
 struct QRScannerView: View {
     @Environment(\.dismiss) private var dismiss
-    
+
+    let isSuitcase: Bool
     @State private var viewModel: QRScannerViewModel
     
     init(session: GameSessionViewModel, isSuitcase: Bool = true, onScanned: ((PieceModel?, String, Int?, Bool) -> Void)? = nil) {
-        _viewModel = State(initialValue: QRScannerViewModel(session: session, isSuitcase: isSuitcase, onScanned: onScanned))
+        self.isSuitcase = isSuitcase
+        _viewModel = State(initialValue: QRScannerViewModel(session: session, onScanned: onScanned))
     }
     
     var body: some View {
@@ -134,12 +136,12 @@ struct QRScannerView: View {
                                     .foregroundColor(.primary)
                             }
                             
-                            Text(viewModel.isSuitcase ? "Adding to Suitcase" : "Adding to Carry-On")
+                            Text(isSuitcase ? "Adding to Suitcase" : "Adding to Carry-On")
                                 .font(.subheadline.bold())
                                 .foregroundColor(.secondary)
 
                             Button("Continue") {
-                                viewModel.confirmAndContinue()
+                                viewModel.confirmAndContinue(isSuitcase: isSuitcase)
                                 dismiss()
                             }
                             .buttonStyle(PrimaryButtonStyle(isFullWidth: true))

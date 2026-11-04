@@ -18,8 +18,6 @@ class QRScannerViewModel {
     var detectedPiece: PieceModel? = nil
     var confirmedWeight: Int? = nil
     
-    var isSuitcase: Bool
-    
     var session: GameSessionViewModel
     var onScanned: ((PieceModel?, String, Int?, Bool) -> Void)? = nil
     var audioPlayer: AVAudioPlayer?
@@ -33,9 +31,8 @@ class QRScannerViewModel {
         scannedCode != nil
     }
     
-    init(session: GameSessionViewModel, isSuitcase: Bool = true, onScanned: ((PieceModel?, String, Int?, Bool) -> Void)? = nil) {
+    init(session: GameSessionViewModel, onScanned: ((PieceModel?, String, Int?, Bool) -> Void)? = nil) {
         self.session = session
-        self.isSuitcase = isSuitcase
         self.onScanned = onScanned
         setupAudioPlayer()
         setupHaptics()
@@ -73,7 +70,7 @@ class QRScannerViewModel {
         scanner.startScanning()
     }
     
-    func finishScan() {
+    func finishScan(isSuitcase: Bool) {
         guard let code = scannedCode else { return }
         onScanned?(detectedPiece, code, confirmedWeight, isSuitcase)
     }
@@ -85,9 +82,8 @@ class QRScannerViewModel {
         onScanned?(piece, code, weight, isSuitcase)
     }
     
-    func confirmAndContinue() {
+    func confirmAndContinue(isSuitcase: Bool) {
         guard let code = scannedCode, let weight = confirmedWeight, let piece = detectedPiece else { return }
-        // Callback ke GameView membawa piece, code, weight, dan isSuitcase
         onScanned?(piece, code, weight, isSuitcase)
     }
     
