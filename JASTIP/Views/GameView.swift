@@ -266,6 +266,11 @@ struct GameView: View {
                 }
             }
         }
+        .fullScreenCover(isPresented: $viewModel.isGameOver) {
+            EndView(players: viewModel.leaderboardPlayers) {
+                viewModel.resetToLobby()
+            }
+        }
         .appBackground()
     }
 }

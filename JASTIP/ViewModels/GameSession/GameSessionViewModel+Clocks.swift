@@ -36,7 +36,7 @@ extension GameSessionViewModel {
             delayHours += 1
         }
         
-        let gameOverStatus = currentHour >= boardingHour
+        let gameOverStatus = currentHour > boardingHour
         self.isGameOver = gameOverStatus
         if gameOverStatus {
             broadcastMyStatus()
