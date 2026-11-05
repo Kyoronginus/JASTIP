@@ -13,7 +13,13 @@ struct MainTabView: View {
             Tab("Luggages", systemImage: "house") {
                 GameView()
             }
-            Tab("JASTIP", systemImage: "gear") {
+            Tab("JASTIP", systemImage: "bubble") {
+                ObjectiveView()
+            }
+            Tab("JASTIP", systemImage: "bubble") {
+                ObjectiveView()
+            }
+            Tab("JASTIP", systemImage: "bubble") {
                 ObjectiveView()
             }
         }
