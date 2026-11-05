@@ -6,19 +6,20 @@
 //
 
 import Foundation
-struct JastipCardModel: Identifiable, Hashable, Codable {
+
+struct JastipOrderModel: Identifiable, Hashable, Codable {
     var id: String = UUID().uuidString
     
     // MARK: - Customer Identity
-    let customerName: String            // Nama customer
-    let points: Int                     // Point if order completed
+    let customerName: String            // Nama customer (contoh: "Thomas", "Henry")
+    let points: Int                     // Poin reward jika order selesai (+3, +4, +5)
     
     // MARK: - Group Chat Visual & Flavor
-    let chatMessage: String           // Balon teks chat pembuka (misal: "Guys, ada yang lewat butik ga? Titip ya!")
-    let requirementImageName: String  // Nama asset gambar diagram/simbol pesanan yang di-show di chat
-    let requirementDescription: String // Penjelasan singkat teksnya (misal: "1 Blue Antique (T) or Green Boutique (L)")
+    let chatMessage: String             // Teks chat pembuka di grup
+    let requirementImageName: String    // Nama asset gambar diagram/simbol pesanan
+    let requirementDescription: String   // Penjelasan teks singkat dari request-nya
     
     // MARK: - Status Gameplay
-    var isPersonal: Bool = false      // true jika ini personal objective (hasil drafting)
-    var isCompleted: Bool = false     // true jika syarat pesanan sudah terpenuhi
+    var isPersonal: Bool = false        // true jika ini personal objective (hasil drafting)
+    var isCompleted: Bool = false       // true jika syarat pesanan sudah terpenuhi
 }

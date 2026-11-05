@@ -7,10 +7,10 @@
 
 import Foundation
 
-enum JastipCardCatalog {
-    static let allCards: [JastipCardModel] = [
+enum JastipOrderCatalog {
+    static let allOrders: [JastipOrderModel] = [
         // MARK: - Kartu 1 (Thomas)
-        JastipCardModel(
+        JastipOrderModel(
             customerName: "Thomas",
             points: 4,
             chatMessage: "Bro, nitip pajangan antik bentuk T ya! Kalo ga ada, jaket butik bentuk L juga boleh.",
@@ -19,7 +19,7 @@ enum JastipCardCatalog {
         ),
         
         // MARK: - Kartu 2 (Toyib)
-        JastipCardModel(
+        JastipOrderModel(
             customerName: "Toyib",
             points: 4,
             chatMessage: "Titip jajan delicacy atau mainan anak dong, bentuknya yang kayak di foto ini ya!",
@@ -28,7 +28,7 @@ enum JastipCardCatalog {
         ),
         
         // MARK: - Kartu 3 (Quincy)
-        JastipCardModel(
+        JastipOrderModel(
             customerName: "Quincy",
             points: 4,
             chatMessage: "Eh jangan lupa titipan gua, cariin antique atau buku sesuai foto ya!",
@@ -37,7 +37,7 @@ enum JastipCardCatalog {
         ),
         
         // MARK: - Kartu 4 (Henry)
-        JastipCardModel(
+        JastipOrderModel(
             customerName: "Henry",
             points: 5,
             chatMessage: "Nitip buku novel tebal (L) plus satu jajan kecil 1 slot ya bro, tengkyu!",
@@ -46,7 +46,7 @@ enum JastipCardCatalog {
         ),
         
         // MARK: - Kartu 5 (Molly)
-        JastipCardModel(
+        JastipOrderModel(
             customerName: "Molly",
             points: 4,
             chatMessage: "Guys, tolong bawain 2 makanan dari Delicacy ya, bentuknya yang kotak/L/T/I yaa.",
@@ -55,7 +55,7 @@ enum JastipCardCatalog {
         ),
         
         // MARK: - Kartu 6 (Mackenzie)
-        JastipCardModel(
+        JastipOrderModel(
             customerName: "Mackenzie",
             points: 3,
             chatMessage: "Titip barang antik atau baju dong, tapi harus yang bentuk domino 2 slot ya!",
@@ -64,7 +64,7 @@ enum JastipCardCatalog {
         ),
         
         // MARK: - Kartu 7 (Billie)
-        JastipCardModel(
+        JastipOrderModel(
             customerName: "Billie",
             points: 5,
             chatMessage: "Nitip jajan atau mainan, cari yang porsi gede ya! Total ukuran berdua minimal 8 grid.",
@@ -73,7 +73,7 @@ enum JastipCardCatalog {
         ),
         
         // MARK: - Kartu 8 (Jude)
-        JastipCardModel(
+        JastipOrderModel(
             customerName: "Jude",
             points: 4,
             chatMessage: "Gua suka yang kembar! Beliin 2 barang dari toko beda, tapi bentuk potongannya harus sama persis.",
@@ -82,7 +82,7 @@ enum JastipCardCatalog {
         ),
         
         // MARK: - Kartu 9 (Caroline)
-        JastipCardModel(
+        JastipOrderModel(
             customerName: "Caroline",
             points: 5,
             chatMessage: "Beliin 2 barang dari toko yang sama ya, satu yang kecil banget (<=2) dan satu yang gede (>=5).",
@@ -91,7 +91,7 @@ enum JastipCardCatalog {
         ),
         
         // MARK: - Kartu 10 (Wayne)
-        JastipCardModel(
+        JastipOrderModel(
             customerName: "Wayne",
             points: 5,
             chatMessage: "Lagi laper banget nih, tolong borong 3 makanan Delicacy! Total ukurannya minimal 8 grid ya.",
@@ -103,13 +103,13 @@ enum JastipCardCatalog {
     // MARK: - Helper Methods
     
     /// Mengambil 3 order acak untuk Shared Objective di awal game
-    static func getRandomSharedOrders(count: Int = 3) -> [JastipCardModel] {
-        Array(allCards.shuffled().prefix(count))
+    static func getRandomSharedOrders(count: Int = 3) -> [JastipOrderModel] {
+        Array(allOrders.shuffled().prefix(count))
     }
     
     /// Mengambil 3 opsi kartu untuk proses drafting personal objective (tidak boleh duplikat dengan yang sudah ada)
-    static func getDraftOrders(count: Int = 3, excludingIds: Set<String> = []) -> [JastipCardModel] {
-        let available = allCards.filter { !excludingIds.contains($0.id) }
+    static func getDraftOrders(count: Int = 3, excludingIds: Set<String> = []) -> [JastipOrderModel] {
+        let available = allOrders.filter { !excludingIds.contains($0.id) }
         return Array(available.shuffled().prefix(count))
     }
 }
