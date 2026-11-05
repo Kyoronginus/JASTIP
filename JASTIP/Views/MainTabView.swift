@@ -10,16 +10,16 @@ import SwiftUI
 struct MainTabView: View {
     var body: some View {
         TabView {
-            Tab("Luggages", systemImage: "house") {
+            Tab("Baggages", systemImage: "suitcase.rolling") {
                 GameView()
             }
-            Tab("JASTIP", systemImage: "bubble") {
+            Tab("Order", systemImage: "scroll") {
                 ObjectiveView()
             }
-            Tab("JASTIP", systemImage: "bubble") {
+            Tab("Stats", systemImage: "chart.bar") {
                 ObjectiveView()
             }
-            Tab("JASTIP", systemImage: "bubble") {
+            Tab("Items", systemImage: "robotic.vacuum") {
                 ObjectiveView()
             }
         }
