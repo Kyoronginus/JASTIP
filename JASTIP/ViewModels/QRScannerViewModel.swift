@@ -51,6 +51,20 @@ class QRScannerViewModel {
     
     func handleDetectedCode(_ code: String) {
         guard scannedCode == nil else { return }
+        guard let piece = PieceCatalog.findPiece(by: code) else { return }
+        
+        // Cek apakah kepingan muat di koper target (Suitcase atau Carry-On)
+        let targetGrid = targetIsSuitcase ? session.suitcaseGrid : session.carryOnGrid
+        let canFit = LuggagePlacementEngine.canFit(piece: piece, in: targetGrid)
+        
+        guard canFit else {
+            UINotificationFeedbackGenerator().notificationOccurred(.error)
+            self.scannedCode = code
+            self.detectedPiece = piece
+            self.rejectionMessage = "Barang ini tidak muat pada susunan \(targetIsSuitcase ? "Suitcase" : "Carry-On") saat ini."
+            return
+        }
+        
         playBeep()
         playScanHaptic()
         self.scannedCode = code

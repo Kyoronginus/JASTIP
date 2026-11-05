@@ -214,4 +214,195 @@ class GameSessionViewModel {
         
         broadcastMyStatus()
     }
+<<<<<<< Updated upstream
+=======
+    
+    // MARK: - Grid Placement & Rearrangement Methods
+    
+    /// Simpan snapshot kondisi koper sebelum user mulai menata ulang
+    func captureGridSnapshotIfNeeded() {
+        if snapshotSuitcaseGrid == nil {
+            snapshotSuitcaseGrid = suitcaseGrid
+        }
+        if snapshotCarryOnGrid == nil {
+            snapshotCarryOnGrid = carryOnGrid
+        }
+    }
+    
+    /// Menambahkan barang baru hasil scan ke area staging
+    func stageScannedPiece(_ piece: PieceModel, weight: Int, targetLuggage: LuggageType) {
+        captureGridSnapshotIfNeeded()
+        stagingWeight = weight
+        // Hapus barang scan lama yang belum ditaruh jika ada, pertahankan barang yang sedang ditata ulang
+        stagedItems.removeAll { !$0.isAlreadyCountedInWeight }
+        stagedItems.append(
+            StagedItem(
+                id: UUID(),
+                piece: piece,
+                weight: weight,
+                rotation: .deg0,
+                lockedLuggage: targetLuggage,
+                isAlreadyCountedInWeight: false
+            )
+        )
+    }
+    
+    /// Mengeluarkan kepingan yang sudah ada di dalam koper kembali ke area staging untuk ditata ulang
+    func removePlacedPieceToStaging(_ placedPiece: PlacedPiece) {
+        captureGridSnapshotIfNeeded()
+        if placedPiece.assignedLuggage == .suitcase {
+            suitcaseGrid.placedPieces.removeAll { $0.id == placedPiece.id }
+        } else {
+            carryOnGrid.placedPieces.removeAll { $0.id == placedPiece.id }
+        }
+        
+        let item = StagedItem(
+            id: placedPiece.id,
+            piece: placedPiece.piece,
+            weight: weight(for: placedPiece.piece.id),
+            rotation: placedPiece.rotation,
+            lockedLuggage: placedPiece.assignedLuggage,
+            isAlreadyCountedInWeight: true
+        )
+        if !stagedItems.contains(where: { $0.id == item.id }) {
+            stagedItems.append(item)
+        }
+    }
+    
+    /// Memutar kepingan yang sedang berada di area staging
+    func rotateStagedItem(id: UUID) {
+        guard let index = stagedItems.firstIndex(where: { $0.id == id }) else { return }
+        stagedItems[index].rotation = stagedItems[index].rotation.next
+    }
+    
+    /// Menaruh kepingan dari staging (baik hasil scan baru maupun tata ulang) ke koper
+    @discardableResult
+    func placeStagedItem(
+        id: UUID,
+        at origin: GridCoordinate,
+        into luggage: LuggageType
+    ) -> Bool {
+        guard let index = stagedItems.firstIndex(where: { $0.id == id }) else { return false }
+        let item = stagedItems[index]
+        
+        // Container lock: jika terikat ke koper tertentu, tidak boleh pindah ke koper lain
+        if let locked = item.lockedLuggage, locked != luggage {
+            return false
+        }
+        
+        let targetGrid = (luggage == .suitcase) ? suitcaseGrid : carryOnGrid
+        guard LuggagePlacementEngine.canPlace(
+            piece: item.piece,
+            at: origin,
+            rotation: item.rotation,
+            in: targetGrid
+        ) else {
+            return false
+        }
+        
+        let placed = PlacedPiece(
+            id: item.id,
+            piece: item.piece,
+            origin: origin,
+            rotation: item.rotation,
+            assignedLuggage: luggage
+        )
+        
+        if luggage == .suitcase {
+            suitcaseGrid.placedPieces.append(placed)
+        } else {
+            carryOnGrid.placedPieces.append(placed)
+        }
+        
+        // Hanya tambahkan bobot jika barang ini baru di-scan (belum dihitung sebelumnya)
+        if !item.isAlreadyCountedInWeight {
+            recordItemPlacement(piece: item.piece, weight: item.weight, isSuitcase: luggage == .suitcase)
+        }
+        
+        stagedItems.remove(at: index)
+        if stagedItems.isEmpty {
+            stagingWeight = nil
+            snapshotSuitcaseGrid = nil
+            snapshotCarryOnGrid = nil
+        }
+        return true
+    }
+    
+    /// Membatalkan barang yang belum dipasang & memulihkan barang koper yang sedang dikeluarkan ke staging
+    func cancelUnplacedStagingAndRestoreGrid() {
+        if let savedSuitcase = snapshotSuitcaseGrid {
+            suitcaseGrid = savedSuitcase
+        }
+        if let savedCarryOn = snapshotCarryOnGrid {
+            carryOnGrid = savedCarryOn
+        }
+        stagedItems.removeAll()
+        stagingWeight = nil
+        snapshotSuitcaseGrid = nil
+        snapshotCarryOnGrid = nil
+    }
+    
+    /// Commit kondisi koper saat semua staging sudah masuk
+    func commitGridSession() {
+        snapshotSuitcaseGrid = nil
+        snapshotCarryOnGrid = nil
+    }
+    
+    /// Menaruh kepingan pertama dari staging ke koper tujuan (kompatibilitas)
+    @discardableResult
+    func placeStagingPiece(
+        at origin: GridCoordinate,
+        rotation: LuggageRotation,
+        into luggage: LuggageType
+    ) -> Bool {
+        guard let first = stagedItems.first else { return false }
+        stagedItems[0].rotation = rotation
+        return placeStagedItem(id: first.id, at: origin, into: luggage)
+    }
+    
+    /// Menggeser/menata ulang kepingan yang sudah ada di dalam koper yang sama
+    @discardableResult
+    func movePlacedPiece(
+        _ placedPiece: PlacedPiece,
+        to newOrigin: GridCoordinate,
+        rotation: LuggageRotation? = nil
+    ) -> Bool {
+        let targetRotation = rotation ?? placedPiece.rotation
+        let targetGrid = (placedPiece.assignedLuggage == .suitcase) ? suitcaseGrid : carryOnGrid
+        
+        guard LuggagePlacementEngine.canPlace(
+            piece: placedPiece.piece,
+            at: newOrigin,
+            rotation: targetRotation,
+            in: targetGrid,
+            ignoringPieceId: placedPiece.id
+        ) else {
+            return false
+        }
+        
+        if placedPiece.assignedLuggage == .suitcase {
+            if let index = suitcaseGrid.placedPieces.firstIndex(where: { $0.id == placedPiece.id }) {
+                suitcaseGrid.placedPieces[index].origin = newOrigin
+                suitcaseGrid.placedPieces[index].rotation = targetRotation
+            }
+        } else {
+            if let index = carryOnGrid.placedPieces.firstIndex(where: { $0.id == placedPiece.id }) {
+                carryOnGrid.placedPieces[index].origin = newOrigin
+                carryOnGrid.placedPieces[index].rotation = targetRotation
+            }
+        }
+        
+        return true
+    }
+    
+    /// Memutar kepingan di dalam koper (melompati sudut yang mentok & wall-kick)
+    @discardableResult
+    func rotatePlacedPiece(_ placedPiece: PlacedPiece) -> Bool {
+        let targetGrid = (placedPiece.assignedLuggage == .suitcase) ? suitcaseGrid : carryOnGrid
+        guard let result = LuggagePlacementEngine.findNextValidRotation(for: placedPiece, in: targetGrid) else {
+            return false
+        }
+        return movePlacedPiece(placedPiece, to: result.origin, rotation: result.rotation)
+    }
+>>>>>>> Stashed changes
 }
