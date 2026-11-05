@@ -8,7 +8,7 @@
 import SwiftUI
 
 // MARK: - Luggage config
-enum LuggageType {
+enum LuggageType: String, Codable, Equatable{
     case suitcase
     case carryOn
 

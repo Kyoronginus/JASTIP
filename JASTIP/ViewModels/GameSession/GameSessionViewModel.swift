@@ -8,6 +8,15 @@
 import SwiftUI
 import Observation
 
+struct StagedItem: Identifiable, Equatable {
+    let id: UUID
+    let piece: PieceModel
+    let weight: Int
+    var rotation: LuggageRotation = .deg0
+    let lockedLuggage: LuggageType?
+    let isAlreadyCountedInWeight: Bool
+}
+
 @Observable
 class GameSessionViewModel {
     // MARK: - Game Flow & Clock
@@ -46,6 +55,36 @@ class GameSessionViewModel {
     var carryWeight: Int = 0
     var pieceWeights: [String: Int] = [:]
     var revealedPieces: [RevealedPiece] = []
+    
+    // MARK: - Luggage Grids (3x5 Suitcase & 2x2 Carry-On)
+    var suitcaseGrid: LuggageGridModel = .suitcase
+    var carryOnGrid: LuggageGridModel = .carryOn
+    var stagedItems: [StagedItem] = []
+    var stagingWeight: Int? = nil
+    
+    // Snapshot untuk memulihkan posisi koper jika user membatalkan penataan
+    private var snapshotSuitcaseGrid: LuggageGridModel? = nil
+    private var snapshotCarryOnGrid: LuggageGridModel? = nil
+    
+    var stagingPiece: PieceModel? {
+        get { stagedItems.first?.piece }
+        set {
+            if let newPiece = newValue {
+                stagedItems = [
+                    StagedItem(
+                        id: UUID(),
+                        piece: newPiece,
+                        weight: stagingWeight ?? weight(for: newPiece.id),
+                        rotation: .deg0,
+                        lockedLuggage: nil,
+                        isAlreadyCountedInWeight: false
+                    )
+                ]
+            } else {
+                stagedItems.removeAll()
+            }
+        }
+    }
     
     // MARK: - Player & Leaderboard
     var playerName: String = UIDevice.current.name
@@ -105,6 +144,12 @@ class GameSessionViewModel {
         lastRoundEventType = nil
         suitWeight = 0
         carryWeight = 0
+        suitcaseGrid = .suitcase
+        carryOnGrid = .carryOn
+        stagedItems.removeAll()
+        stagingWeight = nil
+        snapshotSuitcaseGrid = nil
+        snapshotCarryOnGrid = nil
         generateRandomizedWeights()
         self.airlineCard = AirlineCardCatalog.getRandomCard()
     }

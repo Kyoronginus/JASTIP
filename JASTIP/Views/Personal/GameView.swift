@@ -33,6 +33,9 @@ struct GameView: View {
     @State private var isShowingNFCPopup = false
     @State private var isShowingHowTo = false
     
+    @State private var isShowingChildEditor = false
+    @State private var editorInitialLuggage: LuggageType = .suitcase
+    
     private var suitWeight: Int {
         viewModel.suitWeight
     }
@@ -115,9 +118,14 @@ struct GameView: View {
                             maxWeight: maxSuitCapacity,
                             width: 155
                         )
+                        .onTapGesture {
+                            editorInitialLuggage = .suitcase
+                            isShowingChildEditor = true
+                        }
                         
                         Button {
                             targetIsSuitcase = true
+                            editorInitialLuggage = .suitcase
                             isShowingScanner = true
                             onOpenCamera()
                         } label: {
@@ -139,9 +147,14 @@ struct GameView: View {
                             maxWeight: maxCarryCapacity,
                             width: 120
                         )
+                        .onTapGesture {
+                            editorInitialLuggage = .carryOn
+                            isShowingChildEditor = true
+                        }
                         
                         Button {
                             targetIsSuitcase = false
+                            editorInitialLuggage = .carryOn
                             isShowingScanner = true
                             onOpenCamera()
                         } label: {
@@ -255,13 +268,14 @@ struct GameView: View {
                     lastScannedWeight = weight
                 }
                 
-                // Jeda 0.35 detik agar sheet scanner selesai menutup terlebih dahulu,
-                // baru progress bar koper terlihat bergerak bertambah secara visual!
                 if let piece = piece, let weight = weight {
+                    let targetLuggage: LuggageType = isSuitcase ? .suitcase : .carryOn
+                    editorInitialLuggage = targetLuggage
+                    viewModel.stageScannedPiece(piece, weight: weight, targetLuggage: targetLuggage)
+                    
+                    // Setelah scanner menutup (0.35 detik), buka layar koper (PersonalChildView)
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                        withAnimation(.easeInOut(duration: 0.5)) {
-                            viewModel.recordItemPlacement(piece: piece, weight: weight, isSuitcase: isSuitcase)
-                        }
+                        isShowingChildEditor = true
                     }
                 }
             }
@@ -270,6 +284,9 @@ struct GameView: View {
             EndView(players: viewModel.leaderboardPlayers) {
                 viewModel.resetToLobby()
             }
+        }
+        .fullScreenCover(isPresented: $isShowingChildEditor) {
+            PersonalChildView(session: viewModel, initialLuggage: editorInitialLuggage)
         }
         .appBackground()
     }
