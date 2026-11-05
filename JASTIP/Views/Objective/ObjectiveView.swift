@@ -9,7 +9,18 @@ import SwiftUI
 
 struct ObjectiveView: View {
     var body: some View {
-        Text("INI OBJ")
+        HStack{
+            Circle()
+                .frame(width: 50)
+            VStack(alignment: .leading){
+                Text("DICE GROUP")
+                Text("Fei, Den, Toh, Ind, Rai, Pris")
+            }
+        }
+        .padding()
+        .frame(maxWidth: .infinity) // Expands to fill all horizontal space
+        .background(.gray)
+
     }
 }
 
