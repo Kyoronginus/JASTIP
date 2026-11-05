@@ -259,8 +259,6 @@ class GameSessionViewModel {
         
         broadcastMyStatus()
     }
-<<<<<<< Updated upstream
-=======
     
     // MARK: - Grid Placement & Rearrangement Methods
     
@@ -449,5 +447,4 @@ class GameSessionViewModel {
         }
         return movePlacedPiece(placedPiece, to: result.origin, rotation: result.rotation)
     }
->>>>>>> Stashed changes
 }
