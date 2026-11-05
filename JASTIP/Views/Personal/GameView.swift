@@ -18,7 +18,7 @@ import SwiftUI
 struct GameView: View {
     @Environment(\.dismiss) private var dismiss
     
-    @State private var viewModel: GameSessionViewModel
+    @Bindable private var viewModel: GameSessionViewModel
     @State private var nfcManager = NFCReaderManager()
     var onOpenCamera: () -> Void
     
@@ -70,8 +70,8 @@ struct GameView: View {
         airlineCard: AirlineCardModel = AirlineCardCatalog.dummy,
         onOpenCamera: @escaping () -> Void = {}
     ) {
-        let initViewModel = viewModel ?? GameSessionViewModel(airlineCard: airlineCard)
-        _viewModel = State(initialValue: initViewModel)
+        self.viewModel = viewModel ?? GameSessionViewModel(airlineCard: airlineCard)
+//        _viewModel = State(initialValue: initViewModel)
         self.onOpenCamera = onOpenCamera
     }
     

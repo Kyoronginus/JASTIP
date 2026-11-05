@@ -8,10 +8,12 @@
 import SwiftUI
 
 struct MainTabView: View {
+    var viewModel: GameSessionViewModel
+    
     var body: some View {
         TabView {
             Tab("Baggages", systemImage: "suitcase.rolling") {
-                GameView()
+                GameView(viewModel: viewModel)
             }
             Tab("Order", systemImage: "scroll") {
                 ObjectiveView()
@@ -27,5 +29,5 @@ struct MainTabView: View {
 }
 
 #Preview {
-    MainTabView()
+    MainTabView(viewModel: GameSessionViewModel())
 }
