@@ -15,7 +15,7 @@ struct JastipCardModel: Identifiable, Hashable, Codable {
     
     // MARK: - Group Chat Visual & Flavor
     let chatMessage: String           // Balon teks chat pembuka (misal: "Guys, ada yang lewat butik ga? Titip ya!")
-    let requirementImageName: String  // Nama asset gambar diagram/simbol pesanan yang dilampirkan di chat
+    let requirementImageName: String  // Nama asset gambar diagram/simbol pesanan yang di-show di chat
     let requirementDescription: String // Penjelasan singkat teksnya (misal: "1 Blue Antique (T) or Green Boutique (L)")
     
     // MARK: - Status Gameplay
