@@ -17,8 +17,10 @@ class QRScannerViewModel {
     var scannedCode: String? = nil
     var detectedPiece: PieceModel? = nil
     var confirmedWeight: Int? = nil
+    var rejectionMessage: String? = nil
     
     var session: GameSessionViewModel
+    var targetIsSuitcase: Bool
     var onScanned: ((PieceModel?, String, Int?, Bool) -> Void)? = nil
     var audioPlayer: AVAudioPlayer?
     private var hapticEngine: CHHapticEngine?
@@ -31,8 +33,13 @@ class QRScannerViewModel {
         scannedCode != nil
     }
     
-    init(session: GameSessionViewModel, onScanned: ((PieceModel?, String, Int?, Bool) -> Void)? = nil) {
+    init(
+        session: GameSessionViewModel,
+        isSuitcase: Bool = true,
+        onScanned: ((PieceModel?, String, Int?, Bool) -> Void)? = nil
+    ) {
         self.session = session
+        self.targetIsSuitcase = isSuitcase
         self.onScanned = onScanned
         setupAudioPlayer()
         setupHaptics()
@@ -51,10 +58,25 @@ class QRScannerViewModel {
     
     func handleDetectedCode(_ code: String) {
         guard scannedCode == nil else { return }
+        guard let piece = PieceCatalog.findPiece(by: code) else { return }
+        
+        // Cek apakah kepingan muat di koper target (Suitcase atau Carry-On)
+        let targetGrid = targetIsSuitcase ? session.suitcaseGrid : session.carryOnGrid
+        let canFit = LuggagePlacementEngine.canFit(piece: piece, in: targetGrid)
+        
+        guard canFit else {
+            UINotificationFeedbackGenerator().notificationOccurred(.error)
+            self.scannedCode = code
+            self.detectedPiece = piece
+            self.rejectionMessage = "Barang ini (\(piece.gridCount) kotak) tidak muat di \(targetIsSuitcase ? "Suitcase" : "Carry-On")."
+            return
+        }
+        
         playBeep()
         playScanHaptic()
+        self.rejectionMessage = nil
         self.scannedCode = code
-        self.detectedPiece = PieceCatalog.findPiece(by: code)
+        self.detectedPiece = piece
         self.confirmedWeight = session.weight(for: code)
     }
     
@@ -67,6 +89,7 @@ class QRScannerViewModel {
         self.scannedCode = nil
         self.detectedPiece = nil
         self.confirmedWeight = nil
+        self.rejectionMessage = nil
         scanner.startScanning()
     }
     

@@ -15,7 +15,7 @@ struct QRScannerView: View {
     
     init(session: GameSessionViewModel, isSuitcase: Bool = true, onScanned: ((PieceModel?, String, Int?, Bool) -> Void)? = nil) {
         self.isSuitcase = isSuitcase
-        _viewModel = State(initialValue: QRScannerViewModel(session: session, onScanned: onScanned))
+        _viewModel = State(initialValue: QRScannerViewModel(session: session, isSuitcase: isSuitcase, onScanned: onScanned))
     }
     
     var body: some View {
@@ -105,7 +105,48 @@ struct QRScannerView: View {
                 Spacer()
             }
             
-            // 3. Popup Konfirmasi (Tampil di tengah saat QR terdeteksi)
+            // 3. Popup Penolakan (Jika barang tidak muat di koper target)
+            if let piece = viewModel.detectedPiece, let rejection = viewModel.rejectionMessage {
+                Color.black.opacity(0.4)
+                    .ignoresSafeArea()
+                
+                VStack(spacing: 14) {
+                    Image(piece.assetName)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 80, height: 80)
+                        .padding(12)
+                    
+                    Text("TIDAK MUAT!")
+                        .font(.spaceGrotesk(24, .bold))
+                        .foregroundStyle(Color("FragileRed"))
+                    
+                    Text(rejection)
+                        .font(.spaceGrotesk(14, .medium))
+                        .multilineTextAlignment(.center)
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal, 8)
+                    
+                    Button("Scan Barang Lain") {
+                        viewModel.resetScan()
+                    }
+                    .buttonStyle(PrimaryButtonStyle(isFullWidth: true))
+                    .padding(.horizontal, 16)
+                    
+                    Button("Kembali") {
+                        dismiss()
+                    }
+                    .font(.spaceGrotesk(14, .bold))
+                    .foregroundColor(.secondary)
+                    .padding(.top, 4)
+                }
+                .padding()
+                .frame(maxWidth: 320)
+                .background(Color(uiColor: .systemBackground))
+                .cornerRadius(12)
+            }
+            
+            // 4. Popup Konfirmasi (Tampil di tengah saat QR terdeteksi)
             if let piece = viewModel.detectedPiece, let weight = viewModel.confirmedWeight {
                 Color.black.opacity(0.4)
                     .ignoresSafeArea()
@@ -157,6 +198,7 @@ struct QRScannerView: View {
             }
         }
         .onAppear {
+            viewModel.targetIsSuitcase = isSuitcase
             viewModel.startScanning()
         }
         .onDisappear {

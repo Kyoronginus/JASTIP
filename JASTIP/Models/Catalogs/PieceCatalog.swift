@@ -97,7 +97,75 @@ struct PieceCatalog {
         PieceModel(id: "JASTIP5-9", shape:.unique, color: .pink, gridCount: 3, isAnomaly: true),
     ]
     
-static func findPiece(by id: String) -> PieceModel? {
-        allPieces.first { $0.id == id }
+    static func findPiece(by id: String) -> PieceModel? {
+            allPieces.first { $0.id == id }
+        }
+        
+        
+    // MARK: - Shape Coordinates & Rotation
+    static func baseCoordinates(for shape: PieceShape, pieceId: String? = nil) -> [GridCoordinate] {
+        switch shape {
+        case .single:
+            return [GridCoordinate(x: 0, y: 0)]
+        case .domino:
+            return [GridCoordinate(x: 0, y: 0), GridCoordinate(x: 1, y: 0)]
+        case .smallL:
+            return [GridCoordinate(x: 0, y: 0), GridCoordinate(x: 0, y: 1), GridCoordinate(x: 1, y: 1)]
+        case .triominoI:
+            return [GridCoordinate(x: 0, y: 0), GridCoordinate(x: 1, y: 0), GridCoordinate(x: 2, y: 0)]
+        case .tetrominoL:
+            return [GridCoordinate(x: 0, y: 0), GridCoordinate(x: 0, y: 1), GridCoordinate(x: 1, y: 1), GridCoordinate(x: 2, y: 1)]
+        case .tetrominoT:
+            return [GridCoordinate(x: 1, y: 0), GridCoordinate(x: 0, y: 1), GridCoordinate(x: 1, y: 1), GridCoordinate(x: 2, y: 1)]
+        case .tetrominoI:
+            return [GridCoordinate(x: 0, y: 0), GridCoordinate(x: 1, y: 0), GridCoordinate(x: 2, y: 0), GridCoordinate(x: 3, y: 0)]
+        case .square:
+            return [GridCoordinate(x: 0, y: 0), GridCoordinate(x: 1, y: 0), GridCoordinate(x: 0, y: 1), GridCoordinate(x: 1, y: 1)]
+        case .unique:
+            return anomalyCoordinates(for: pieceId)
+        }
+    }
+    
+    private static func anomalyCoordinates(for pieceId: String?) -> [GridCoordinate] {
+        guard let id = pieceId else { return [GridCoordinate(x: 0, y: 0)] }
+        switch id {
+        case "JASTIP1-9":
+            return [GridCoordinate(x: 0, y: 0),
+                    GridCoordinate(x: 1, y: 0),
+                    GridCoordinate(x: 1, y: 1),
+                    GridCoordinate(x: 2, y: 1),
+                    GridCoordinate(x: 2, y: 2)]
+        case "JASTIP2-9":
+            return [GridCoordinate(x: 0, y: 0),
+                    GridCoordinate(x: 2, y: 0),
+                    GridCoordinate(x: 0, y: 1),
+                    GridCoordinate(x: 1, y: 1),
+                    GridCoordinate(x: 2, y: 1)]
+        case "JASTIP3-9":
+            return [GridCoordinate(x: 1, y: 0),
+                    GridCoordinate(x: 0, y: 1),
+                    GridCoordinate(x: 1, y: 1),
+                    GridCoordinate(x: 2, y: 1),
+                    GridCoordinate(x: 3, y: 1),
+                    GridCoordinate(x: 0, y: 2)]
+        case "JASTIP4-9":
+            return [GridCoordinate(x: 0, y: 0),
+                    GridCoordinate(x: 1, y: 0),
+                    GridCoordinate(x: 0, y: 1),
+                    GridCoordinate(x: 1, y: 1),
+                    GridCoordinate(x: 2, y: 1),
+                    GridCoordinate(x: 3, y: 1),
+                    GridCoordinate(x: 0, y: 2),
+                    GridCoordinate(x: 1, y: 2)]
+        case "JASTIP5-9":
+            return [GridCoordinate(x: 0, y: 0),
+                    GridCoordinate(x: 1, y: 0),
+                    GridCoordinate(x: 2, y: 0),
+                    GridCoordinate(x: 3, y: 0),
+                    GridCoordinate(x: 1, y: 1),
+                    GridCoordinate(x: 3, y: 1)]
+        default:
+            return [GridCoordinate(x: 0, y: 0)]
+        }
     }
 }

@@ -8,7 +8,7 @@
 import Foundation
 import SwiftUI
 
-enum PieceShape: String, Codable {
+enum PieceShape: String, Codable, Equatable {
     case single = "Single"
     case domino = "Domino"
     case smallL = "Small L"
@@ -20,7 +20,7 @@ enum PieceShape: String, Codable {
     case unique = "Unique"
 }
 
-enum PieceColor: String, CaseIterable, Codable {
+enum PieceColor: String, CaseIterable, Codable, Equatable {
     case red = "Red"
     case yellow = "Yellow"
     case green = "Green"
@@ -48,7 +48,7 @@ enum PieceColor: String, CaseIterable, Codable {
     }
 }
 
-struct PieceModel: Codable, Identifiable {
+struct PieceModel: Codable, Identifiable, Equatable {
     let id: String
     let shape: PieceShape
     let color: PieceColor
@@ -61,7 +61,7 @@ struct PieceModel: Codable, Identifiable {
     }
 }
 
-struct RevealedPiece: Codable, Identifiable {
+struct RevealedPiece: Codable, Identifiable, Equatable {
     let piece: PieceModel
     let weight: Int
     var scannedBy: String = ""
@@ -72,3 +72,5 @@ struct RevealedPiece: Codable, Identifiable {
         "\(piece.color.rawValue)-\(piece.shape.rawValue) = \(weight) kg"
     }
 }
+
+
