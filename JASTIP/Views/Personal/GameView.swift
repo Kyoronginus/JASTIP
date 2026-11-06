@@ -171,15 +171,15 @@ struct GameView: View {
             }
             .padding(.horizontal,20)
             
-            if let event = viewModel.currentEvent, !viewModel.isGameOver {
-                EventAlertView(event: event) {
-                    withAnimation {
-                        viewModel.dismissEvent()
-                    }
-                }
-                .transition(.opacity)
-                .zIndex(100)
-            }
+//            if let event = viewModel.currentEvent, !viewModel.isGameOver {
+//                EventAlertView(event: event) {
+//                    withAnimation {
+//                        viewModel.dismissEvent()
+//                    }
+//                }
+//                .transition(.opacity)
+//                .zIndex(100)
+//            }
             
             
             if isShowingRevealedWeights {

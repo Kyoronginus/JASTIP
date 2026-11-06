@@ -29,20 +29,32 @@ struct MainTabView: View {
     ]
     
     var body: some View {
-        TabView {
-            Tab("Baggages", systemImage: "suitcase.rolling") {
-                GameView(viewModel: viewModel)
+        ZStack{
+            TabView {
+                Tab("Baggages", systemImage: "suitcase.rolling") {
+                    GameView(viewModel: viewModel)
+                }
+                Tab("Order", systemImage: "scroll") {
+                    ObjectiveView()
+                }
+                Tab("Stats", systemImage: "chart.bar") {
+                    StatsView()
+                }
+                Tab("Items", systemImage: "robotic.vacuum") {
+                    // Placeholder
+                    ScannedItemChildView(pieces: sample)
+                    
+                }
             }
-            Tab("Order", systemImage: "scroll") {
-                ObjectiveView()
-            }
-            Tab("Stats", systemImage: "chart.bar") {
-                StatsView()
-            }
-            Tab("Items", systemImage: "robotic.vacuum") {
-                // Placeholder
-                ScannedItemChildView(pieces: sample)
-
+            
+            if let event = viewModel.currentEvent, !viewModel.isGameOver {
+                EventAlertView(event: event) {
+                    withAnimation {
+                        viewModel.dismissEvent()
+                    }
+                }
+                .transition(.opacity)
+                .zIndex(100)
             }
         }
     }

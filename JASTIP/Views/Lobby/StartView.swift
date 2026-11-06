@@ -34,8 +34,10 @@ struct StartView: View {
                     onLeaveLobby: {
                         Task {
                             await viewModel.lobbyService.leaveLobby()
-                            step = .home
-                            joinCode = ""
+                            withAnimation(.easeInOut(duration: 0.15)) {
+                                step = .home
+                                joinCode = ""
+                            }
                         }
                     }
                 )
@@ -45,12 +47,12 @@ struct StartView: View {
                     case .home:
                         HomeView(
                             onJoinGame: {
-                                withAnimation(.easeInOut(duration: 0.1)) {
+                                withAnimation(.easeInOut(duration: 0.15)) {
                                     step = .inputCode
                                 }
                             },
                             onCreateGame: {
-                                withAnimation(.easeInOut(duration: 0.1)) {
+                                withAnimation(.easeInOut(duration: 0.15)) {
                                     step = .inputName(isHost: true)
                                 }
                             }
@@ -58,36 +60,64 @@ struct StartView: View {
                         .transition(.opacity)
 
                     case .inputCode:
-                        InputRoomCodeView(code: $joinCode) {
-                            withAnimation(.easeInOut(duration: 0.1)) {
-                                step = .inputName(isHost: false)
+                        InputRoomCodeView(
+                            code: $joinCode,
+                            onBack: {
+                                withAnimation(.easeInOut(duration: 0.15)) {
+                                    step = .home
+                                    joinCode = ""
+                                }
+                            },
+                            onSubmit: {
+                                withAnimation(.easeInOut(duration: 0.15)) {
+                                    step = .inputName(isHost: false)
+                                }
                             }
-                        }
+                        )
                         .transition(.opacity)
 
                     case .inputName(let isHost):
                         InputNameView(
                             name: $viewModel.playerName,
                             isHost: isHost,
-                            isLoading: viewModel.lobbyService.isLoading
-                        ) {
-                            Task {
-                                if isHost {
-                                    await viewModel.lobbyService.createLobby(playerName: viewModel.playerName)
-                                } else {
-                                    await viewModel.lobbyService.joinLobby(
-                                        code: joinCode,
-                                        playerName: viewModel.playerName
-                                    )
+                            isLoading: viewModel.lobbyService.isLoading,
+                            onBack: {
+                                withAnimation(.easeInOut(duration: 0.15)) {
+                                    if isHost {
+                                        step = .home
+                                    } else {
+                                        step = .inputCode
+                                    }
+                                }
+                            },
+                            onSubmit: {
+                                Task {
+                                    if isHost {
+                                        await viewModel.lobbyService.createLobby(playerName: viewModel.playerName)
+                                    } else {
+                                        await viewModel.lobbyService.joinLobby(
+                                            code: joinCode,
+                                            playerName: viewModel.playerName
+                                        )
+                                    }
                                 }
                             }
-                        }
+                        )
                         .transition(.opacity)
                     }
                 }
             }
         }
         .appBackground()
+        .onChange(of: viewModel.lobbyService.lobby == nil) { _, isLobbyNil in
+            // Jika sebelumnya di dalam lobby dan host menutup room, kembalikan ke home
+            if isLobbyNil {
+                withAnimation(.easeInOut(duration: 0.15)) {
+                    step = .home
+                    joinCode = ""
+                }
+            }
+        }
         .alert(
             "Lobby",
             isPresented: Binding(
