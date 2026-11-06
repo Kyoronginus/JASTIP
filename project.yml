@@ -42,7 +42,6 @@ targets:
       path: JASTIP/JASTIP.entitlements
       properties: 
         com.apple.developer.nfc.readersession.formats:
-          - NDEF
           - TAG
 
     info: 

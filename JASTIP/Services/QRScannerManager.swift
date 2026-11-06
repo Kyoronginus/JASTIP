@@ -127,7 +127,7 @@ class QRScannerManager: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
             }
         }
         
-        request.symbologies = [.microQR, .qr]
+        request.symbologies = [.microQR, .qr, .code39]
         
 //        request.regionOfInterest = CGRect(x: 0.375, y: 0.25, width: 0.25, height: 0.5)'
         
