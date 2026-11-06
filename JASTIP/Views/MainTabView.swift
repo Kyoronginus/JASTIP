@@ -8,7 +8,8 @@
 import SwiftUI
 
 struct MainTabView: View {
-    var viewModel: GameSessionViewModel
+    @Bindable var viewModel: GameSessionViewModel
+    @State private var activeToast: ToastOptions? = nil
     
     let sample = [
         RevealedPiece(
@@ -38,7 +39,7 @@ struct MainTabView: View {
                     ObjectiveView()
                 }
                 Tab("Stats", systemImage: "chart.bar") {
-                    StatsView()
+                    StatsView(viewModel: viewModel)
                 }
                 Tab("Items", systemImage: "robotic.vacuum") {
                     // Placeholder
@@ -57,6 +58,7 @@ struct MainTabView: View {
                 .zIndex(100)
             }
         }
+        .toastNotification($viewModel.activeToast)
     }
 }
 

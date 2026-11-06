@@ -43,6 +43,7 @@ final class FirebaseLobbyService {
     var onGameStateChanged: ((CloudGameState) -> Void)?
     var onPlayerStatusesChanged: (([String: PlayerSyncPayload]) -> Void)?
     var onScannedPiecesChanged: (([RevealedPiece]) -> Void)?
+    var onToastReceived: ((ToastOptions) -> Void)?
 
     var currentPlayerID: String? {
         Auth.auth().currentUser?.uid
@@ -154,6 +155,18 @@ final class FirebaseLobbyService {
             errorMessage = error.localizedDescription
         }
     }
+    
+    func publishToast(_ toast: ToastOptions) async {
+            guard let lobby, lobby.status == "playing" || lobby.status == "waiting" else { return }
+            do {
+                try await database.collection("lobbies").document(lobby.code).updateData([
+                    "latestToast": try Self.encode(toast),
+                    "updatedAt": FieldValue.serverTimestamp()
+                ])
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
 
     func leaveLobby() async {
         guard let lobby, let uid = currentPlayerID else { return }
@@ -279,6 +292,12 @@ final class FirebaseLobbyService {
                     self.errorMessage = LobbyError.invalidLobbyData.localizedDescription
                     return
                 }
+                // Cek apakah ada broadcast toast baru dari pemain lain
+                if let toastData = data["latestToast"] as? [String: Any],
+                   let toast = try? Self.decode(ToastOptions.self, from: toastData) {
+                    self.onToastReceived?(toast)
+                }
+                
                 self.lobby = GameLobby(
                     code: reference.documentID,
                     hostUID: hostUID,
