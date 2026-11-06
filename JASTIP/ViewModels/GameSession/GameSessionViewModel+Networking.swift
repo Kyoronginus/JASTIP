@@ -5,6 +5,7 @@ extension GameSessionViewModel {
         CloudGameState(
             card: airlineCard,
             pieceWeights: pieceWeights,
+            sharedJastipOrders: sharedJastipOrders,
             currentHour: currentHour,
             delayHours: delayHours,
             isGameOver: isGameOver,
@@ -19,6 +20,9 @@ extension GameSessionViewModel {
         guard isGameStarted else { return }
         airlineCard = state.card
         pieceWeights = state.pieceWeights
+        if !state.sharedJastipOrders.isEmpty {
+            sharedJastipOrders = state.sharedJastipOrders
+        }
         currentHour = state.currentHour
         delayHours = state.delayHours
         isGameOver = state.isGameOver
@@ -32,6 +36,9 @@ extension GameSessionViewModel {
     }
 
     func startCloudGame() async {
+        if sharedJastipOrders.isEmpty {
+            sharedJastipOrders = JastipOrderCatalog.getRandomSharedOrders(count: 3)
+        }
         await lobbyService.startGame(state: cloudGameState)
     }
 

@@ -15,8 +15,13 @@ struct DraftRoundHistory: Identifiable {
 }
 
 struct ObjectiveView: View {
-    // 3 Order awal (Shared)
-    @State private var sharedOrders: [JastipOrderModel] = JastipOrderCatalog.getRandomSharedOrders(count: 3)
+    // Terima viewModel dari MainTabView
+    var viewModel: GameSessionViewModel
+    
+    // 3 Order awal (Shared) membaca data yang sudah tersinkronisasi dari Firebase/ViewModel
+    private var sharedOrders: [JastipOrderModel] {
+        viewModel.sharedJastipOrders
+    }
     
     // Riwayat draft yang sudah pernah diselesaikan (bisa berkali-kali)
     @State private var draftHistory: [DraftRoundHistory] = []
@@ -301,7 +306,7 @@ struct ObjectiveView: View {
         }
     }
     
-    /// Mengonfirmasi order yang dipilih, simpan ke histori, dan reset input bar
+    /// Mengonfirmasi order yacloudng dipilih, simpan ke histori, dan reset input bar
     private func confirmSelectedDraftOrders() {
         let templateMessage = confirmationTemplateText
         
@@ -330,5 +335,5 @@ struct ObjectiveView: View {
 }
 
 #Preview {
-    ObjectiveView()
+    ObjectiveView(viewModel: GameSessionViewModel())
 }

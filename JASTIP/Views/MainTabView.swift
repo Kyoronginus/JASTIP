@@ -16,13 +16,13 @@ struct MainTabView: View {
                 GameView(viewModel: viewModel)
             }
             Tab("Order", systemImage: "scroll") {
-                ObjectiveView()
+                ObjectiveView(viewModel: viewModel)
             }
             Tab("Stats", systemImage: "chart.bar") {
-                ObjectiveView()
+                ObjectiveView(viewModel: viewModel)
             }
             Tab("Items", systemImage: "robotic.vacuum") {
-                ObjectiveView()
+                ObjectiveView(viewModel: viewModel)
             }
         }
     }
