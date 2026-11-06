@@ -24,7 +24,8 @@ class GameSessionViewModel {
     var delayHours: Int = 0
     var isGameOver: Bool = false
     var isGameStarted: Bool = false
-    var hasProceededToGame: Bool = false // <-- TAMBAHKAN INI
+    var hasProceededToGame: Bool = false
+    var sharedJastipOrders: [JastipOrderModel] = JastipOrderCatalog.getRandomSharedOrders(count: 3)
     
     var currentTimeString: String {
         String(format: "%02d:00", currentHour)
@@ -178,6 +179,7 @@ class GameSessionViewModel {
         snapshotCarryOnGrid = nil
         generateRandomizedWeights()
         self.airlineCard = AirlineCardCatalog.getRandomCard()
+        self.sharedJastipOrders = JastipOrderCatalog.getRandomSharedOrders(count: 3)
     }
     
     func weight(for pieceId: String) -> Int {
