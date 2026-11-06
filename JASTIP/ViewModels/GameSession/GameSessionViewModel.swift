@@ -121,6 +121,15 @@ class GameSessionViewModel {
             self.remotePlayers = statuses.filter { $0.key != self.lobbyService.currentPlayerID }
             self.checkAllPlayersBoarded()
         }
+        lobbyService.onToastReceived = { [weak self] toast in
+            guard let self = self else { return }
+            // Cegah re-trigger animasi jika ID toast-nya sama
+            if self.activeToast?.id != toast.id {
+                withAnimation {
+                    self.activeToast = toast
+                }
+            }
+        }
         lobbyService.onScannedPiecesChanged = { [weak self] scans in
             guard let self else { return }
             self.revealedPieces = scans
@@ -129,6 +138,23 @@ class GameSessionViewModel {
             }
         }
     }
+    
+    // MARK: - Global Toast System
+        var activeToast: ToastOptions? = nil
+        
+        func showToast(_ message: String, type: ToastModel = .info, duration: TimeInterval = 2.5, broadcast: Bool = true) {
+            let toast = ToastOptions(id: UUID().uuidString, message: message, type: type, duration: duration)
+            withAnimation {
+                self.activeToast = toast
+            }
+            
+            // Kirim ke semua device lain via Firebase
+            if broadcast {
+                Task {
+                    await lobbyService.publishToast(toast)
+                }
+            }
+        }
     
     // MARK: - Game Lifecycle
     func startNewGame() {
@@ -232,7 +258,7 @@ class GameSessionViewModel {
             }
         }
     }
-
+    
     // Fungsi untuk mencatat item sekaligus memilih tempat (Suitcase / Carry-On)
     func recordItemPlacement(piece: PieceModel, weight: Int, isSuitcase: Bool) {
         guard !isBoarded && !isGameOver else { return }

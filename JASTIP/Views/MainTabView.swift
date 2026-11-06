@@ -8,7 +8,8 @@
 import SwiftUI
 
 struct MainTabView: View {
-    var viewModel: GameSessionViewModel
+    @Bindable var viewModel: GameSessionViewModel
+    @State private var activeToast: ToastOptions? = nil
     
     let sample = [
         RevealedPiece(
@@ -29,18 +30,38 @@ struct MainTabView: View {
     ]
     
     var body: some View {
-        TabView {
-            Tab("Baggages", systemImage: "suitcase.rolling") {
-                GameView(viewModel: viewModel)
+        ZStack{
+            TabView {
+                Tab("Baggages", systemImage: "suitcase.rolling") {
+                    GameView(viewModel: viewModel)
+                }
+                Tab("Order", systemImage: "scroll") {
+                    ObjectiveView(viewModel: viewModel)
+                }
+                Tab("Stats", systemImage: "chart.bar") {
+                    StatsView(viewModel: viewModel)
+                }
+                Tab("Items", systemImage: "robotic.vacuum") {
+                    // Placeholder
+                    ScannedItemChildView(pieces: sample)
+                    
+                }
             }
-            Tab("Order", systemImage: "scroll") {
-                ObjectiveView(viewModel: viewModel)
+            
+            if let event = viewModel.currentEvent, !viewModel.isGameOver {
+                EventAlertView(event: event) {
+                    withAnimation {
+                        viewModel.dismissEvent()
+                    }
+                }
+                .transition(.opacity)
+                .zIndex(100)
             }
-            Tab("Stats", systemImage: "chart.bar") {
-                ObjectiveView(viewModel: viewModel)
-            }
-            Tab("Items", systemImage: "robotic.vacuum") {
-                ObjectiveView(viewModel: viewModel)
+        }
+        .toastNotification($viewModel.activeToast)
+        .fullScreenCover(isPresented: $viewModel.isGameOver) {
+            EndView(players: viewModel.leaderboardPlayers) {
+                viewModel.resetToLobby()
             }
         }
     }

@@ -47,7 +47,7 @@ struct InputNameCard: View {
             .clipShape(RoundedRectangle(cornerRadius: 12))
 
             // Action Button
-            Button(isHost ? "Enter Room" : "Enter Room") {
+            Button(isHost ? "Create Room" : "Join Room") {
                 onSubmit()
             }
             .buttonStyle(PrimaryButtonStyle(isFullWidth: true))

@@ -171,15 +171,15 @@ struct GameView: View {
             }
             .padding(.horizontal,20)
             
-            if let event = viewModel.currentEvent, !viewModel.isGameOver {
-                EventAlertView(event: event) {
-                    withAnimation {
-                        viewModel.dismissEvent()
-                    }
-                }
-                .transition(.opacity)
-                .zIndex(100)
-            }
+//            if let event = viewModel.currentEvent, !viewModel.isGameOver {
+//                EventAlertView(event: event) {
+//                    withAnimation {
+//                        viewModel.dismissEvent()
+//                    }
+//                }
+//                .transition(.opacity)
+//                .zIndex(100)
+//            }
             
             
             if isShowingRevealedWeights {
@@ -278,11 +278,6 @@ struct GameView: View {
                         isShowingChildEditor = true
                     }
                 }
-            }
-        }
-        .fullScreenCover(isPresented: $viewModel.isGameOver) {
-            EndView(players: viewModel.leaderboardPlayers) {
-                viewModel.resetToLobby()
             }
         }
         .fullScreenCover(isPresented: $isShowingChildEditor) {
