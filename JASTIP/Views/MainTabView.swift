@@ -34,15 +34,13 @@ struct MainTabView: View {
                 GameView(viewModel: viewModel)
             }
             Tab("Order", systemImage: "scroll") {
-                ObjectiveView()
+                ObjectiveView(viewModel: viewModel)
             }
             Tab("Stats", systemImage: "chart.bar") {
-                StatsView()
+                ObjectiveView(viewModel: viewModel)
             }
             Tab("Items", systemImage: "robotic.vacuum") {
-                // Placeholder
-                ScannedItemChildView(pieces: sample)
-
+                ObjectiveView(viewModel: viewModel)
             }
         }
     }

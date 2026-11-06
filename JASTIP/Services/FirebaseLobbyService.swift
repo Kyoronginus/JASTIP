@@ -22,6 +22,7 @@ struct GameLobby {
 struct CloudGameState: Codable, Equatable {
     let card: AirlineCardModel
     let pieceWeights: [String: Int]
+    var sharedJastipOrders: [JastipOrderModel]
     var currentHour: Int
     var delayHours: Int
     var isGameOver: Bool
