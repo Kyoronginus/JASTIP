@@ -66,9 +66,16 @@ struct JastipChatBubble: View {
                             .resizable()
                             .scaledToFit()
                     } else {
-                        Image("6")
-                            .resizable()
-                            .scaledToFit()
+                        HStack{
+                            Image("ppp")
+                                .resizable()
+                                .scaledToFit()
+                            Text("+")
+                            Image("ppp")
+                                .resizable()
+                                .scaledToFit()
+                        }
+                       
                     }
                 }
                 .frame(maxWidth: .infinity)
