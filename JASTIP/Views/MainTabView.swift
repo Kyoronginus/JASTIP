@@ -10,6 +10,24 @@ import SwiftUI
 struct MainTabView: View {
     var viewModel: GameSessionViewModel
     
+    let sample = [
+        RevealedPiece(
+            piece: PieceCatalog.allPieces.first(where: { $0.id == "JASTIP1-5" }) ?? PieceCatalog.allPieces[0],
+            weight: 4,
+            scannedBy: "quincy"
+        ),
+        RevealedPiece(
+            piece: PieceCatalog.allPieces.first(where: { $0.id == "JASTIP4-6" }) ?? PieceCatalog.allPieces[1],
+            weight: 4,
+            scannedBy: "emily"
+        ),
+        RevealedPiece(
+            piece: PieceCatalog.allPieces.first(where: { $0.id == "JASTIP2-8" }) ?? PieceCatalog.allPieces[2],
+            weight: 5,
+            scannedBy: "david"
+        )
+    ]
+    
     var body: some View {
         TabView {
             Tab("Baggages", systemImage: "suitcase.rolling") {
@@ -19,15 +37,23 @@ struct MainTabView: View {
                 ObjectiveView()
             }
             Tab("Stats", systemImage: "chart.bar") {
-                ObjectiveView()
+                StatsView()
             }
             Tab("Items", systemImage: "robotic.vacuum") {
-                ObjectiveView()
+                // Placeholder
+                ScannedItemChildView(pieces: sample)
+
             }
         }
     }
 }
 
-#Preview {
+#Preview("Light") {
     MainTabView(viewModel: GameSessionViewModel())
+        .preferredColorScheme(.light)
+}
+
+#Preview("Dark") {
+    MainTabView(viewModel: GameSessionViewModel())
+        .preferredColorScheme(.dark)
 }
