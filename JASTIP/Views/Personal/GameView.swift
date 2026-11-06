@@ -280,11 +280,6 @@ struct GameView: View {
                 }
             }
         }
-        .fullScreenCover(isPresented: $viewModel.isGameOver) {
-            EndView(players: viewModel.leaderboardPlayers) {
-                viewModel.resetToLobby()
-            }
-        }
         .fullScreenCover(isPresented: $isShowingChildEditor) {
             PersonalChildView(session: viewModel, initialLuggage: editorInitialLuggage)
         }

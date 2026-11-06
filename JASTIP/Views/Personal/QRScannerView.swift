@@ -147,7 +147,7 @@ struct QRScannerView: View {
             }
             
             // 4. Popup Konfirmasi (Tampil di tengah saat QR terdeteksi)
-            if let piece = viewModel.detectedPiece, let weight = viewModel.confirmedWeight {
+            if let piece = viewModel.detectedPiece, let _ = viewModel.confirmedWeight {
                 Color.black.opacity(0.4)
                     .ignoresSafeArea()
                 

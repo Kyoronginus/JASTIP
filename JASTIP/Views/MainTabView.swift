@@ -36,7 +36,7 @@ struct MainTabView: View {
                     GameView(viewModel: viewModel)
                 }
                 Tab("Order", systemImage: "scroll") {
-                    ObjectiveView()
+                    ObjectiveView(viewModel: viewModel)
                 }
                 Tab("Stats", systemImage: "chart.bar") {
                     StatsView(viewModel: viewModel)
@@ -59,6 +59,11 @@ struct MainTabView: View {
             }
         }
         .toastNotification($viewModel.activeToast)
+        .fullScreenCover(isPresented: $viewModel.isGameOver) {
+            EndView(players: viewModel.leaderboardPlayers) {
+                viewModel.resetToLobby()
+            }
+        }
     }
 }
 
