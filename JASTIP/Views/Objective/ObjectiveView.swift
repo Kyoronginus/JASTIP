@@ -207,7 +207,8 @@ struct ObjectiveView: View {
     
     // MARK: - Subview: Bottom Action Bar
     private var bottomActionBar: some View {
-        HStack(spacing: 10) {
+        // 1. KUNCI UTAMA: alignment: .bottom agar tombol kanan selalu stay di dasar
+        HStack(alignment: .bottom, spacing: 10) {
             if !isDrafting {
                 // TAMPILAN NORMAL (SELALU KEMBALI KE SINI SETELAH DRAFT SELESAI)
                 HStack {
@@ -224,7 +225,7 @@ struct ObjectiveView: View {
                     Button {
                         startDraftingFlow()
                     } label: {
-                        Text("Request more order")
+                        Text("Add order")
                             .font(.plusJakarta(12, .bold))
                             .padding(.horizontal, 10)
                             .padding(.vertical, 6)
@@ -240,22 +241,24 @@ struct ObjectiveView: View {
                     Text(confirmationTemplateText)
                         .font(.plusJakarta(13, .regular))
                         .foregroundColor(selectedOrderIds.isEmpty ? .secondary : .primary)
-                        .lineLimit(1)
-                    Spacer()
+                        .lineLimit(2) // 2. BISA HINGGA 2 BARIS
+                        .fixedSize(horizontal: false, vertical: true) // 3. MEMBESAR SECARA VERTIKAL
+                    Spacer(minLength: 0)
                 }
                 .padding(.horizontal, 14)
-                .frame(height: 42)
+                .padding(.vertical, 8) // Padding vertikal agar teks 2 baris bernapas
+                .frame(minHeight: 42)  // 4. TINGGI MINIMAL 42 (akan membesar ke atas jika ada 2 baris)
                 .background(Color(.systemBackground))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 
-                // Tombol Send Message
+                // Tombol Send / Accept Message
                 Button {
                     confirmSelectedDraftOrders()
                 } label: {
-                    Text("Send message")
+                    Text("Accept")
                         .font(.plusJakarta(12, .bold))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 10)
+                        .padding(.horizontal, 14)
+                        .frame(height: 42) // 5. UKURAN TETAP (tidak ikut membesar)
                         .foregroundColor(.white)
                         .background(selectedOrderIds.isEmpty ? Color.gray.opacity(0.5) : Color.blue)
                         .clipShape(RoundedRectangle(cornerRadius: 10))
@@ -266,6 +269,7 @@ struct ObjectiveView: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
         .background(Color(.secondarySystemBackground))
+        .animation(.easeInOut(duration: 0.2), value: confirmationTemplateText) // Animasi transisi tinggi yang halus
     }
     
     // MARK: - Flow Logics
@@ -334,6 +338,10 @@ struct ObjectiveView: View {
     }
 }
 
+//#Preview {
+//    ObjectiveView(viewModel: GameSessionViewModel())
+//}
+
 #Preview {
-    ObjectiveView(viewModel: GameSessionViewModel())
+    MainTabView(viewModel: GameSessionViewModel())
 }
