@@ -103,7 +103,7 @@ struct PersonalChildView: View {
                     }
                 )
                 
-                Spacer(minLength: 0)
+//                Spacer(minLength: 0)
                 
                 // Area Bawah: Staging Kepingan ("Drag items here to reorganize")
                 StagingSectionView(
@@ -129,6 +129,7 @@ struct PersonalChildView: View {
                         handleDropStagedItem(item)
                     }
                 )
+//                .padding()
                 
                 // Tombol Scan Item
                 Button {

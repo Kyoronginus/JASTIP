@@ -97,35 +97,45 @@ struct GameView: View {
     private var topHeaderSection: some View {
         HStack(alignment: .top) {
             // Kiri: Who's Turn + Tombol End Turn
-            VStack(alignment: .leading, spacing: 10) {
-                Text("\(currentTurnPlayerName)'s turn")
-                    .font(.shantellSans(18, .bold))
-                    .foregroundStyle(.white)
+            
+            ZStack {
                 
-                Button {
-                    if let onEndTurn {
-                        onEndTurn()
-                    } else {
-                        viewModel.nextHour()
+                Image("TurnTag")
+                    .resizable()
+                    .scaledToFit()
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("\(currentTurnPlayerName)'s turn")
+                        .font(.shantellSans(18, .bold))
+                        .foregroundStyle(.black)
+                    
+                    Button {
+                        if let onEndTurn {
+                            onEndTurn()
+                        } else {
+                            viewModel.nextHour()
+                        }
+                    } label: {
+                        Text("End Turn")
+                            .font(.shantellSans(14, .bold))
                     }
-                } label: {
-                    Text("End Turn")
-                        .font(.shantellSans(14, .bold))
-                }
-                .buttonStyle(
-                    PrimaryButtonStyle(
-                        backgroundColor: Color("EndTurn"),
-                        borderColor: .white,
-                        shadowColor: Color("EndTurn").opacity(0.65),
-                        foregroundColor: .white,
-                        cornerRadius: 12,
-                        borderWidth: 1.5,
-                        shadowOffset: 4,
-                        paddingVertical: 8,
-                        paddingHorizontal: 16
+                    .buttonStyle(
+                        PrimaryButtonStyle(
+                            backgroundColor: Color("EndTurn"),
+                            borderColor: .white,
+                            shadowColor: Color("EndTurn").opacity(0.65),
+                            foregroundColor: .white,
+                            cornerRadius: 12,
+                            borderWidth: 1.5,
+                            shadowOffset: 4,
+                            paddingVertical: 8,
+                            paddingHorizontal: 16
+                        )
                     )
-                )
+                }
+                .offset(x: -30)
             }
+            .rotationEffect(.degrees(-3))
             
             Spacer()
             
