@@ -126,7 +126,6 @@ struct GameView: View {
                     )
                 )
             }
-            .padding(.top, 8)
             
             Spacer()
             
@@ -196,15 +195,15 @@ struct CalendarCountdownView: View {
     
     var body: some View {
         ZStack {
-            Image("Calendar")
+            Image("Calendar-1")
                 .resizable()
                 .scaledToFit()
                 .frame(width: 100, height: 148)
             
-            Text("\(daysToGo)")
-                .font(.shantellSans(64, .bold))
-                .foregroundStyle(Color("SuitcaseFrame"))
-                .offset(y: 16)
+//            Text("\(daysToGo)")
+//                .font(.shantellSans(64, .bold))
+//                .foregroundStyle(Color("SuitcaseFrame"))
+//                .offset(y: 16)
         }
     }
 }

@@ -209,7 +209,7 @@ struct PersonalChildView: View {
             .buttonStyle(
                 PrimaryButtonStyle(
                     backgroundColor: .white,
-                    borderColor: Color("SuitcaseFrame"),
+                    borderColor: .white,
                     shadowColor: Color("SuitcaseFrame"),
                     foregroundColor: Color("SuitcaseFrame"),
                     cornerRadius: 10,
@@ -219,6 +219,7 @@ struct PersonalChildView: View {
                     paddingHorizontal: 12
                 )
             )
+            .offset(x:0 ,y: 20)
             
             Spacer()
         }

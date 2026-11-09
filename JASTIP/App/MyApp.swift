@@ -32,7 +32,8 @@ struct MyApp: App {
                     }
                 } else {
                     // 4. MAIN GAMEPLAY
-                    MainTabView(viewModel: gameSessionVM)
+//                    MainTabView(viewModel: gameSessionVM)
+                    GameView(viewModel: gameSessionVM)
                 }
             }
             
