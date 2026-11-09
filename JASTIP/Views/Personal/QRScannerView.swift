@@ -90,29 +90,19 @@ struct QRScannerView: View {
                 Spacer()
                 
                 if !viewModel.isShowingPopup {
-                    VStack(spacing: 12) {
+                    VStack(spacing: 8) {
                         RoundedRectangle(cornerRadius: 12)
                             .stroke(Color.yellow, lineWidth: 3)
                             .frame(width: 180, height: 180)
                             .background(Color.black.opacity(0.15))
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                viewModel.scanner.refocusCenter()
-                            }
                         
-                        Text("Arahkan ke QR... (Tap kotak untuk fokus ulang)")
+                        Text("Arahkan ke QR...")
                             .font(.subheadline)
                             .foregroundColor(.white)
                     }
                 }
                 
                 Spacer()
-                
-                if !viewModel.isShowingPopup {
-                    cameraAdjustmentControls
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 24)
-                }
             }
             
             // 3. Popup Penolakan (Jika barang tidak muat di koper target)
@@ -214,75 +204,6 @@ struct QRScannerView: View {
         .onDisappear {
             viewModel.stopScanning()
         }
-    }
-    
-    // MARK: - Zoom & Focus Adjustment Controls
-    private var cameraAdjustmentControls: some View {
-        VStack(spacing: 10) {
-            // 1. Zoom Presets & Slider
-            HStack(spacing: 10) {
-                Image(systemName: "plus.magnifyingglass")
-                    .foregroundStyle(Color("TaxiYellow"))
-                    .frame(width: 22)
-                
-                Text(String(format: "%.1fx", viewModel.scanner.zoomMultiplier))
-                    .font(.spaceGrotesk(13, .bold))
-                    .foregroundStyle(.white)
-                    .frame(width: 36, alignment: .leading)
-                
-                Slider(
-                    value: Binding(
-                        get: { viewModel.scanner.zoomMultiplier },
-                        set: { viewModel.scanner.setZoom(multiplier: $0) }
-                    ),
-                    in: 1.0...3.0,
-                    step: 0.1
-                )
-                .tint(Color("TaxiYellow"))
-            }
-            
-            // 2. Focus Mode & Manual Lens Position Slider
-            if viewModel.scanner.supportsManualFocus {
-                HStack(spacing: 10) {
-                    Button {
-                        if viewModel.scanner.isManualFocus {
-                            viewModel.scanner.setAutoFocus()
-                        } else {
-                            viewModel.scanner.setManualFocus(position: viewModel.scanner.lensPosition)
-                        }
-                    } label: {
-                        Text(viewModel.scanner.isManualFocus ? "MANUAL" : "AUTO")
-                            .font(.spaceGrotesk(11, .bold))
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 5)
-                            .background(viewModel.scanner.isManualFocus ? Color("TaxiYellow") : Color.white.opacity(0.2))
-                            .foregroundStyle(viewModel.scanner.isManualFocus ? .black : .white)
-                            .clipShape(Capsule())
-                    }
-                    
-                    Image(systemName: "camera.macro")
-                        .font(.caption)
-                        .foregroundStyle(Color("TaxiYellow"))
-                    
-                    Slider(
-                        value: Binding(
-                            get: { viewModel.scanner.lensPosition },
-                            set: { viewModel.scanner.setManualFocus(position: $0) }
-                        ),
-                        in: 0.0...1.0
-                    )
-                    .tint(Color("TaxiYellow"))
-                    
-                    Image(systemName: "mountain.2.fill")
-                        .font(.caption)
-                        .foregroundStyle(.white.opacity(0.8))
-                }
-            }
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .background(Color.black.opacity(0.75))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
     }
 }
 
