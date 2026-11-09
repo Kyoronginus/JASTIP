@@ -8,6 +8,11 @@ struct LobbyPlayer: Identifiable {
     let name: String
 }
 
+struct TurnPlayer: Codable, Equatable, Identifiable {
+    let id: String
+    let name: String
+}
+
 struct GameLobby {
     let code: String
     let hostUID: String
@@ -30,6 +35,10 @@ struct CloudGameState: Codable, Equatable {
     var activeHourEvent: RandomEventModel?
     var triggeredUniqueEvents: Set<RandomEventType>
     var lastRoundEventType: RandomEventType?
+    // Sistem giliran dan days
+    var turnOrder: [TurnPlayer]
+    var currentTurnIndex: Int
+    var daysToGo: Int
 }
 
 @Observable
@@ -117,7 +126,7 @@ final class FirebaseLobbyService {
     }
 
     func publishGameState(_ state: CloudGameState) async {
-        guard let lobby, lobby.isHost, lobby.status == "playing" else { return }
+        guard let lobby, lobby.status == "playing" else { return }
         do {
             try await database.collection("lobbies").document(lobby.code).updateData([
                 "game": try Self.encode(state),

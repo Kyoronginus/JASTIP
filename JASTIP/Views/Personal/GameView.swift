@@ -24,17 +24,25 @@ struct GameView: View {
     var onOpenCamera: () -> Void
     
     // Properti UI Turn & Kalender (Siap disambungkan oleh dev yang mengerjakan logic turn/kalender)
-    var currentTurnPlayerName: String = "maxwell"
-    var daysToGo: Int = 7
+    var currentTurnPlayerName: String? = nil
+    var daysToGo: Int? = nil
     var onEndTurn: (() -> Void)? = nil
+    
+    private var displayedTurnPlayerName: String {
+        currentTurnPlayerName ?? viewModel.currentTurnPlayerName
+    }
+    
+    private var displayedDaysToGo: Int {
+        daysToGo ?? viewModel.daysToGo
+    }
     
     @State private var openedLuggage: LuggageType? = nil
     
     init(
         viewModel: GameSessionViewModel? = nil,
         airlineCard: AirlineCardModel = AirlineCardCatalog.dummy,
-        currentTurnPlayerName: String = "maxwell",
-        daysToGo: Int = 7,
+        currentTurnPlayerName: String? = nil,
+        daysToGo: Int? = nil,
         onEndTurn: (() -> Void)? = nil,
         onOpenCamera: @escaping () -> Void = {}
     ) {
@@ -64,16 +72,7 @@ struct GameView: View {
                 // MARK: - Bottom Section: Slot UI HP Jastip Order (Dihandle oleh Dev Lain)
             }
             
-            // MARK: - Popup Event Aktif
-            if let event = viewModel.currentEvent, !viewModel.isGameOver {
-                EventAlertView(event: event) {
-                    withAnimation {
-                        viewModel.dismissEvent()
-                    }
-                }
-                .transition(.opacity)
-                .zIndex(100)
-            }
+
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(
@@ -97,31 +96,33 @@ struct GameView: View {
     private var topHeaderSection: some View {
         HStack(alignment: .top) {
             // Kiri: Who's Turn + Tombol End Turn
-            
             ZStack {
-                
                 Image("TurnTag")
                     .resizable()
                     .scaledToFit()
                 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("\(currentTurnPlayerName)'s turn")
+                    // 1. NAMA PEMAIN AKTIF (OTOMATIS BERUBAH)
+                    Text("\(displayedTurnPlayerName)'s turn")
                         .font(.shantellSans(18, .bold))
                         .foregroundStyle(.black)
                     
+                    // 2. TOMBOL END TURN (Hanya aktif jika giliran HP ini)
                     Button {
                         if let onEndTurn {
                             onEndTurn()
                         } else {
-                            viewModel.nextHour()
+                            viewModel.endCurrentTurn()
                         }
                     } label: {
-                        Text("End Turn")
+                        Text(viewModel.isMyTurn ? "End Turn" : "Waiting...")
                             .font(.shantellSans(14, .bold))
                     }
+                    .disabled(!viewModel.isMyTurn)
+                    .opacity(viewModel.isMyTurn ? 1.0 : 0.6)
                     .buttonStyle(
                         PrimaryButtonStyle(
-                            backgroundColor: Color("EndTurn"),
+                            backgroundColor: viewModel.isMyTurn ? Color("EndTurn") : Color.gray,
                             borderColor: .white,
                             shadowColor: Color("EndTurn").opacity(0.65),
                             foregroundColor: .white,
@@ -139,8 +140,9 @@ struct GameView: View {
             
             Spacer()
             
-            // Kanan: Kalender ("Days to go" + Angka Tanggal)
-            CalendarCountdownView(daysToGo: daysToGo)
+            // 3. KANAN: KALENDER OTOMATIS BERKURANG TIAP ROUND
+            CalendarCountdownView(daysToGo: displayedDaysToGo)
+                .animation(.spring(response: 0.45, dampingFraction: 0.7), value: displayedDaysToGo)
         }
     }
     
@@ -203,21 +205,21 @@ struct GameView: View {
 struct CalendarCountdownView: View {
     let daysToGo: Int
     
+    // Memilih nama asset otomatis: "Calendar-7", "Calendar-6", dst.
+    private var calendarImageName: String {
+        let clamped = max(0, min(10, daysToGo))
+        return "Calendar-\(clamped)"
+    }
+    
     var body: some View {
-        ZStack {
-            Image("Calendar-1")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 100, height: 148)
-            
-//            Text("\(daysToGo)")
-//                .font(.shantellSans(64, .bold))
-//                .foregroundStyle(Color("SuitcaseFrame"))
-//                .offset(y: 16)
-        }
+        Image(calendarImageName)
+            .resizable()
+            .scaledToFit()
+            .frame(width: 100, height: 148)
+            .id(daysToGo) // Memicu re-render & animasi saat harinya berkurang
+            .transition(.scale.combined(with: .opacity))
     }
 }
-
 // MARK: - Subview: Weight label for baggages
 struct LuggageWeightLabel: View {
     let currentWeight: Int

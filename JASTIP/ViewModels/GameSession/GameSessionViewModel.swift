@@ -28,6 +28,32 @@ class GameSessionViewModel {
     var hasSeenStoryboard: Bool = false
     var sharedJastipOrders: [JastipOrderModel] = JastipOrderCatalog.getRandomSharedOrders(count: 3)
     
+    // MARK: - Turn & Round System
+    var turnOrder: [TurnPlayer] = []
+    var currentTurnIndex: Int = 0
+    var daysToGo: Int = 7
+    
+    /// Pemain yang saat ini sedang aktif mengambil giliran
+    var currentTurnPlayer: TurnPlayer? {
+        guard !turnOrder.isEmpty, currentTurnIndex >= 0, currentTurnIndex < turnOrder.count else {
+            return nil
+        }
+        return turnOrder[currentTurnIndex]
+    }
+    
+    /// Nama pemain aktif untuk ditampilkan di header ("maxwell's turn")
+    var currentTurnPlayerName: String {
+        currentTurnPlayer?.name ?? playerName
+    }
+    
+    /// Mengecek apakah giliran sekarang adalah giliran HP ini
+    var isMyTurn: Bool {
+        guard let currentTurnPlayer else { return true }
+        guard let myID = lobbyService.currentPlayerID else { return true }
+        return currentTurnPlayer.id == myID
+    }
+    
+    // MARK: - Timer Boarding Hour
     var currentTimeString: String {
         String(format: "%02d:00", currentHour)
     }
@@ -182,6 +208,9 @@ class GameSessionViewModel {
         generateRandomizedWeights()
         self.airlineCard = AirlineCardCatalog.getRandomCard()
         self.sharedJastipOrders = JastipOrderCatalog.getRandomSharedOrders(count: 3)
+        self.turnOrder.removeAll()
+        self.currentTurnIndex = 0
+        self.daysToGo = 7
     }
     
     func weight(for pieceId: String) -> Int {
