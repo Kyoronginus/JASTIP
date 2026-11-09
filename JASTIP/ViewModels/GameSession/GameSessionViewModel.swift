@@ -25,6 +25,7 @@ class GameSessionViewModel {
     var isGameOver: Bool = false
     var isGameStarted: Bool = false
     var hasProceededToGame: Bool = false
+    var hasSeenStoryboard: Bool = false
     var sharedJastipOrders: [JastipOrderModel] = JastipOrderCatalog.getRandomSharedOrders(count: 3)
     
     var currentTimeString: String {
@@ -166,7 +167,8 @@ class GameSessionViewModel {
         activeHourEvent = nil
         isGameOver = false
         isBoarded = false
-        hasProceededToGame = false // <-- TAMBAHKAN INI
+        hasProceededToGame = false
+        hasSeenStoryboard = false
         triggeredUniqueEvents.removeAll()
         lastRoundEventType = nil
         suitWeight = 0
