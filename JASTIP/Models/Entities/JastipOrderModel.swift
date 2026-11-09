@@ -12,10 +12,12 @@ struct JastipRequirementItem: Identifiable, Hashable, Codable {
     var id: String = UUID().uuidString
     let requirementImage: String        // Nama asset gambar (placeholder: "itemui")
     let shapeDescription: String       // Bentuk atau kriteria (misal: "2 / 3 / 4", "kotak / T", "any")
+    var isFulfilled: Bool = false
     
-    init(requirementImage: String = "itemui", shapeDescription: String) {
+    init(requirementImage: String = "itemui", shapeDescription: String, isFulfilled: Bool = false) {
         self.requirementImage = requirementImage
         self.shapeDescription = shapeDescription
+        self.isFulfilled = isFulfilled
     }
 }
 

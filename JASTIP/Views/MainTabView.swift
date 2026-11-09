@@ -149,6 +149,7 @@ struct ObjectivePhoneContainer: View {
                     .clipShape(RoundedRectangle(cornerRadius: 35))
                     .padding(.horizontal, 20)
                     .padding(.bottom, 40)
+                    .offset(y:20)
             }
             .contentShape(Rectangle())
             // Tap di kepala HP saat ngintip untuk membuka

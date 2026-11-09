@@ -477,4 +477,15 @@ class GameSessionViewModel {
         }
         return movePlacedPiece(placedPiece, to: result.origin, rotation: result.rotation)
     }
+    
+    // MARK: - Jastip Validation
+        /// Semua piece yang saat ini sudah masuk ke koper (Suitcase + Carry-on)
+        var allLuggagePieces: [PieceModel] {
+            (suitcaseGrid.placedPieces + carryOnGrid.placedPieces).map { $0.piece }
+        }
+        
+        /// Cek apakah suatu order sudah terpenuhi oleh barang di koper
+        func isOrderFulfilled(_ order: JastipOrderModel) -> Bool {
+            order.isFulfilled(by: allLuggagePieces)
+        }
 }

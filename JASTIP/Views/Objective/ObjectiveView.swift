@@ -56,10 +56,10 @@ struct ObjectiveView: View {
         VStack(spacing: 0) {
             // 1. Header Bar
             VStack(spacing: 0){
-                   Text("Jastip Order")
+                Text("Jastip Order")
                     .font(.spaceGrotesk(33.4, .bold))
                 
-                    Image("HeaderLine")
+                Image("HeaderLine")
             }
             
             // 2. Scrollable Chat Content
@@ -69,8 +69,8 @@ struct ObjectiveView: View {
                         
                         // A. 3 SHARED JASTIP ORDERS AWAL
                         ForEach(sharedOrders) { order in
-                            JastipChatBubble(order: order)
-                        }
+                           JastipChatBubble(order: validatedOrder(order))
+                       }
                         
                         // B. HISTORI SESI-SESI DRAFT YANG SUDAH SELESAI SEBELUMNYA
                         ForEach(draftHistory) { round in
@@ -79,8 +79,8 @@ struct ObjectiveView: View {
                             
                             // Kartu-kartu yang di-accept di sesi itu
                             ForEach(round.acceptedOrders) { order in
-                                JastipChatBubble(order: order)
-                            }
+                               JastipChatBubble(order: validatedOrder(order))
+                           }
                             
                             // Chat balasan konfirmasi
                             playerChatBubble(text: round.confirmationMessage)
@@ -115,32 +115,37 @@ struct ObjectiveView: View {
                                 ))
                             }
                         }
+                        Color.clear
+                            .frame(height: 1)
+                            .id("CHAT_BOTTOM")
                     }
                     .padding(.vertical, 8)
                 }
-                // Tambahkan listener ini tepat di bawah .onChange(of: visibleCandidateOrders.count):
-                .onChange(of: isDrafting) { _, newValue in
-                    if newValue {
-                        // Begitu tombol diklik, LANGSUNG scroll ke chat biru player di detik 0!
-                        withAnimation(.easeOut(duration: 0.3)) {
-                            proxy.scrollTo("activePlayerRequest", anchor: .bottom)
-                        }
+                // 1. Scroll saat pertama kali layar dibuka
+                .onAppear {
+                    scrollToBottom(proxy: proxy, animated: false)
+                }
+                // 2. Scroll setiap kali draft dimulai (chat player muncul)
+                .onChange(of: isDrafting) { _, isStarting in
+                    if isStarting {
+                        scrollToBottom(proxy: proxy)
                     }
                 }
-                // Auto scroll ke konfirmasi pesan terakhir
+                // 3. Scroll setiap kali KARTU BARU MUNCUL satu per satu
+                .onChange(of: visibleCandidateOrders.count) { _, _ in
+                    scrollToBottom(proxy: proxy)
+                }
+                // 4. Scroll setiap kali SESI DRAFT DI-ACCEPT (pesan konfirmasi muncul)
                 .onChange(of: draftHistory.count) { _, _ in
-                    if let lastRound = draftHistory.last {
-                        withAnimation { proxy.scrollTo(lastRound.id, anchor: .bottom) }
-                    }
-                }
-            }
+                    scrollToBottom(proxy: proxy)
+                }            }
             
             // 3. Dynamic Bottom Action Bar
             bottomActionBar
         }
         .background(Color("BackgroundChat"))
     }
-
+    
     // MARK: - Subview: Bubble Chat Player (Biru di Kanan)
     private func playerChatBubble(text: String) -> some View {
         HStack {
@@ -190,7 +195,7 @@ struct ObjectiveView: View {
                         Spacer()
                     }
                 }
-
+                
                 .padding(.vertical, 10)
                 Button {
                     startDraftingFlow()
@@ -321,12 +326,34 @@ struct ObjectiveView: View {
             selectedOrderIds.removeAll()
         }
     }
+    
+    private func scrollToBottom(proxy: ScrollViewProxy, animated: Bool = true) {
+        if animated {
+            withAnimation(.easeOut(duration: 0.25)) {
+                proxy.scrollTo("CHAT_BOTTOM", anchor: .bottom)
+            }
+        } else {
+            proxy.scrollTo("CHAT_BOTTOM", anchor: .bottom)
+        }
+    }
+    
+    /// Update status isFulfilled pada item order sesuai kondisi koper saat ini
+    private func validatedOrder(_ order: JastipOrderModel) -> JastipOrderModel {
+        var updated = order
+        let completed = viewModel.isOrderFulfilled(order)
+        
+        // Tandai slot item-nya sebagai fulfilled jika order sudah terpenuhi
+        for index in updated.requirementItems.indices {
+            updated.requirementItems[index].isFulfilled = completed
+        }
+        return updated
+    }
+}
+
+#Preview {
+    ObjectiveView(viewModel: GameSessionViewModel())
 }
 
 //#Preview {
-//    ObjectiveView(viewModel: GameSessionViewModel())
+//    MainTabView(viewModel: GameSessionViewModel())
 //}
-
-#Preview {
-    MainTabView(viewModel: GameSessionViewModel())
-}

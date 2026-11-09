@@ -132,9 +132,10 @@ struct PieceCatalog {
         case "JASTIP1-9":
             return [GridCoordinate(x: 0, y: 0),
                     GridCoordinate(x: 1, y: 0),
+                    GridCoordinate(x: 2, y: 0),
+                    GridCoordinate(x: 3, y: 0),
                     GridCoordinate(x: 1, y: 1),
-                    GridCoordinate(x: 2, y: 1),
-                    GridCoordinate(x: 2, y: 2)]
+                    GridCoordinate(x: 3, y: 1)]
         case "JASTIP2-9":
             return [GridCoordinate(x: 0, y: 0),
                     GridCoordinate(x: 2, y: 0),
@@ -142,13 +143,6 @@ struct PieceCatalog {
                     GridCoordinate(x: 1, y: 1),
                     GridCoordinate(x: 2, y: 1)]
         case "JASTIP3-9":
-            return [GridCoordinate(x: 1, y: 0),
-                    GridCoordinate(x: 0, y: 1),
-                    GridCoordinate(x: 1, y: 1),
-                    GridCoordinate(x: 2, y: 1),
-                    GridCoordinate(x: 3, y: 1),
-                    GridCoordinate(x: 0, y: 2)]
-        case "JASTIP4-9":
             return [GridCoordinate(x: 0, y: 0),
                     GridCoordinate(x: 1, y: 0),
                     GridCoordinate(x: 0, y: 1),
@@ -157,13 +151,19 @@ struct PieceCatalog {
                     GridCoordinate(x: 3, y: 1),
                     GridCoordinate(x: 0, y: 2),
                     GridCoordinate(x: 1, y: 2)]
+        case "JASTIP4-9":
+            return [GridCoordinate(x: 1, y: 0),
+                    GridCoordinate(x: 0, y: 1),
+                    GridCoordinate(x: 1, y: 1),
+                    GridCoordinate(x: 2, y: 1),
+                    GridCoordinate(x: 3, y: 1),
+                    GridCoordinate(x: 0, y: 2)]
         case "JASTIP5-9":
             return [GridCoordinate(x: 0, y: 0),
                     GridCoordinate(x: 1, y: 0),
-                    GridCoordinate(x: 2, y: 0),
-                    GridCoordinate(x: 3, y: 0),
                     GridCoordinate(x: 1, y: 1),
-                    GridCoordinate(x: 3, y: 1)]
+                    GridCoordinate(x: 2, y: 1),
+                    GridCoordinate(x: 2, y: 2)]
         default:
             return [GridCoordinate(x: 0, y: 0)]
         }

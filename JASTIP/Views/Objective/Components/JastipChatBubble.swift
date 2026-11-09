@@ -114,10 +114,30 @@ struct JastipChatBubble: View {
                 // 3. Deretan Gambar Kartu
                 HStack(spacing: maxCardSpacing) {
                     ForEach(order.requirementItems) { item in
-                        Image(item.requirementImage)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: imageCardWidth, height: imageCardHeight)
+                        ZStack(alignment: .topTrailing) {
+                            // Gambar Kartu Item
+                            Image(item.requirementImage)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: imageCardWidth, height: imageCardHeight)
+                                .overlay(
+                                    // Stroke Oranye jika item sudah terpenuhi
+                                    RoundedRectangle(cornerRadius: 14)
+                                        .stroke(
+                                            item.isFulfilled ? Color("TransitTangerine") : Color.clear,
+                                            lineWidth: 2
+                                        )
+                                )
+
+                            // Badge Centang "checkdone" di pojok kanan atas nembus garis
+                            if item.isFulfilled {
+                                Image("checkdone")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 22, height: 22)
+                                    .offset(x: 4, y: -4)
+                            }
+                        }
                     }
                 }
                 .padding(.top, 4)
