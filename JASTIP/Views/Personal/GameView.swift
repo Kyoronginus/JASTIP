@@ -24,17 +24,25 @@ struct GameView: View {
     var onOpenCamera: () -> Void
     
     // Properti UI Turn & Kalender (Siap disambungkan oleh dev yang mengerjakan logic turn/kalender)
-    var currentTurnPlayerName: String = "maxwell"
-    var daysToGo: Int = 7
+    var currentTurnPlayerName: String? = nil
+    var daysToGo: Int? = nil
     var onEndTurn: (() -> Void)? = nil
+    
+    private var displayedTurnPlayerName: String {
+        currentTurnPlayerName ?? viewModel.currentTurnPlayerName
+    }
+    
+    private var displayedDaysToGo: Int {
+        daysToGo ?? viewModel.daysToGo
+    }
     
     @State private var openedLuggage: LuggageType? = nil
     
     init(
         viewModel: GameSessionViewModel? = nil,
         airlineCard: AirlineCardModel = AirlineCardCatalog.dummy,
-        currentTurnPlayerName: String = "maxwell",
-        daysToGo: Int = 7,
+        currentTurnPlayerName: String? = nil,
+        daysToGo: Int? = nil,
         onEndTurn: (() -> Void)? = nil,
         onOpenCamera: @escaping () -> Void = {}
     ) {
@@ -97,31 +105,33 @@ struct GameView: View {
     private var topHeaderSection: some View {
         HStack(alignment: .top) {
             // Kiri: Who's Turn + Tombol End Turn
-            
             ZStack {
-                
                 Image("TurnTag")
                     .resizable()
                     .scaledToFit()
                 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("\(currentTurnPlayerName)'s turn")
+                    // 1. NAMA PEMAIN AKTIF (OTOMATIS BERUBAH)
+                    Text("\(displayedTurnPlayerName)'s turn")
                         .font(.shantellSans(18, .bold))
                         .foregroundStyle(.black)
                     
+                    // 2. TOMBOL END TURN (Hanya aktif jika giliran HP ini)
                     Button {
                         if let onEndTurn {
                             onEndTurn()
                         } else {
-                            viewModel.nextHour()
+                            viewModel.endCurrentTurn()
                         }
                     } label: {
-                        Text("End Turn")
+                        Text(viewModel.isMyTurn ? "End Turn" : "Waiting...")
                             .font(.shantellSans(14, .bold))
                     }
+                    .disabled(!viewModel.isMyTurn)
+                    .opacity(viewModel.isMyTurn ? 1.0 : 0.6)
                     .buttonStyle(
                         PrimaryButtonStyle(
-                            backgroundColor: Color("EndTurn"),
+                            backgroundColor: viewModel.isMyTurn ? Color("EndTurn") : Color.gray,
                             borderColor: .white,
                             shadowColor: Color("EndTurn").opacity(0.65),
                             foregroundColor: .white,
@@ -139,8 +149,8 @@ struct GameView: View {
             
             Spacer()
             
-            // Kanan: Kalender ("Days to go" + Angka Tanggal)
-            CalendarCountdownView(daysToGo: daysToGo)
+            // 3. KANAN: KALENDER OTOMATIS BERKURANG TIAP ROUND
+            CalendarCountdownView(daysToGo: displayedDaysToGo)
         }
     }
     
