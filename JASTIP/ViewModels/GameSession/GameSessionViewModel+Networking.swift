@@ -23,9 +23,7 @@ extension GameSessionViewModel {
         guard isGameStarted else { return }
         airlineCard = state.card
         pieceWeights = state.pieceWeights
-        if !state.sharedJastipOrders.isEmpty {
-            sharedJastipOrders = state.sharedJastipOrders
-        }
+        sharedJastipOrders = state.sharedJastipOrders
         currentHour = state.currentHour
         delayHours = state.delayHours
         isGameOver = state.isGameOver

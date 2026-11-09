@@ -9,25 +9,31 @@ import SwiftUI
 
 // Random Events
 enum RandomEventType: String, CaseIterable, Codable {
-    case flightDelay
-    case zeroWeight
-    case relativeCanceled
-    case storesClosed
-    case reshuffleStore
-    case mindYourManners
-    case reverseMadness
     case customsIssue
+    case energyBoost
+    case mindYourManners // Etiquette
+    case evacuation
+    case flightDelay
+    case zeroWeight // Free Items
+    case relativeCanceled // Order Cancelled
+    case reshuffleStore // Restock Store
+    case reverseMadness
+    case silentAirport
+    case storesClosed
     
     var imageName: String? {
         switch self {
-        case .flightDelay: return "FlightDelayed"
-        case .relativeCanceled: return "OrderCancelled"
-        case .storesClosed: return "StoresClosed"
-        case .reshuffleStore: return "RestockStore"
-        case .mindYourManners: return "MindYourManners"
-        case .reverseMadness: return "ReverseMadness"
         case .customsIssue: return "CustomsIssue"
-        case .zeroWeight: return nil
+        case .energyBoost: return "EnergyBoost"
+        case .mindYourManners: return "Etiquette"
+        case .evacuation: return "Evacuation"
+        case .flightDelay: return "FlightDelayed"
+        case .zeroWeight: return "FreeItems"
+        case .relativeCanceled: return "OrderCancelled"
+        case .reshuffleStore: return "RestockStore-Wellness"
+        case .reverseMadness: return "ReverseMadness"
+        case .silentAirport: return "SilentAirport"
+        case .storesClosed: return "StoresClosed-Boutique"
         }
     }
 }
@@ -35,6 +41,9 @@ enum RandomEventType: String, CaseIterable, Codable {
 struct RandomEventModel: Identifiable, Equatable, Codable {
     var id: String = UUID().uuidString
     var type: RandomEventType = .storesClosed
-    let title: String
-    let message: String
+    var imageName: String? = nil
+    
+    var resolvedImageName: String? {
+        imageName ?? type.imageName
+    }
 }
