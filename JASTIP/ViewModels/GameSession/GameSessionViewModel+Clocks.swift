@@ -28,12 +28,17 @@ extension GameSessionViewModel {
         currentHour += 1
         
         let event = rollForRandomEvent()
-            lastRoundEventType = event?.type
+        lastRoundEventType = event?.type
         currentEvent = event
         activeHourEvent = event
         
         if event?.type == .flightDelay {
             delayHours += 1
+        }
+        
+        if event?.type == .relativeCanceled, !sharedJastipOrders.isEmpty {
+            let canceledIndex = Int.random(in: 0..<sharedJastipOrders.count)
+            sharedJastipOrders.remove(at: canceledIndex)
         }
         
         let gameOverStatus = currentHour > boardingHour
@@ -56,7 +61,11 @@ extension GameSessionViewModel {
         let nonConsecutiveEvents: Set<RandomEventType> = [
             .zeroWeight,
             .mindYourManners,
-            .reverseMadness
+            .reverseMadness,
+            .silentAirport,
+            .evacuation,
+            .energyBoost,
+            .customsIssue
         ]
 
         let availableTypes = RandomEventType.allCases.filter { type in
@@ -64,6 +73,10 @@ extension GameSessionViewModel {
                 guard !triggeredUniqueEvents.contains(type) else {
                     return false
                 }
+            }
+            
+            if type == .relativeCanceled, sharedJastipOrders.isEmpty {
+                return false
             }
 
             if nonConsecutiveEvents.contains(type), lastRoundEventType == type {
@@ -83,6 +96,4 @@ extension GameSessionViewModel {
 
         return event
     }
-    
-    
 }

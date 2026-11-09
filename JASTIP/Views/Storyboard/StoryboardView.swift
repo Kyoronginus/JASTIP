@@ -7,6 +7,7 @@
 
 import SwiftUI
 import AudioToolbox
+import AVFoundation
 
 struct StoryboardView: View {
     @Bindable var session: GameSessionViewModel
@@ -14,6 +15,8 @@ struct StoryboardView: View {
     
     // State animasi PPT: langkah reveal saat ini (0..6)
     @State private var currentStep: Int = 0
+
+    @State private var audioPlayer: AVAudioPlayer?
     
     // Suara & Haptik
     private let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
@@ -136,17 +139,23 @@ struct StoryboardView: View {
         
         switch step {
         case 0: // POST
-            AudioServicesPlaySystemSound(1104) // keyboard tap sound
+//            AudioServicesPlaySystemSound(1104)  keyboard tap sound
+            AudioManager.shared.play("panel 1.1 - post story.mp3")
         case 1: // ROLL..
-            AudioServicesPlaySystemSound(1105)
+//            AudioServicesPlaySystemSound(1105)
+            AudioManager.shared.play("panel 1.2 - suitcase rolling.mp3")
         case 2: // Panel 3
-            AudioServicesPlaySystemSound(1104)
+//            AudioServicesPlaySystemSound(1104)
+            AudioManager.shared.play("panel 1.3 - seatbelt click.mp3")
         case 3: // WOOOSH...
-            AudioServicesPlaySystemSound(1001) // swoosh sound
+//            AudioServicesPlaySystemSound(1001) // swoosh sound
+            AudioManager.shared.play("panel 2.1 - airplane swoosh.mp3")
         case 4: // STEP.. STEP..
             AudioServicesPlaySystemSound(1104)
+            
         case 5: // PING!
-            AudioServicesPlaySystemSound(1003) // SMS notification chime
+//            AudioServicesPlaySystemSound(1003) // SMS notification chime
+            AudioManager.shared.play("panel 3 - notification ping.mp3")
             notificationFeedback.notificationOccurred(.success)
         case 6: // Cards reveal
             AudioServicesPlaySystemSound(1003)

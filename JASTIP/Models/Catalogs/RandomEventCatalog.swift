@@ -9,95 +9,99 @@ import Foundation
 
 enum RandomEventCatalog {
     // 5 Toko di board game fisik
-    static let allStores = ["Antique", "Delicacy", "Kids", "Books", "Fashion"]
+    static let allStores = ["Wellness", "Local Delicacy", "Boutique", "Antique", "Toys"]
+    
+    // 5 Kombinasi Asset Restock Store
+    static let restockStoreVariants: [(store: String, assetName: String)] = [
+        ("Antique", "RestockStore-Antique"),
+        ("Boutique", "RestockStore-Boutique"),
+        ("Local Delicacy", "RestockStore-LocalDelicacy"),
+        ("Toys", "RestockStore-Toys"),
+        ("Wellness", "RestockStore-Wellness")
+    ]
+    
+    // 10 Kombinasi Asset Stores Closed
+    static let storesClosedVariants: [(stores: String, assetName: String)] = [
+        ("Boutique & Delicacy", "RandomEvent-BoutiqueDelicacy"),
+        ("Antique & Delicacy", "StoresClosed-AntiqueDelicacy"),
+        ("Antique & Wellness", "StoresClosed-AntiqueWellness"),
+        ("Boutique & Antique", "StoresClosed-Boutique"),
+        ("Delicacy & Toys", "StoresClosed-DelicacyToys"),
+        ("Delicacy & Wellness", "StoresClosed-DelicacyWellness"),
+        ("Toys & Antique", "StoresClosed-ToysAntique"),
+        ("Toys & Boutique", "StoresClosed-ToysBoutique"),
+        ("Wellness & Boutique", "StoresClosed-Wellness&Boutique"),
+        ("Wellness & Toys", "StoresClosed-WellnessToys")
+    ]
 
-    // Generator pesan event sesuai tipenya
+    // Generator event sesuai tipenya
     static func createEvent(for type: RandomEventType) -> RandomEventModel {
         switch type {
-        case .flightDelay:
-            return RandomEventModel(
-                type: .flightDelay,
-                title: "Flight Delayed!",
-                message: "Boarding time is postponed by 1 hour. Game duration extended!"
-            )
-             
-        case .zeroWeight:
-            return RandomEventModel(
-                type: .zeroWeight,
-                title: "Free Items!",
-                message: "All items collected during this hour have a weight of 0 kg."
-            )
-             
-        case .relativeCanceled:
-            return RandomEventModel(
-                type: .relativeCanceled,
-                title: "Relative Card Canceled!",
-                message: "Shuffle the 3 Relative Cards on the physical board and draw 1 at random. That card is canceled and will no longer grant points."
-            )
-             
-        case .storesClosed:
-            // Randomize 2 stores automatically from the 5 stores
-            let closedStores = allStores.shuffled().prefix(2).joined(separator: " & ")
-            return RandomEventModel(
-                type: .storesClosed,
-                title: "Stores Closed!",
-                message: "The \(closedStores) stores are closed this hour. Players cannot take items from these stores."
-            )
+        case .customsIssue:
+            return RandomEventModel(type: .customsIssue, imageName: "CustomsIssue")
             
-        case .reshuffleStore:
-            // Randomize 1 store untuk di-reshuffle
-            let targetStore = allStores.randomElement() ?? "Antique"
-            return RandomEventModel(
-                type: .reshuffleStore,
-                title: "Reshuffle Store!",
-                message: "The \(targetStore) store must reshuffle its displayed pieces back into the supply and draw new ones!"
-            )
+        case .energyBoost:
+            return RandomEventModel(type: .energyBoost, imageName: "EnergyBoost")
             
         case .mindYourManners:
-            return RandomEventModel(
-                type: .mindYourManners,
-                title: "Mind Your Manners!",
-                message: "No one can point their finger during this round. Anyone who does can only do 1 action in the next round."
-            )
-
+            return RandomEventModel(type: .mindYourManners, imageName: "Etiquette")
+            
+        case .evacuation:
+            return RandomEventModel(type: .evacuation, imageName: "Evacuation")
+            
+        case .flightDelay:
+            return RandomEventModel(type: .flightDelay, imageName: "FlightDelayed")
+             
+        case .zeroWeight:
+            return RandomEventModel(type: .zeroWeight, imageName: "FreeItems")
+             
+        case .relativeCanceled:
+            return RandomEventModel(type: .relativeCanceled, imageName: "OrderCancelled")
+             
+        case .reshuffleStore:
+            let selected = restockStoreVariants.randomElement() ?? ("Wellness", "RestockStore-Wellness")
+            return RandomEventModel(type: .reshuffleStore, imageName: selected.assetName)
+            
         case .reverseMadness:
-            return RandomEventModel(
-                type: .reverseMadness,
-                title: "Reverse Madness!",
-                message: "For this round, you may only interact with physical components using their non-dominant hand. If you violate this rule, you can only do 1 action in the next round."
-            )
-
-        case .customsIssue:
-            return RandomEventModel(
-                type: .customsIssue,
-                title: "Customs Issue!",
-                message: "For this round, each player may perform only 1 action instead of 2."
-            )
+            return RandomEventModel(type: .reverseMadness, imageName: "ReverseMadness")
+            
+        case .silentAirport:
+            return RandomEventModel(type: .silentAirport, imageName: "SilentAirport")
+             
+        case .storesClosed:
+            let selected = storesClosedVariants.randomElement() ?? ("Boutique & Antique", "StoresClosed-Boutique")
+            return RandomEventModel(type: .storesClosed, imageName: selected.assetName)
         }
     }
 
-    // Logic pemilihan event berbobot (contoh proporsi baru: Stores Closed 30%, Flight Delay 25%, Zero Weight 20%, Relative Canceled 10%, Reshuffle Store 15%)
+    // Logic pemilihan event berbobot
     static func getRandomEvent(from availableEvents: [RandomEventType]) -> RandomEventModel? {
         guard !availableEvents.isEmpty else { return nil }
 
         func weight(for type: RandomEventType) -> Int {
             switch type {
             case .storesClosed:
-                return 18
-            case .flightDelay:
-                return 8
-            case .zeroWeight:
-                return 12
-            case .relativeCanceled:
-                return 5
+                return 16
             case .reshuffleStore:
                 return 10
-            case .mindYourManners:
-                return 17
-            case .reverseMadness:
-                return 15
             case .customsIssue:
-                return 15
+                return 10
+            case .energyBoost:
+                return 10
+            case .mindYourManners:
+                return 8
+            case .evacuation:
+                return 8
+            case .reverseMadness:
+                return 8
+            case .silentAirport:
+                return 8
+            case .zeroWeight:
+                return 8
+            case .flightDelay:
+                return 8
+            case .relativeCanceled:
+                return 8
             }
         }
 
