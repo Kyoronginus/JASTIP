@@ -422,40 +422,40 @@ enum JastipOrderCatalog {
         switch orderKey {
         // --- 1. Thomas ---
         case "thomas":
-            return items.contains { ($0.color == .blue || $0.color == .green) && $0.isAnomaly }
+            return items.contains { ($0.color == .green || $0.color == .blue) && $0.isAnomaly }
             
         // --- 2. Toyib ---
         case "toyib":
-            return items.contains { ($0.color == .yellow || $0.color == .pink) && $0.isAnomaly }
+            return items.contains { ($0.color == .orange || $0.color == .red) && $0.isAnomaly }
             
         // --- 3. Quincy ---
         case "quincy":
-            return items.contains { ($0.color == .blue || $0.color == .red) && $0.isAnomaly }
+            return items.contains { ($0.color == .green || $0.color == .purple) && $0.isAnomaly }
             
         // --- 4. Henry ---
         case "henry":
-            let hasRedL = items.contains { $0.color == .red && $0.shape == .tetrominoL }
-            let hasNonRedSingle = items.contains { $0.color != .red && $0.shape == .single }
-            return hasRedL && hasNonRedSingle
+            let hasPurpleL = items.contains { $0.color == .purple && $0.shape == .tetrominoL }
+            let hasNonPurpleSingle = items.contains { $0.color != .purple && $0.shape == .single }
+            return hasPurpleL && hasNonPurpleSingle
             
         // --- 5. Molly ---
         case "molly":
             let validShapes: [PieceShape] = [.square, .tetrominoL, .tetrominoT, .tetrominoI]
-            return items.filter { $0.color == .yellow && validShapes.contains($0.shape) }.count >= 2
+            return items.filter { $0.color == .orange && validShapes.contains($0.shape) }.count >= 2
             
         // --- 6. Mackenzie ---
         case "mackenzie":
-            return items.filter { $0.shape == .domino && ($0.color == .blue || $0.color == .green) }.count >= 2
+            return items.filter { $0.shape == .domino && ($0.color == .green || $0.color == .blue) }.count >= 2
             
         // --- 7. Joe ---
         case "joe":
-            let hasTriomino = items.contains { [.red, .pink, .blue, .green].contains($0.color) && $0.shape == .triominoI }
-            let hasSingleYellow = items.contains { $0.color == .yellow && $0.shape == .single }
-            return hasTriomino && hasSingleYellow
+            let hasTriomino = items.contains { [.purple, .red, .green, .blue].contains($0.color) && $0.shape == .triominoI }
+            let hasSingleOrange = items.contains { $0.color == .orange && $0.shape == .single }
+            return hasTriomino && hasSingleOrange
             
         // --- 8. Billie ---
         case "billie":
-            let targetItems = items.filter { $0.color == .yellow || $0.color == .pink }
+            let targetItems = items.filter { $0.color == .orange || $0.color == .red }
             guard targetItems.count >= 2 else { return false }
             for i in 0..<targetItems.count {
                 for j in (i + 1)..<targetItems.count {
@@ -476,29 +476,29 @@ enum JastipOrderCatalog {
             
         // --- 10. Brie ---
         case "brie":
-            let greenItems = items.filter { $0.color == .green }
-            guard greenItems.count >= 3 else { return false }
+            let blueItems = items.filter { $0.color == .blue }
+            guard blueItems.count >= 3 else { return false }
             let lineShapes: [PieceShape] = [.domino, .triominoI, .tetrominoI]
             let tOrSquare: [PieceShape] = [.tetrominoT, .square]
-            let hasLine = greenItems.contains { lineShapes.contains($0.shape) }
-            let hasTOrSq = greenItems.contains { tOrSquare.contains($0.shape) }
+            let hasLine = blueItems.contains { lineShapes.contains($0.shape) }
+            let hasTOrSq = blueItems.contains { tOrSquare.contains($0.shape) }
             return hasLine && hasTOrSq
             
         // --- 11. Bella ---
         case "bella":
-            let redItems = items.filter { $0.color == .red }
-            guard redItems.count >= 3 else { return false }
+            let purpleItems = items.filter { $0.color == .purple }
+            guard purpleItems.count >= 3 else { return false }
             let lineShapes: [PieceShape] = [.domino, .triominoI, .tetrominoI]
-            return redItems.filter { lineShapes.contains($0.shape) }.count >= 2
+            return purpleItems.filter { lineShapes.contains($0.shape) }.count >= 2
             
         // --- 12. Roxanne ---
         case "roxanne":
             let validShapes: [PieceShape] = [.domino, .triominoI, .tetrominoT, .tetrominoL, .square]
-            return items.filter { ($0.color == .blue || $0.color == .green) && validShapes.contains($0.shape) }.count >= 2
+            return items.filter { ($0.color == .green || $0.color == .blue) && validShapes.contains($0.shape) }.count >= 2
             
         // --- 13. Diana ---
         case "diana":
-            let pool = items.filter { $0.color == .yellow || $0.color == .red }
+            let pool = items.filter { $0.color == .orange || $0.color == .purple }
             guard pool.count >= 2 else { return false }
             let hasLT = pool.contains { $0.shape == .tetrominoL || $0.shape == .tetrominoT }
             let hasLine = pool.contains { $0.shape == .domino || $0.shape == .triominoI || $0.shape == .tetrominoI }
@@ -525,7 +525,7 @@ enum JastipOrderCatalog {
             
         // --- 16. Fernando ---
         case "fernando":
-            let pool = items.filter { $0.color == .red || $0.color == .pink }
+            let pool = items.filter { $0.color == .purple || $0.color == .red }
             guard pool.count >= 2 else { return false }
             let hasLT = pool.contains { $0.shape == .tetrominoL || $0.shape == .tetrominoT }
             let hasLine = pool.contains { $0.shape == .domino || $0.shape == .triominoI }
@@ -539,7 +539,7 @@ enum JastipOrderCatalog {
         // --- 18. Enzo ---
         case "enzo":
             let validShapes: [PieceShape] = [.square, .tetrominoL, .tetrominoT]
-            return items.filter { ($0.color == .blue || $0.color == .green) && validShapes.contains($0.shape) }.count >= 2
+            return items.filter { ($0.color == .green || $0.color == .blue) && validShapes.contains($0.shape) }.count >= 2
             
         // --- 19. Taylor ---
         case "taylor":
@@ -562,52 +562,52 @@ enum JastipOrderCatalog {
             
         // --- 21. David ---
         case "david":
-            let blueItems = items.filter { $0.color == .blue }
-            guard blueItems.count >= 3 else { return false }
-            let hasSqOrT = blueItems.contains { $0.shape == .square || $0.shape == .tetrominoT }
-            let hasLongOrUnique = blueItems.contains { $0.shape == .tetrominoI || $0.shape == .smallL || $0.isAnomaly }
+            let greenItems = items.filter { $0.color == .green }
+            guard greenItems.count >= 3 else { return false }
+            let hasSqOrT = greenItems.contains { $0.shape == .square || $0.shape == .tetrominoT }
+            let hasLongOrUnique = greenItems.contains { $0.shape == .tetrominoI || $0.shape == .smallL || $0.isAnomaly }
             return hasSqOrT && hasLongOrUnique
             
         // --- 22. Jimmy ---
         case "jimmy":
-            let pinkItems = items.filter { $0.color == .pink }
-            guard pinkItems.count >= 3 else { return false }
-            let distinctShapes = Set(pinkItems.map { $0.shape })
+            let redItems = items.filter { $0.color == .red }
+            guard redItems.count >= 3 else { return false }
+            let distinctShapes = Set(redItems.map { $0.shape })
             return distinctShapes.count >= 2
             
         // --- 23. Wayne ---
         case "wayne":
-            let yellowItems = items.filter { $0.color == .yellow }
-            guard yellowItems.count >= 3 else { return false }
-            return yellowItems.reduce(0) { $0 + $1.gridCount } >= 8
+            let orangeItems = items.filter { $0.color == .orange }
+            guard orangeItems.count >= 3 else { return false }
+            return orangeItems.reduce(0) { $0 + $1.gridCount } >= 8
             
         // --- 24. Kevin (Straight) ---
         case "kevin_straight":
             let validShapes: [PieceShape] = [.domino, .triominoI, .tetrominoI]
-            return items.filter { ($0.color == .blue || $0.color == .red) && validShapes.contains($0.shape) }.count >= 2
+            return items.filter { ($0.color == .green || $0.color == .purple) && validShapes.contains($0.shape) }.count >= 2
             
         // --- 25. Lloyd ---
         case "lloyd":
-            return items.filter { ($0.color == .yellow || $0.color == .pink) && $0.shape == .tetrominoL }.count >= 2
+            return items.filter { ($0.color == .orange || $0.color == .red) && $0.shape == .tetrominoL }.count >= 2
             
         // --- 26. Kevin (Square) ---
         case "kevin_square":
-            return items.filter { ($0.color == .yellow || $0.color == .green) && $0.shape == .square }.count >= 2
+            return items.filter { ($0.color == .orange || $0.color == .blue) && $0.shape == .square }.count >= 2
             
         // --- 27. Elliot ---
         case "elliot":
-            let pool = items.filter { $0.color == .green || $0.color == .pink }
+            let pool = items.filter { $0.color == .blue || $0.color == .red }
             let hasT = pool.contains { $0.shape == .tetrominoT }
             let hasL = pool.contains { $0.shape == .tetrominoL }
             return hasT && hasL
             
         // --- 28. Jake ---
         case "jake":
-            return items.filter { ($0.color == .pink || $0.color == .yellow) && $0.gridCount >= 4 }.count >= 2
+            return items.filter { ($0.color == .red || $0.color == .orange) && $0.gridCount >= 4 }.count >= 2
             
         // --- 29. Leon ---
         case "leon":
-            return items.filter { $0.color == .yellow && ($0.shape == .domino || $0.shape == .triominoI) }.count >= 2
+            return items.filter { $0.color == .orange && ($0.shape == .domino || $0.shape == .triominoI) }.count >= 2
             
         // --- 30. Matheo (Tetris T) ---
         case "matheo_tetris_t":
@@ -621,7 +621,7 @@ enum JastipOrderCatalog {
             
         // --- 32. Minnie ---
         case "minnie":
-            return items.filter { ($0.color == .pink || $0.color == .yellow) && $0.shape == .single }.count >= 2
+            return items.filter { ($0.color == .red || $0.color == .orange) && $0.shape == .single }.count >= 2
             
         default:
             return false
