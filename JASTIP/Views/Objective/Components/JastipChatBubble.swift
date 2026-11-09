@@ -10,104 +10,101 @@ import SwiftUI
 struct JastipChatBubble: View {
     let order: JastipOrderModel
     
-    // Properti Seleksi untuk Drafting
     var isSelectable: Bool = false
     var isSelected: Bool = false
     var onToggleSelect: () -> Void = {}
     
-    // Warna acak pengirim ala WhatsApp Group
+    // Warna tema acak pengirim ala WhatsApp Group
     private var senderColor: Color {
-        let colors: [Color] = [.green, .orange, .blue, .purple, .pink]
+        let colors: [Color] = [.orange, .blue, .green, .purple, Color(red: 0.95, green: 0.45, blue: 0.15)]
         let hash = abs(order.customerName.hashValue)
         return colors[hash % colors.count]
     }
     
+    // Lebar ideal kartu gambar sesuai jumlah item (Hug Content)
+    private var imageCardWidth: CGFloat {
+        switch order.requirementItems.count {
+        case 1:
+            return 220 // 1 kartu lebar (SS 1 - Toyib)
+        case 2:
+            return 120 // 2 kartu sedang (SS 3 - Elliott)
+        default:
+            return 82  // 3 kartu ramping (SS 2 - Bella)
+        }
+    }
+    
+    // Tinggi kartu gambar konsisten 145 pt
+    private let imageCardHeight: CGFloat = 145
+    
+    // Spacing maksimal antar kartu
+    private let maxCardSpacing: CGFloat = 6
+    
     var body: some View {
-        HStack(spacing: 12) {
-            // MARK: - Bubble Chat Customer
+        HStack(alignment: .top, spacing: 10) {
+            // MARK: - Avatar Pengirim / Centang Drafting
+            ZStack {
+                if isSelectable {
+                    Button {
+                        onToggleSelect()
+                    } label: {
+                        Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                            .font(.system(size: 26, weight: .semibold))
+                            .foregroundStyle(isSelected ? Color.blue : Color.gray.opacity(0.4))
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, 12)
+                } else {
+                    Circle()
+                        .fill(senderColor)
+                        .frame(width: 44, height: 44)
+                    
+                    Image(systemName: "person.fill")
+                        .font(.system(size: 24))
+                        .foregroundStyle(.white.opacity(0.9))
+                }
+            }
+            .padding(.top, 2)
+            
+            // MARK: - Bubble Chat Putih (Hug Content Ukuran Asli)
             VStack(alignment: .leading, spacing: 8) {
-                // 1. Header: Nama Customer & Badge
+                // 1. Header: Nama Customer & Nominal Dollar
                 HStack {
                     Text(order.customerName)
-                        .font(.plusJakarta(13, .bold))
+                        .font(.plusJakarta(15, .bold))
                         .foregroundStyle(senderColor)
                     
-                    Spacer()
+                    Spacer(minLength: 16)
                     
-                    // Badge Poin Reward (+3, +4, +5)
-                    Text("+\(order.points) PTS")
-                        .font(.plusJakarta(10, .bold))
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color("TaxiYellow").opacity(0.2))
-                        .foregroundStyle(Color("NavyBlack"))
-                        .clipShape(Capsule())
-                    
-                    if order.isPersonal {
-                        Text("PERSONAL")
-                            .font(.plusJakarta(9, .bold))
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.purple.opacity(0.15))
-                            .foregroundStyle(.purple)
-                            .clipShape(Capsule())
-                    }
+                    Text("$\(order.points * 10)")
+                        .font(.plusJakarta(15, .bold))
+                        .foregroundStyle(senderColor)
                 }
                 
-                // 2. Teks Chat
+                // 2. Chat Message
                 Text(order.chatMessage)
                     .font(.plusJakarta(14, .regular))
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(Color("NavyBlack"))
                 
-                // 3. Gambar Requirement (Fallback ke "6" jika aset spesifik belum ada)
-                Group {
-                    if UIImage(named: order.requirementImageName) != nil {
-                        Image(order.requirementImageName)
+                // 3. Deretan Gambar Kartu
+                HStack(spacing: maxCardSpacing) {
+                    ForEach(order.requirementItems) { item in
+                        Image(item.requirementImage)
                             .resizable()
                             .scaledToFit()
-                    } else {
-                        HStack{
-                            Image("ppp")
-                                .resizable()
-                                .scaledToFit()
-                            Text("+")
-                            Image("ppp")
-                                .resizable()
-                                .scaledToFit()
-                        }
-                       
+                            .frame(width: imageCardWidth, height: imageCardHeight)
                     }
                 }
-                .frame(maxWidth: .infinity)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                
-                // 4. Jam Chat
-                HStack {
-                    Spacer()
-                    Text("08:30")
-                        .font(.plusJakarta(10, .regular))
-                        .foregroundStyle(.secondary)
-                }
+                .padding(.top, 4)
             }
-            .padding(12)
-            .background(Color(uiColor: .secondarySystemGroupedBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .shadow(color: .black.opacity(0.04), radius: 4, x: 0, y: 2)
+            .padding(14)
+            // Bubble hanya sebesar konten di dalamnya (Hug Content)
+            .fixedSize(horizontal: true, vertical: false)
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 20))
+            .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 3)
             
-            // MARK: - Lingkaran Seleksi (Hollow -> Checked) di Kanan Bubble
-            if isSelectable {
-                Button {
-                    onToggleSelect()
-                } label: {
-                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                        .font(.system(size: 26, weight: .semibold))
-                        .foregroundStyle(isSelected ? Color.blue : Color.gray.opacity(0.5))
-                }
-                .buttonStyle(.plain)
-                .transition(.scale.combined(with: .opacity))
-            } else {
-                Spacer(minLength: 40)
-            }
+            // Spacer di luar agar bubble selalu menempel rapi di kiri
+            Spacer(minLength: 0)
         }
         .padding(.horizontal, 16)
     }

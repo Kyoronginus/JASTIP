@@ -18,9 +18,10 @@ enum JastipOrderCatalog {
             orderKey: "thomas",
             customerName: "Thomas",
             points: 4,
-            chatMessage: "Bro, nitip pajangan antik bentuk T ya! Kalo ga ada, jaket butik bentuk L juga boleh.",
-            requirementImageName: "req_thomas",
-            requirementDescription: "1 Blue Antique (T) OR 1 Green Boutique (L)"
+            chatMessage: "i’d like to request these items,",
+            requirementItems: [
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "T / L (Unique)")
+            ]
         ),
         
         // 2. Toyib (+4)
@@ -28,9 +29,10 @@ enum JastipOrderCatalog {
             orderKey: "toyib",
             customerName: "Toyib",
             points: 4,
-            chatMessage: "Titip jajan delicacy atau mainan anak dong, bentuknya yang unik sesuai foto ya!",
-            requirementImageName: "req_toyib",
-            requirementDescription: "1 Yellow Delicacy OR 1 Pink Kids (Unique)"
+            chatMessage: "get me these plsss",
+            requirementItems: [
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Unique Shape")
+            ]
         ),
         
         // 3. Quincy (+4)
@@ -38,9 +40,10 @@ enum JastipOrderCatalog {
             orderKey: "quincy",
             customerName: "Quincy",
             points: 4,
-            chatMessage: "Eh jangan lupa titipan gua, cariin antique atau buku sesuai foto ya!",
-            requirementImageName: "req_quincy",
-            requirementDescription: "1 Blue Antique OR 1 Red Books (Unique)"
+            chatMessage: "gurl cn u get me these??",
+            requirementItems: [
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Unique Shape")
+            ]
         ),
         
         // 4. Henry (+5)
@@ -48,9 +51,11 @@ enum JastipOrderCatalog {
             orderKey: "henry",
             customerName: "Henry",
             points: 5,
-            chatMessage: "Nitip buku novel tebal (L) plus satu jajan kecil 1 slot ya bro, tengkyu!",
-            requirementImageName: "req_henry",
-            requirementDescription: "1 Red Books (L) + 1 Single (Yellow/Pink/Blue/Green)"
+            chatMessage: "i’d like to request these items,",
+            requirementItems: [
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Tetromino L"),
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "1 Slot (Single)")
+            ]
         ),
         
         // 5. Molly (+4)
@@ -58,9 +63,11 @@ enum JastipOrderCatalog {
             orderKey: "molly",
             customerName: "Molly",
             points: 4,
-            chatMessage: "Guys, tolong bawain 2 makanan dari Delicacy ya, bentuknya yang kotak/L/T/I yaa.",
-            requirementImageName: "req_molly",
-            requirementDescription: "2 Yellow Delicacy (Square / L / T / I)"
+            chatMessage: "get me these plsss",
+            requirementItems: [
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Square / L / T / I"),
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Square / L / T / I")
+            ]
         ),
         
         // 6. Mackenzie (+3)
@@ -68,9 +75,11 @@ enum JastipOrderCatalog {
             orderKey: "mackenzie",
             customerName: "Mackenzie",
             points: 3,
-            chatMessage: "Titip barang antik atau baju dong, tapi harus yang bentuk domino 2 slot ya!",
-            requirementImageName: "req_mackenzie",
-            requirementDescription: "2 Dominoes from Blue Antique or Green Boutique"
+            chatMessage: "gurl cn u get me these??",
+            requirementItems: [
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Domino (2)"),
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Domino (2)")
+            ]
         ),
         
         // 7. Joe (+3)
@@ -78,9 +87,11 @@ enum JastipOrderCatalog {
             orderKey: "joe",
             customerName: "Joe",
             points: 3,
-            chatMessage: "Bawain barang panjang (3 slot) dari toko buku/mainan/antik/butik, plus jajan kecil 1 slot!",
-            requirementImageName: "req_joe",
-            requirementDescription: "1 Triomino I (Red/Pink/Blue/Green) + 1 Single (Yellow Delicacy)"
+            chatMessage: "i’d like to request these items,",
+            requirementItems: [
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Triomino I (3)"),
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "1 Slot (Single)")
+            ]
         ),
         
         // 8. Billie (+5)
@@ -88,9 +99,11 @@ enum JastipOrderCatalog {
             orderKey: "billie",
             customerName: "Billie",
             points: 5,
-            chatMessage: "Nitip jajan atau mainan, cari yang porsi gede ya! Total ukuran berdua minimal 8 grid.",
-            requirementImageName: "req_billie",
-            requirementDescription: "2 Items (Yellow/Pink) with Total Size >= 8 grids"
+            chatMessage: "get me these plsss",
+            requirementItems: [
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "4+ Grids"),
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "4+ Grids")
+            ]
         ),
         
         // 9. Jude (+4)
@@ -98,9 +111,11 @@ enum JastipOrderCatalog {
             orderKey: "jude",
             customerName: "Jude",
             points: 4,
-            chatMessage: "Gua suka yang kembar! Beliin 2 barang dari toko beda, tapi bentuk potongannya harus sama persis.",
-            requirementImageName: "req_jude",
-            requirementDescription: "2 Items from 2 different stores with exact same shape"
+            chatMessage: "gurl cn u get me these??",
+            requirementItems: [
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Shape A"),
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Shape A (Same)")
+            ]
         ),
 
         // ==========================================
@@ -112,9 +127,12 @@ enum JastipOrderCatalog {
             orderKey: "brie",
             customerName: "Brie",
             points: 5,
-            chatMessage: "Tolong borong 3 barang dari Butik ya! Yang satu lurus, satu lagi bentuk T/kotak, satunya bebas.",
-            requirementImageName: "req_brie",
-            requirementDescription: "3 Green Boutique: 1 Line + 1 (T/Square) + 1 Any"
+            chatMessage: "get me these plsss",
+            requirementItems: [
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "2 / 3 / 4"),
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Square / T"),
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "any")
+            ]
         ),
         
         // 11. Bella (+5)
@@ -122,9 +140,12 @@ enum JastipOrderCatalog {
             orderKey: "bella",
             customerName: "Bella",
             points: 5,
-            chatMessage: "Nitip 3 buku dari toko Books! Minimal 2 buku harus bentuk lurus (domino/triomino/tetromino I).",
-            requirementImageName: "req_bella",
-            requirementDescription: "3 Red Books: at least 2 Line shapes"
+            chatMessage: "i’d like to request these items,",
+            requirementItems: [
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Line (2/3/4)"),
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Line (2/3/4)"),
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "any")
+            ]
         ),
         
         // 12. Roxanne (+4)
@@ -132,9 +153,11 @@ enum JastipOrderCatalog {
             orderKey: "roxanne",
             customerName: "Roxanne",
             points: 4,
-            chatMessage: "Titip 2 barang dari toko Antik atau Butik ya, bentuknya yang standar kayak di foto.",
-            requirementImageName: "req_roxanne",
-            requirementDescription: "2 Items (Blue/Green) with shapes: Domino/Triomino/T/L/Square"
+            chatMessage: "gurl cn u get me these??",
+            requirementItems: [
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Standard Shape"),
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Standard Shape")
+            ]
         ),
         
         // 13. Diana (+4)
@@ -142,9 +165,11 @@ enum JastipOrderCatalog {
             orderKey: "diana",
             customerName: "Diana",
             points: 4,
-            chatMessage: "Nitip 2 barang dari toko Makanan atau Buku: satu bentuk L/T, dan satu lagi yang lurus!",
-            requirementImageName: "req_diana",
-            requirementDescription: "2 Items (Yellow/Red): 1 (L/T) + 1 Line shape"
+            chatMessage: "get me these plsss",
+            requirementItems: [
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "L / T"),
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Line Shape")
+            ]
         ),
         
         // 14. Caroline (+5)
@@ -152,9 +177,11 @@ enum JastipOrderCatalog {
             orderKey: "caroline",
             customerName: "Caroline",
             points: 5,
-            chatMessage: "Beliin 2 barang dari toko yang sama ya, satu yang kecil banget (<=2) dan satu yang gede (>=5).",
-            requirementImageName: "req_caroline",
-            requirementDescription: "2 Items from same store: 1 size <= 2 grids & 1 size >= 5 grids"
+            chatMessage: "i’d like to request these items,",
+            requirementItems: [
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "<= 2 Grids"),
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: ">= 5 Grids")
+            ]
         ),
 
         // ==========================================
@@ -166,9 +193,11 @@ enum JastipOrderCatalog {
             orderKey: "matheo_unique",
             customerName: "Matheo",
             points: 5,
-            chatMessage: "Titip 1 barang kecil 1 slot plus 1 barang unik yang langka ya!",
-            requirementImageName: "req_matheo_unique",
-            requirementDescription: "1 Single + 1 Any Unique shape"
+            chatMessage: "gurl cn u get me these??",
+            requirementItems: [
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "1 Slot (Single)"),
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Unique Shape")
+            ]
         ),
         
         // 16. Fernando (+4)
@@ -176,9 +205,11 @@ enum JastipOrderCatalog {
             orderKey: "fernando",
             customerName: "Fernando",
             points: 4,
-            chatMessage: "Nitip 2 barang dari Buku atau Mainan: satu bentuk L/T, dan satu lagi bentuk lurus pendek.",
-            requirementImageName: "req_fernando",
-            requirementDescription: "2 Items (Red/Pink): 1 (L/T) + 1 (Domino/Triomino I)"
+            chatMessage: "i’d like to request these items,",
+            requirementItems: [
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "L / T"),
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "2 / 3 Line")
+            ]
         ),
         
         // 17. Alvin (+5)
@@ -186,9 +217,12 @@ enum JastipOrderCatalog {
             orderKey: "alvin",
             customerName: "Alvin",
             points: 5,
-            chatMessage: "Tolong bawain 3 barang dari toko apa aja, asalkan bentuknya geometris rapi (garis atau kotak)!",
-            requirementImageName: "req_alvin",
-            requirementDescription: "3 Items from any store with shapes: Domino/Triomino I/Tetromino I/Square"
+            chatMessage: "get me these plsss",
+            requirementItems: [
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Line / Square"),
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Line / Square"),
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Line / Square")
+            ]
         ),
         
         // 18. Enzo (+4)
@@ -196,9 +230,11 @@ enum JastipOrderCatalog {
             orderKey: "enzo",
             customerName: "Enzo",
             points: 4,
-            chatMessage: "Titip 2 barang dari toko Antik atau Butik, pilih bentuk balok kotak/L/T ya.",
-            requirementImageName: "req_enzo",
-            requirementDescription: "2 Items (Blue/Green) with shapes: Square/Tetromino L/Tetromino T"
+            chatMessage: "gurl cn u get me these??",
+            requirementItems: [
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Square / L / T"),
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Square / L / T")
+            ]
         ),
         
         // 19. Taylor (+5)
@@ -206,9 +242,12 @@ enum JastipOrderCatalog {
             orderKey: "taylor",
             customerName: "Taylor",
             points: 5,
-            chatMessage: "Titip 3 barang bertingkat ukurannya: satu minimal 2 grid, satu minimal 3 grid, satu minimal 4 grid!",
-            requirementImageName: "req_taylor",
-            requirementDescription: "3 Items from any store: sizes 2+, 3+, 4+ grids"
+            chatMessage: "i’d like to request these items,",
+            requirementItems: [
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "2+ Grids"),
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "3+ Grids"),
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "4+ Grids")
+            ]
         ),
         
         // 20. Silvia (+5)
@@ -216,9 +255,12 @@ enum JastipOrderCatalog {
             orderKey: "silvia",
             customerName: "Silvia",
             points: 5,
-            chatMessage: "Tolong beliin 3 barang dari toko mana aja, tapi jumlah kotaknya harus kembar identik semuanya!",
-            requirementImageName: "req_silvia",
-            requirementDescription: "3 Items from any store with exact same grid count"
+            chatMessage: "get me these plsss",
+            requirementItems: [
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Same Size"),
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Same Size"),
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Same Size")
+            ]
         ),
         
         // 21. David (+3)
@@ -226,9 +268,12 @@ enum JastipOrderCatalog {
             orderKey: "david",
             customerName: "David",
             points: 3,
-            chatMessage: "Borong 3 barang dari toko Antik ya! Yang penting ada yang bentuk kotak/T dan bentuk panjang.",
-            requirementImageName: "req_david",
-            requirementDescription: "3 Blue Antique: 1 (Square/T) + 1 (Line/Small L/Unique) + 1 Any"
+            chatMessage: "gurl cn u get me these??",
+            requirementItems: [
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Square / T"),
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Line / L / Unique"),
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "any")
+            ]
         ),
         
         // 22. Jimmy (+5)
@@ -236,9 +281,12 @@ enum JastipOrderCatalog {
             orderKey: "jimmy",
             customerName: "Jimmy",
             points: 5,
-            chatMessage: "Beliin 3 mainan anak dari toko Kids, tapi jangan kembar semua ya, minimal ada 2 bentuk berbeda!",
-            requirementImageName: "req_jimmy",
-            requirementDescription: "3 Pink Kids items with at least 2 different shapes"
+            chatMessage: "i’d like to request these items,",
+            requirementItems: [
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Shape A"),
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Shape B"),
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "any")
+            ]
         ),
         
         // 23. Wayne (+5)
@@ -246,9 +294,12 @@ enum JastipOrderCatalog {
             orderKey: "wayne",
             customerName: "Wayne",
             points: 5,
-            chatMessage: "Lagi laper banget nih, tolong borong 3 makanan Delicacy! Total ukurannya minimal 8 grid ya.",
-            requirementImageName: "req_wayne",
-            requirementDescription: "3 Yellow Delicacy items with Total Size >= 8 grids"
+            chatMessage: "get me these plsss",
+            requirementItems: [
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "any"),
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "any"),
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Total >= 8")
+            ]
         ),
 
         // ==========================================
@@ -260,9 +311,11 @@ enum JastipOrderCatalog {
             orderKey: "kevin_straight",
             customerName: "Kevin",
             points: 4,
-            chatMessage: "Titip 2 barang bentuk lurus (domino/triomino/tetromino I) dari toko Antik atau Buku ya!",
-            requirementImageName: "req_kevin_straight",
-            requirementDescription: "2 Items (Blue/Red) with Line shapes (Domino/Triomino/Tetromino I)"
+            chatMessage: "gurl cn u get me these??",
+            requirementItems: [
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Line (2/3/4)"),
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Line (2/3/4)")
+            ]
         ),
         
         // 25. Lloyd (+4)
@@ -270,9 +323,11 @@ enum JastipOrderCatalog {
             orderKey: "lloyd",
             customerName: "Lloyd",
             points: 4,
-            chatMessage: "Beliin 2 barang bentuk huruf L dari toko Delicacy atau toko Mainan ya bro!",
-            requirementImageName: "req_lloyd",
-            requirementDescription: "2 Tetromino L from Yellow Delicacy or Pink Kids"
+            chatMessage: "i’d like to request these items,",
+            requirementItems: [
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Tetromino L"),
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Tetromino L")
+            ]
         ),
         
         // 26. Kevin - Square (+4)
@@ -280,9 +335,11 @@ enum JastipOrderCatalog {
             orderKey: "kevin_square",
             customerName: "Kevin",
             points: 4,
-            chatMessage: "Nitip 2 barang yang bentuknya kotak 2x2 (square) dari toko Makanan atau Butik ya!",
-            requirementImageName: "req_kevin_square",
-            requirementDescription: "2 Square shapes from Yellow Delicacy or Green Boutique"
+            chatMessage: "get me these plsss",
+            requirementItems: [
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Square (2x2)"),
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Square (2x2)")
+            ]
         ),
         
         // 27. Elliot (+5)
@@ -290,9 +347,11 @@ enum JastipOrderCatalog {
             orderKey: "elliot",
             customerName: "Elliot",
             points: 5,
-            chatMessage: "Titip 1 barang bentuk T dan 1 barang bentuk L dari toko Butik atau Mainan ya!",
-            requirementImageName: "req_elliot",
-            requirementDescription: "1 Tetromino T + 1 Tetromino L (from Green Boutique or Pink Kids)"
+            chatMessage: "gurl cn u get me these??",
+            requirementItems: [
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Tetromino T"),
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Tetromino L")
+            ]
         ),
         
         // 28. Jake (+5)
@@ -300,9 +359,11 @@ enum JastipOrderCatalog {
             orderKey: "jake",
             customerName: "Jake",
             points: 5,
-            chatMessage: "Beliin 2 barang gede (masing-masing minimal 4 kotak) dari toko Makanan atau Mainan!",
-            requirementImageName: "req_jake",
-            requirementDescription: "2 Items (Pink/Yellow), each with minimum 4 grids"
+            chatMessage: "i’d like to request these items,",
+            requirementItems: [
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: ">= 4 Grids"),
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: ">= 4 Grids")
+            ]
         ),
         
         // 29. Leon (+4)
@@ -310,9 +371,11 @@ enum JastipOrderCatalog {
             orderKey: "leon",
             customerName: "Leon",
             points: 4,
-            chatMessage: "Nitip 2 cemilan bentuk stik/lurus (domino atau triomino I) dari toko Delicacy ya!",
-            requirementImageName: "req_leon",
-            requirementDescription: "2 Yellow Delicacy with shapes: Domino or Triomino I"
+            chatMessage: "get me these plsss",
+            requirementItems: [
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Domino / Triomino"),
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Domino / Triomino")
+            ]
         ),
         
         // 30. Matheo - Tetris T (+4)
@@ -320,9 +383,11 @@ enum JastipOrderCatalog {
             orderKey: "matheo_tetris_t",
             customerName: "Matheo",
             points: 4,
-            chatMessage: "Tolong cariin 2 barang yang bentuknya huruf T dari toko mana aja!",
-            requirementImageName: "req_matheo_t",
-            requirementDescription: "2 Tetromino T shapes from any store"
+            chatMessage: "gurl cn u get me these??",
+            requirementItems: [
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Tetromino T"),
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Tetromino T")
+            ]
         ),
         
         // 31. Pixie (+5)
@@ -330,9 +395,12 @@ enum JastipOrderCatalog {
             orderKey: "pixie",
             customerName: "Pixie",
             points: 5,
-            chatMessage: "Beliin 3 barang kecil (single atau domino) dari 3 toko yang berbeda-beda ya!",
-            requirementImageName: "req_pixie",
-            requirementDescription: "3 Items from 3 different stores, each size 1 or 2 grids (Single/Domino)"
+            chatMessage: "i’d like to request these items,",
+            requirementItems: [
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Store A (1/2)"),
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Store B (1/2)"),
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "Store C (1/2)")
+            ]
         ),
         
         // 32. Minnie (+4)
@@ -340,11 +408,14 @@ enum JastipOrderCatalog {
             orderKey: "minnie",
             customerName: "Minnie",
             points: 4,
-            chatMessage: "Titip 2 barang mungil 1 slot (single) dari toko Mainan atau Delicacy ya!",
-            requirementImageName: "req_minnie",
-            requirementDescription: "2 Single (1-grid) items from Pink Kids or Yellow Delicacy"
+            chatMessage: "get me these plsss",
+            requirementItems: [
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "1 Slot (Single)"),
+                JastipRequirementItem(requirementImage: "itemui", shapeDescription: "1 Slot (Single)")
+            ]
         )
     ]
+
     
     // MARK: - Logic Validator Berbasis PieceModel (32 Kasus)
     static func checkOrderCompletion(orderKey: String, items: [PieceModel]) -> Bool {

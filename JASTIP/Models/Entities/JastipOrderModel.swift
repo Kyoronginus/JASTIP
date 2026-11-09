@@ -7,6 +7,18 @@
 
 import Foundation
 
+// Slot requirement per item di dalam chat bubble
+struct JastipRequirementItem: Identifiable, Hashable, Codable {
+    var id: String = UUID().uuidString
+    let requirementImage: String        // Nama asset gambar (placeholder: "itemui")
+    let shapeDescription: String       // Bentuk atau kriteria (misal: "2 / 3 / 4", "kotak / T", "any")
+    
+    init(requirementImage: String = "itemui", shapeDescription: String) {
+        self.requirementImage = requirementImage
+        self.shapeDescription = shapeDescription
+    }
+}
+
 struct JastipOrderModel: Identifiable, Hashable, Codable {
     var id: String = UUID().uuidString
     
@@ -19,8 +31,12 @@ struct JastipOrderModel: Identifiable, Hashable, Codable {
     
     // MARK: - Group Chat Visual & Flavor
     let chatMessage: String             // Teks chat pembuka di grup
-    let requirementImageName: String    // Nama asset gambar diagram/simbol pesanan
-    let requirementDescription: String  // Penjelasan teks singkat dari request-nya
+    var requirementItems: [JastipRequirementItem] = [] // Daftar slot barang (1, 2, 3, dst.)
+    
+    // Backward compatibility
+    var requirementImage: String {
+        requirementItems.first?.requirementImage ?? "itemui"
+    }
     
     // MARK: - Status Gameplay
     var isPersonal: Bool = false        // true jika ini personal objective (hasil drafting)
