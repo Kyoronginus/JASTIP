@@ -15,319 +15,226 @@
 
 import SwiftUI
 
+extension LuggageType: Identifiable {
+    var id: String { rawValue }
+}
+
 struct GameView: View {
-    @Environment(\.dismiss) private var dismiss
-    
     @Bindable private var viewModel: GameSessionViewModel
-    @State private var nfcManager = NFCReaderManager()
     var onOpenCamera: () -> Void
     
-    @State private var isShowingScanner = false
-    @State private var isShowingRevealedWeights = false
-    @State private var isShowingScannedItems = false
-    @State private var lastScannedPiece: PieceModel? = nil
-    @State private var targetIsSuitcase: Bool = true
+    // Properti UI Turn & Kalender (Siap disambungkan oleh dev yang mengerjakan logic turn/kalender)
+    var currentTurnPlayerName: String = "maxwell"
+    var daysToGo: Int = 7
+    var onEndTurn: (() -> Void)? = nil
     
-    @State private var nfcDetectedPiece: PieceModel? = nil
-    @State private var nfcConfirmedWeight: Int? = nil
-    @State private var isShowingNFCPopup = false
-    @State private var isShowingHowTo = false
-    
-    @State private var isShowingChildEditor = false
-    @State private var editorInitialLuggage: LuggageType = .suitcase
-    
-    private var suitWeight: Int {
-        viewModel.suitWeight
-    }
-    
-    private var carryWeight: Int {
-        viewModel.carryWeight
-    }
-    
-    private var maxSuitCapacity: Int {
-        viewModel.displayedAirlineCard.maxCapacityKg
-    }
-    
-    private var maxCarryCapacity: Int {
-        viewModel.displayedAirlineCard.maxCarryOnKg
-    }
-    
-    // Progress otomatis dihitung dari (berat / kapasitas)
-    private var suitProgress: Double {
-        guard maxSuitCapacity > 0 else { return 0 }
-        return Double(suitWeight) / Double(maxSuitCapacity)
-    }
-    
-    private var carryProgress: Double {
-        guard maxCarryCapacity > 0 else { return 0 }
-        return Double(carryWeight) / Double(maxCarryCapacity)
-    }
-    
-    @State private var lastScannedWeight: Int? = nil
+    @State private var openedLuggage: LuggageType? = nil
     
     init(
         viewModel: GameSessionViewModel? = nil,
         airlineCard: AirlineCardModel = AirlineCardCatalog.dummy,
+        currentTurnPlayerName: String = "maxwell",
+        daysToGo: Int = 7,
+        onEndTurn: (() -> Void)? = nil,
         onOpenCamera: @escaping () -> Void = {}
     ) {
         self.viewModel = viewModel ?? GameSessionViewModel(airlineCard: airlineCard)
-//        _viewModel = State(initialValue: initViewModel)
+        self.currentTurnPlayerName = currentTurnPlayerName
+        self.daysToGo = daysToGo
+        self.onEndTurn = onEndTurn
         self.onOpenCamera = onOpenCamera
     }
     
     var body: some View {
         ZStack {
-            VStack{
-                // Top Part
-                VStack {
-                    BoardingCard(
-                        departureTime: viewModel.displayedAirlineCard.departureTime,
-                        currentTimeString: viewModel.currentTimeString,
-                        isHost: viewModel.lobbyService.lobby?.isHost == true,
-                        isNextHourDisabled: viewModel.currentEvent != nil || viewModel.lobbyService.lobby?.isHost != true,
-                        onNextHour: {
-                            viewModel.nextHour()
-                        }
-                    )
-                    .padding(.horizontal)
-                    
-                }
+            VStack(spacing: 0) {
+                // MARK: - Top Header (Turn & Calendar)
+                topHeaderSection
+                    .padding(.horizontal, 24)
+                    .padding(.top, 12)
                 
+                Spacer(minLength: 16)
                 
-                // Middle part
-                // CAROUSEL
-                ScannedItemView(pieces: viewModel.revealedPieces) {
-                    isShowingScannedItems = true
-                }
-                .fullScreenCover(isPresented: $isShowingScannedItems) {
-                    ScannedItemChildView(pieces: viewModel.revealedPieces)
-                }
-                .padding(.vertical,8)
+                // MARK: - Middle Section (Suitcase & Carry-On di Atas Kasur)
+                luggagePairSection
+                    .padding(.horizontal, 20)
                 
+                Spacer(minLength: 140)
                 
-                
-                // Bottom Part
-                Spacer()
-                
-                HStack(alignment: .bottom, spacing: 48) {
-                    // 1. SUITCASE + TOMBOL '+' DI TENGAH BAWAH
-                    ZStack(alignment: .bottom) {
-                        ProgressBar(
-                            luggage: .suitcase,
-                            weight: suitWeight,
-                            maxWeight: maxSuitCapacity,
-                            width: 155
-                        )
-                        .onTapGesture {
-                            editorInitialLuggage = .suitcase
-                            isShowingChildEditor = true
-                        }
-                        
-                        Button {
-                            targetIsSuitcase = true
-                            editorInitialLuggage = .suitcase
-                            isShowingScanner = true
-                            onOpenCamera()
-                        } label: {
-                            Image(systemName: "plus")
-                                .font(.system(size: 20, weight: .bold))
-                                .foregroundStyle(Color("TaxiYellow"))
-                        }
-                        .buttonStyle(PrimaryButtonStyle.square(color: Color("TaxiYellow"), size: 44, cornerRadius: 22))
-                        .disabled(viewModel.currentEvent != nil || viewModel.isBoarded)
-                        .offset(y: 18) // Mengambang pas di tengah batas bawah koper
-                    }
-                    .padding(.bottom, 18) // Memberi ruang ekstra untuk tonjolan tombol
-                    
-                    // 2. CARRY-ON + TOMBOL '+' DI TENGAH BAWAH
-                    ZStack(alignment: .bottom) {
-                        ProgressBar(
-                            luggage: .carryOn,
-                            weight: carryWeight,
-                            maxWeight: maxCarryCapacity,
-                            width: 120
-                        )
-                        .onTapGesture {
-                            editorInitialLuggage = .carryOn
-                            isShowingChildEditor = true
-                        }
-                        
-                        Button {
-                            targetIsSuitcase = false
-                            editorInitialLuggage = .carryOn
-                            isShowingScanner = true
-                            onOpenCamera()
-                        } label: {
-                            Image(systemName: "plus")
-                                .font(.system(size: 18, weight: .bold))
-                                .foregroundStyle(Color("TaxiYellow"))
-                        }
-                        .buttonStyle(PrimaryButtonStyle.square(color: Color("TaxiYellow"), size: 40, cornerRadius: 20))
-                        .disabled(viewModel.currentEvent != nil || viewModel.isBoarded)
-                        .offset(y: 16) // Mengambang pas di tengah batas bawah carry-on
-                    }
-                    .padding(.bottom, 16)
-                }
+                // MARK: - Bottom Section: Slot UI HP Jastip Order (Dihandle oleh Dev Lain)
             }
-            .padding(.horizontal,20)
             
-//            if let event = viewModel.currentEvent, !viewModel.isGameOver {
-//                EventAlertView(event: event) {
-//                    withAnimation {
-//                        viewModel.dismissEvent()
-//                    }
-//                }
-//                .transition(.opacity)
-//                .zIndex(100)
-//            }
-            
-            
-            if isShowingRevealedWeights {
-                Color.black.opacity(0.4)
-                    .ignoresSafeArea()
-                    .onTapGesture {
-                        withAnimation {
-                            isShowingRevealedWeights = false
-                        }
-                    }
-                
-                RevealedPiecesListView(pieces: viewModel.revealedPieces) {
+            // MARK: - Popup Event Aktif
+            if let event = viewModel.currentEvent, !viewModel.isGameOver {
+                EventAlertView(event: event) {
                     withAnimation {
-                        isShowingRevealedWeights = false
+                        viewModel.dismissEvent()
                     }
                 }
-                .transition(.scale.combined(with: .opacity))
-            }
-            
-            if isShowingNFCPopup, let piece = nfcDetectedPiece, let weight = nfcConfirmedWeight {
-                Color.black.opacity(0.4)
-                    .ignoresSafeArea()
-                    .onTapGesture {
-                        withAnimation { isShowingNFCPopup = false }
-                    }
-                
-                VStack(spacing: 16) {
-                    Text("NFC ITEM DETECTED")
-                        .font(.caption)
-                        .fontWeight(.bold)
-                        .foregroundColor(.secondary)
-                    
-                    Text(piece.shape.rawValue)
-                        .font(.title2.bold())
-                    
-                    // Cek jika sedang ada Event Free Items (0 kg)
-                    if viewModel.isZeroWeightHour {
-                        VStack(spacing: 2) {
-                            Text("Bobot: 0 kg")
-                                .font(.title3.bold())
-                                .foregroundColor(.green)
-                            Text("Free Items Event! (Asli: \(weight) kg)")
-                                .font(.caption2.bold())
-                                .foregroundColor(.orange)
-                        }
-                    } else {
-                        Text("Bobot: \(weight) kg")
-                            .font(.title3.bold())
-                            .foregroundColor(.green)
-                    }
-                    
-                    Text("Where do you want to put it in?")
-                        .font(.subheadline.bold())
-                        .foregroundColor(.primary)
-                    
-                    HStack(spacing: 14) {
-                        Button("Suitcase") {
-                            viewModel.recordItemPlacement(piece: piece, weight: weight, isSuitcase: true)
-                            withAnimation { isShowingNFCPopup = false }
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .tint(.blue)
-                        
-                        Button("Carry-On") {
-                            viewModel.recordItemPlacement(piece: piece, weight: weight, isSuitcase: false)
-                            withAnimation { isShowingNFCPopup = false }
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .tint(.orange)
-                    }
-                }
-                .padding(20)
-                .frame(maxWidth: 320)
-                .background(Color(uiColor: .systemBackground))
-                .cornerRadius(16)
-                .shadow(radius: 10)
-                .transition(.scale.combined(with: .opacity))
+                .transition(.opacity)
+                .zIndex(100)
             }
         }
-        .animation(.easeInOut(duration: 0.2), value: viewModel.currentEvent != nil || isShowingRevealedWeights || isShowingNFCPopup)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(
+            Image("OpenSuitCaseViewBackground")
+                .resizable()
+                .scaledToFill()
+                .overlay {
+                    Color.black.opacity(0.4)
+                }
+                .ignoresSafeArea()
+        )
+
+        .animation(.easeInOut(duration: 0.2), value: viewModel.currentEvent != nil)
         .navigationBarBackButtonHidden(true)
-        .fullScreenCover(isPresented: $isShowingScanner) {
-            QRScannerView(session: viewModel, isSuitcase: targetIsSuitcase) { piece, code, weight, isSuitcase in
-                lastScannedPiece = piece
-                if let weight = weight {
-                    lastScannedWeight = weight
-                }
+        .fullScreenCover(item: $openedLuggage) { luggage in
+            PersonalChildView(session: viewModel, initialLuggage: luggage)
+        }
+    }
+    
+    // MARK: - Subview: Top Header (Turn Info, End Turn Button, & Calendar)
+    private var topHeaderSection: some View {
+        HStack(alignment: .top) {
+            // Kiri: Who's Turn + Tombol End Turn
+            VStack(alignment: .leading, spacing: 10) {
+                Text("\(currentTurnPlayerName)'s turn")
+                    .font(.shantellSans(18, .bold))
+                    .foregroundStyle(.white)
                 
-                if let piece = piece, let weight = weight {
-                    let targetLuggage: LuggageType = isSuitcase ? .suitcase : .carryOn
-                    editorInitialLuggage = targetLuggage
-                    viewModel.stageScannedPiece(piece, weight: weight, targetLuggage: targetLuggage)
-                    
-                    // Setelah scanner menutup (0.35 detik), buka layar koper (PersonalChildView)
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                        isShowingChildEditor = true
+                Button {
+                    if let onEndTurn {
+                        onEndTurn()
+                    } else {
+                        viewModel.nextHour()
                     }
+                } label: {
+                    Text("End Turn")
+                        .font(.shantellSans(14, .bold))
                 }
+                .buttonStyle(
+                    PrimaryButtonStyle(
+                        backgroundColor: Color("EndTurn"),
+                        borderColor: .white,
+                        shadowColor: Color("EndTurn").opacity(0.65),
+                        foregroundColor: .white,
+                        cornerRadius: 12,
+                        borderWidth: 1.5,
+                        shadowOffset: 4,
+                        paddingVertical: 8,
+                        paddingHorizontal: 16
+                    )
+                )
+            }
+            .padding(.top, 8)
+            
+            Spacer()
+            
+            // Kanan: Kalender ("Days to go" + Angka Tanggal)
+            CalendarCountdownView(daysToGo: daysToGo)
+        }
+    }
+    
+    // MARK: - Subview: Suitcase & Carry-On di Atas Kasur
+    private var luggagePairSection: some View {
+        HStack(alignment: .bottom, spacing: 8) {
+            
+            VStack {
+                // 1. Suitcase (3x5)
+                Button {
+                    openedLuggage = .suitcase
+                } label: {
+                    LuggageGridView(
+                        grid: viewModel.suitcaseGrid,
+                        cellSize: 46,
+                        cellSpacing: 2,
+                        cellCornerRadius: 3,
+                        isInteractive: false
+                    )
+                    .rotationEffect(.degrees(7))
+                }
+                .buttonStyle(.plain)
+                .scaledToFit()
+    //            .frame(width: 100)
+                .offset(x: 0, y :-120)
+                .disabled(viewModel.currentEvent != nil || viewModel.isBoarded)
+                
+                // text
+                LuggageWeightLabel(currentWeight: viewModel.suitWeight, maxWeight: viewModel.displayedAirlineCard.maxCapacityKg)
+                    .offset(x: 0, y: -100)
+            }
+
+            VStack {
+                // 2. Carry-On (2x2)
+                Button {
+                    openedLuggage = .carryOn
+                } label: {
+                    LuggageGridView(
+                        grid: viewModel.carryOnGrid,
+                        cellSize: 46,
+                        cellSpacing: 2,
+                        cellCornerRadius: 3,
+                        isInteractive: false
+                    )
+                    .rotationEffect(.degrees(-6))
+                }
+                .buttonStyle(.plain)
+                .offset(x:0, y:-70)
+                .disabled(viewModel.currentEvent != nil || viewModel.isBoarded)
+                
+                // text
+                LuggageWeightLabel(currentWeight: viewModel.carryWeight, maxWeight: viewModel.displayedAirlineCard.maxCarryOnKg)
+                    .offset(x: 0, y: -50)
             }
         }
-        .fullScreenCover(isPresented: $isShowingChildEditor) {
-            PersonalChildView(session: viewModel, initialLuggage: editorInitialLuggage)
-        }
-        .appBackground()
     }
 }
 
-#Preview("Host View") {
-    let mockViewModel = GameSessionViewModel(airlineCard: AirlineCardCatalog.dummy)
-    mockViewModel.isBoarded = false
-    mockViewModel.revealedPieces = [
-        RevealedPiece(
-            piece: PieceCatalog.allPieces.first(where: { $0.id == "JASTIP1-5" }) ?? PieceCatalog.allPieces[0],
-            weight: 4,
-            scannedBy: "quincy"
-        ),
-        RevealedPiece(
-            piece: PieceCatalog.allPieces.first(where: { $0.id == "JASTIP4-6" }) ?? PieceCatalog.allPieces[1],
-            weight: 4,
-            scannedBy: "emily"
-        ),
-        RevealedPiece(
-            piece: PieceCatalog.allPieces.first(where: { $0.id == "JASTIP4-9" }) ?? PieceCatalog.allPieces[2],
-            weight: 5,
-            scannedBy: "david"
-        )
-    ]
-    mockViewModel.suitWeight = 12
-    mockViewModel.carryWeight = 4
-    return GameView(viewModel: mockViewModel)
+// MARK: - Subview: Kalender Countdown (ZStack Image + Angka)
+struct CalendarCountdownView: View {
+    let daysToGo: Int
+    
+    var body: some View {
+        ZStack {
+            Image("Calendar")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 100, height: 148)
+            
+            Text("\(daysToGo)")
+                .font(.shantellSans(64, .bold))
+                .foregroundStyle(Color("SuitcaseFrame"))
+                .offset(y: 16)
+        }
+    }
 }
 
-#Preview("Non-Host View") {
+// MARK: - Subview: Weight label for baggages
+struct LuggageWeightLabel: View {
+    let currentWeight: Int
+    let maxWeight: Int
+    
+    private var isOverweight: Bool {
+        currentWeight > maxWeight
+    }
+    
+    var body: some View {
+        HStack(spacing: 4) {
+            Text("\(currentWeight)")
+                .foregroundStyle(isOverweight ? Color.red : Color.black)
+            Text("/ \(maxWeight) kg")
+                .foregroundStyle(Color.black)
+        }
+        .font(.shantellSans(16, .bold))
+    }
+}
+
+#Preview("PersonalView (OpenSuitcaseView)") {
     let mockViewModel = GameSessionViewModel(airlineCard: AirlineCardCatalog.dummy)
     mockViewModel.isBoarded = false
-    mockViewModel.revealedPieces = [
-        RevealedPiece(
-            piece: PieceCatalog.allPieces.first(where: { $0.id == "JASTIP1-5" }) ?? PieceCatalog.allPieces[0],
-            weight: 4,
-            scannedBy: "quincy"
-        ),
-        RevealedPiece(
-            piece: PieceCatalog.allPieces.first(where: { $0.id == "JASTIP4-6" }) ?? PieceCatalog.allPieces[1],
-            weight: 4,
-            scannedBy: "emily"
-        )
-    ]
-    mockViewModel.suitWeight = 8
-    mockViewModel.carryWeight = 3
-    return GameView(viewModel: mockViewModel)
+    return GameView(
+        viewModel: mockViewModel,
+        currentTurnPlayerName: "maxwell",
+        daysToGo: 7
+    )
 }

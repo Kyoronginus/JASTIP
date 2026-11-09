@@ -21,29 +21,29 @@ enum PieceShape: String, Codable, Equatable {
 }
 
 enum PieceColor: String, CaseIterable, Codable, Equatable {
-    case red = "Red"
-    case yellow = "Yellow"
-    case green = "Green"
+    case purple = "Purple"
+    case orange = "Orange"
     case blue = "Blue"
-    case pink = "Pink"
+    case green = "Green"
+    case red = "Red"
     
     var displayColor: Color {
         switch self {
-        case .red: return .red
-        case .yellow: return .yellow
-        case .green: return .green
+        case .purple: return .purple
+        case .orange: return .orange
         case .blue: return .blue
-        case .pink: return .pink
+        case .green: return .green
+        case .red: return .red
         }
     }
     
     var categoryName: String {
         switch self {
-            case .red: return "Books"
-            case .yellow: return "Delicacy"
-            case .green: return "Boutique"
-            case .blue: return "Antique"
-            case .pink: return "Kids"
+        case .purple: return "Wellness"
+        case .orange: return "Delicacy"
+        case .blue: return "Boutique"
+        case .green: return "Antique"
+        case .red: return "Toys"
         }
     }
 }

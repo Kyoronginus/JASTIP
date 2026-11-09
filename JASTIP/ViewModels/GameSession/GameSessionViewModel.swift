@@ -218,7 +218,7 @@ class GameSessionViewModel {
         var weights: [String: Int] = [:]
         let deltas = [1, 1, 2, 2, 3]
         
-        let allColors: [PieceColor] = [.red, .yellow, .green, .blue, .pink]
+        let allColors: [PieceColor] = PieceColor.allCases
         
         for color in allColors {
             let piecesOfColor = PieceCatalog.allPieces.filter { $0.color == color }
