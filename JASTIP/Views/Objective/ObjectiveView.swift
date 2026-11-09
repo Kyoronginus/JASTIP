@@ -221,8 +221,13 @@ struct ObjectiveView: View {
                         Spacer()
                     }
                 }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8) // Padding vertikal agar teks 2 baris bernapas
+                .frame(minHeight: 42)  // 4. TINGGI MINIMAL 42 (akan membesar ke atas jika ada 2 baris)
+                .background(Color(.systemBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
                 
-                // Tombol Send Message
+                // Tombol Send / Accept Message
                 Button {
                     confirmSelectedDraftOrders()
                 } label: {
@@ -318,6 +323,10 @@ struct ObjectiveView: View {
     }
 }
 
+//#Preview {
+//    ObjectiveView(viewModel: GameSessionViewModel())
+//}
+
 #Preview {
-    ObjectiveView(viewModel: GameSessionViewModel())
+    MainTabView(viewModel: GameSessionViewModel())
 }
