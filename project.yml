@@ -59,7 +59,18 @@ targets:
           - SpaceGrotesk-Medium.ttf
           - SpaceGrotesk-SemiBold.ttf
           - SpaceGrotesk-Bold.ttf
-
+          - ShantellSans-Bold.ttf
+          - ShantellSans-BoldItalic.ttf
+          - ShantellSans-ExtraBold
+          - ShantellSans-ExtraBoldItalic
+          - ShantellSans-Italic
+          - ShantellSans-Light
+          - ShantellSans-LightItalic
+          - ShantellSans-Medium
+          - ShantellSans-MediumItalic
+          - ShantellSans-Regular
+          - ShantellSans-SemiBold
+          - ShantellSans-SemiBoldItalic
 packages:
   Firebase:
     url: https://github.com/firebase/firebase-ios-sdk

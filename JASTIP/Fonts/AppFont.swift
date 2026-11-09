@@ -41,7 +41,23 @@ enum AppFont {
         default:
             return .custom("SpaceGrotesk-Regular", size: size)
         }
-}
+    }
+    
+    // Shantell Sans
+    static func shantellSans(size: CGFloat, weight: Font.Weight = .regular) -> Font {
+        switch weight {
+        case .bold:
+            return .custom("ShantellSans-Bold", size: size)
+        case .semibold:
+            return .custom("ShantellSans-SemiBold", size: size)
+        case .medium:
+            return .custom("ShantellSans-Medium", size: size)
+        case .light:
+            return .custom("ShantellSans-Light", size: size)
+        default:
+            return .custom("ShantellSans-Regular", size: size)
+        }
+    }
 }
 
 // Extension biar bisa dipanggil langsung: .font(.plusJakarta(16, .bold)) atau .font(.spaceGrotesk(16, .bold))
@@ -52,5 +68,9 @@ extension Font {
     
     static func spaceGrotesk(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
         AppFont.spaceGrotesk(size: size, weight: weight)
+    }
+    
+    static func shantellSans(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
+        AppFont.shantellSans(size: size, weight: weight)
     }
 }
