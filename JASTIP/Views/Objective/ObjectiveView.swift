@@ -190,7 +190,6 @@ struct ObjectiveView: View {
                         Spacer()
                     }
                 }
-
                 .padding(.vertical, 10)
                 Button {
                     startDraftingFlow()
@@ -221,11 +220,7 @@ struct ObjectiveView: View {
                         Spacer()
                     }
                 }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8) // Padding vertikal agar teks 2 baris bernapas
-                .frame(minHeight: 42)  // 4. TINGGI MINIMAL 42 (akan membesar ke atas jika ada 2 baris)
-                .background(Color(.systemBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .padding(.vertical, 10)
                 
                 // Tombol Send / Accept Message
                 Button {
@@ -323,10 +318,10 @@ struct ObjectiveView: View {
     }
 }
 
-//#Preview {
-//    ObjectiveView(viewModel: GameSessionViewModel())
-//}
-
 #Preview {
-    MainTabView(viewModel: GameSessionViewModel())
+    ObjectiveView(viewModel: GameSessionViewModel())
 }
+
+//#Preview {
+//    MainTabView(viewModel: GameSessionViewModel())
+//}

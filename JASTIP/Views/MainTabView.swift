@@ -143,7 +143,7 @@ struct ObjectivePhoneContainer: View {
             VStack(spacing: 0) {
                 // Jarak atas agar konten tidak nabrak Dynamic Island frame
                 Color.clear
-                    .frame(height: 48)
+                    .frame(height: 57)
                 
                 ObjectiveView(viewModel: viewModel)
                     .clipShape(RoundedRectangle(cornerRadius: 35))

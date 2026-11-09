@@ -7,6 +7,7 @@
 
 import SwiftUI
 import AudioToolbox
+import AVFoundation
 
 struct StoryboardView: View {
     @Bindable var session: GameSessionViewModel
@@ -14,6 +15,8 @@ struct StoryboardView: View {
     
     // State animasi PPT: langkah reveal saat ini (0..6)
     @State private var currentStep: Int = 0
+
+    @State private var audioPlayer: AVAudioPlayer?
     
     // Suara & Haptik
     private let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
@@ -58,6 +61,7 @@ struct StoryboardView: View {
                         insertion: .move(edge: .trailing).combined(with: .opacity),
                         removal: .opacity
                     ))
+
                 }
             }
             .animation(.spring(response: 0.45, dampingFraction: 0.8), value: currentSheet)
@@ -103,7 +107,7 @@ struct StoryboardView: View {
                 Spacer()
                 
                 // Petunjuk Tap di Bawah
-                Text(currentStep >= 6 ? "Tap untuk mulai berbelanja" : "Tap layar untuk melanjutkan")
+                Text(currentStep >= 5 ? "Tap untuk mulai berbelanja" : "Tap layar untuk melanjutkan")
                     .font(.spaceGrotesk(12, .medium))
                     .foregroundStyle(Color.secondary.opacity(0.7))
                     .padding(.bottom, 16)
@@ -120,7 +124,7 @@ struct StoryboardView: View {
     
     // MARK: - Step Advancement
     private func advanceStep() {
-        if currentStep < 6 {
+        if currentStep < 5 {
             withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
                 currentStep += 1
             }
@@ -136,17 +140,24 @@ struct StoryboardView: View {
         
         switch step {
         case 0: // POST
-            AudioServicesPlaySystemSound(1104) // keyboard tap sound
+//            AudioServicesPlaySystemSound(1104)  keyboard tap sound
+            AudioManager.shared.play("panel 1.1 - post story.mp3")
         case 1: // ROLL..
-            AudioServicesPlaySystemSound(1105)
+//            AudioServicesPlaySystemSound(1105)
+            AudioManager.shared.play("panel 1.2 - suitcase rolling.mp3")
         case 2: // Panel 3
-            AudioServicesPlaySystemSound(1104)
+//            AudioServicesPlaySystemSound(1104)
+            AudioManager.shared.play("panel 1.3 - seatbelt click.mp3")
         case 3: // WOOOSH...
-            AudioServicesPlaySystemSound(1001) // swoosh sound
+//            AudioServicesPlaySystemSound(1001) // swoosh sound
+            AudioManager.shared.play("panel 2.1 - airplane swoosh.mp3")
         case 4: // STEP.. STEP..
-            AudioServicesPlaySystemSound(1104)
+//            AudioServicesPlaySystemSound(1104)
+            AudioManager.shared.play("panel 2.2 - walking click clack.mp3")
+            
         case 5: // PING!
-            AudioServicesPlaySystemSound(1003) // SMS notification chime
+//            AudioServicesPlaySystemSound(1003) // SMS notification chime
+            // AudioManager.shared.play("panel 3 - notification ping.mp3")
             notificationFeedback.notificationOccurred(.success)
         case 6: // Cards reveal
             AudioServicesPlaySystemSound(1003)
@@ -304,11 +315,15 @@ struct StoryboardSheet2View: View {
 struct StoryboardSheet3View: View {
     let step: Int
     let orders: [JastipOrderModel]
+
+    @State private var visibleBubbleCount: Int = 0
+    private let pingHaptic = UINotificationFeedbackGenerator()
     
     // Parameter layout kartu agar mudah disesuaikan
-    var cardsTopOffset: CGFloat = 220
-    var cardsHorizontalPadding: CGFloat = 48
-    var cardsSpacing: CGFloat = 10
+    var cardsTopOffset: CGFloat = 190
+    var cardsHorizontalPadding: CGFloat = 20
+    var bubbleScale: CGFloat = 0.38
+    var cardsSpacing: CGFloat = -18
     
     var body: some View {
         ZStack {
@@ -322,35 +337,45 @@ struct StoryboardSheet3View: View {
                 .ignoresSafeArea()
             
             // Stiker PING! di atas HP
+            // Overlay 3 JastipChatBubble di Layar HP
             if step >= 5 {
-                VStack {
-                    HStack {
-                        Spacer()
-                        Image("sfx_ping")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 150)
-                            .rotationEffect(.degrees(35))
-                            .offset(x: -28, y: 110)
-                            .transition(.scale(scale: 1.4).combined(with: .opacity))
-                    }
-                    Spacer()
-                }
-            }
-            
-            // Overlay 3 Kartu Jastip di Layar HP (VStack di ZStack)
-            if step >= 6 {
-                VStack(spacing: cardsSpacing) {
+                VStack(alignment:.leading, spacing: cardsSpacing) {
                     Spacer().frame(height: cardsTopOffset)
                     
-                    ForEach(orders.prefix(3)) { order in
-                        StoryboardOrderCardItemView(order: order)
-                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                    let targetOrders = Array(orders.prefix(3))
+                    ForEach(0..<targetOrders.count, id: \.self) { index in
+                        if index < visibleBubbleCount {
+                            JastipChatBubble(order: targetOrders[index])
+                                .scaleEffect(bubbleScale, anchor: .topLeading)
+                                .frame(width: 10, height: 110) // Batasi slot tinggi vertikal setelah diskalakan
+                                .transition(.asymmetric(
+                                    insertion: .move(edge: .bottom).combined(with: .opacity).combined(with: .scale(scale: 0.8)),
+                                    removal: .opacity
+                                ))
+                        }
                     }
                     
                     Spacer()
                 }
                 .padding(.horizontal, cardsHorizontalPadding)
+                .offset(x: 100, y: 100)
+            }
+        }
+        .task {
+            // Tunggu 0.2 detik setelah transisi sheet 3 selesai
+            try? await Task.sleep(nanoseconds: 200_000_000)
+            
+            let total = min(3, orders.count)
+            for i in 1...total {
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.72)) {
+                    visibleBubbleCount = i
+                }
+                // Mainkan suara ping & haptic per bubble
+                AudioManager.shared.play("panel 3 - notification ping.mp3")
+                pingHaptic.notificationOccurred(.success)
+                
+                // Jeda 0.25 detik sebelum bubble berikutnya muncul
+                try? await Task.sleep(nanoseconds: 250_000_000)
             }
         }
     }
