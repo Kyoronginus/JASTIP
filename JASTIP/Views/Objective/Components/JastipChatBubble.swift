@@ -14,11 +14,35 @@ struct JastipChatBubble: View {
     var isSelected: Bool = false
     var onToggleSelect: () -> Void = {}
     
-    // Warna tema acak pengirim ala WhatsApp Group
-    private var senderColor: Color {
-        let colors: [Color] = [.orange, .blue, .green, .purple, Color(red: 0.95, green: 0.45, blue: 0.15)]
+    // Model pasangan warna Avatar (Background & Icon)
+    private struct ProfileTheme {
+        let main: Color       // Warna background avatar & teks header
+        let iconTint: Color   // Warna icon profil di dalamnya (varian 150)
+    }
+    
+    // Daftar palet warna dari Assets yang lo punya
+    private var profileTheme: ProfileTheme {
+        let themes: [ProfileTheme] = [
+            ProfileTheme(
+                main: Color("PassportBlue"),
+                iconTint: Color("PassportBlue150")
+            ),
+            ProfileTheme(
+                main: Color("TransitTangerine"),
+                iconTint: Color("TransitTangerine150")
+            ),
+            ProfileTheme(
+                main: Color("FragileRed"),
+                iconTint: Color("FragileRed150")
+            ),
+            ProfileTheme(
+                main: Color("TaxiYellow"),
+                iconTint: Color("TaxiYellow150")
+            )
+        ]
+        
         let hash = abs(order.customerName.hashValue)
-        return colors[hash % colors.count]
+        return themes[hash % themes.count]
     }
     
     // Lebar ideal kartu gambar sesuai jumlah item (Hug Content)
@@ -49,35 +73,37 @@ struct JastipChatBubble: View {
                     } label: {
                         Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                             .font(.system(size: 26, weight: .semibold))
-                            .foregroundStyle(isSelected ? Color.blue : Color.gray.opacity(0.4))
+                            .foregroundStyle(isSelected ? Color("PassportBlue") : Color.gray.opacity(0.4))
                     }
                     .buttonStyle(.plain)
                     .padding(.top, 12)
                 } else {
+                    // Background Circle Avatar
                     Circle()
-                        .fill(senderColor)
+                        .fill(profileTheme.main)
                         .frame(width: 44, height: 44)
                     
+                    // Icon Person dengan varian warna 150
                     Image(systemName: "person.fill")
                         .font(.system(size: 24))
-                        .foregroundStyle(.white.opacity(0.9))
+                        .foregroundStyle(profileTheme.iconTint)
                 }
             }
             .padding(.top, 2)
             
             // MARK: - Bubble Chat Putih (Hug Content Ukuran Asli)
             VStack(alignment: .leading, spacing: 8) {
-                // 1. Header: Nama Customer & Nominal Dollar
+                // 1. Header: Nama Customer & Nominal Dollar (Warna Utama Tema)
                 HStack {
                     Text(order.customerName)
                         .font(.plusJakarta(15, .bold))
-                        .foregroundStyle(senderColor)
+                        .foregroundStyle(profileTheme.main)
                     
                     Spacer(minLength: 16)
                     
                     Text("$\(order.points * 10)")
                         .font(.plusJakarta(15, .bold))
-                        .foregroundStyle(senderColor)
+                        .foregroundStyle(profileTheme.main)
                 }
                 
                 // 2. Chat Message

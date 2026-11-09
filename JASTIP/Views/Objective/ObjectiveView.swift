@@ -176,59 +176,79 @@ struct ObjectiveView: View {
         HStack(spacing: 10) {
             if !isDrafting {
                 // TAMPILAN NORMAL (SELALU KEMBALI KE SINI SETELAH DRAFT SELESAI)
-                HStack {
-                    Text("anyone else need anything?")
-                        .font(.plusJakarta(14, .regular))
-                        .foregroundColor(.secondary)
-                    Spacer()
+                ZStack{
+                    Image("tfback")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 260)
+                    HStack{
+                        Spacer()
+                            .frame(width: 10)
+                        Text("anyone else need anything?")
+                            .font(.system(size: 16, weight: .regular))
+                            .foregroundColor(Color("TextActive"))
+                        Spacer()
+                    }
                 }
-                .padding(.horizontal, 8)
+
                 .padding(.vertical, 10)
-                .frame(height: 42)
-                .background(Color(.systemBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
                 Button {
                     startDraftingFlow()
                 } label: {
-                    Text("Add Order")
-                        .font(.plusJakarta(12, .bold))
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 10)
-                        .foregroundColor(.white)
-                        .background(Color.blue)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                    ZStack{
+                        Image("addorderback")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 100)
+                        Text("Add Order")
+                            .font(.system(size: 16, weight: .regular))
+                            .foregroundColor(.white)
+                    }
                 }
             } else {
                 // TAMPILAN MODE DRAFTING (Saat memilih kartu)
-                HStack {
-                    Text(confirmationTemplateText)
-                        .font(.plusJakarta(13, .regular))
-                        .foregroundColor(selectedOrderIds.isEmpty ? .secondary : .primary)
-                        .lineLimit(1)
-                    Spacer()
+                ZStack{
+                    Image("tfback")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 260)
+                    HStack{
+                        Spacer()
+                            .frame(width: 10)
+                        Text(confirmationTemplateText)
+                            .font(.system(size: 16, weight: .regular))
+                            .foregroundColor(selectedOrderIds.isEmpty ? Color("TextDisabled") : Color("TextActive"))
+                        Spacer()
+                    }
                 }
-                .padding(.horizontal, 14)
-                .frame(height: 42)
-                .background(Color(.systemBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
                 
                 // Tombol Send Message
                 Button {
                     confirmSelectedDraftOrders()
                 } label: {
-                    Text("Send message")
-                        .font(.plusJakarta(12, .bold))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 10)
-                        .foregroundColor(.white)
-                        .background(selectedOrderIds.isEmpty ? Color.gray.opacity(0.5) : Color.blue)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                    ZStack{
+                        if (selectedOrderIds.isEmpty){
+                            Image("addorderbackdisabled")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 100)
+                        }
+                        else{
+                            Image("addorderback")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 100)
+                        }
+                        Text("Accept")
+                            .font(.system(size: 16, weight: .regular))
+                            .foregroundColor(.white)
+                    }
                 }
                 .disabled(selectedOrderIds.isEmpty)
             }
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 20)
+        .padding(.vertical, 10)
         .background(Color(.backgroundReply))
     }
     
