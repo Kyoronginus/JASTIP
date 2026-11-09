@@ -34,6 +34,7 @@ extension GameSessionViewModel {
         
         if event?.type == .flightDelay {
             delayHours += 1
+            daysToGo += 1
         }
         
         let gameOverStatus = currentHour > boardingHour
