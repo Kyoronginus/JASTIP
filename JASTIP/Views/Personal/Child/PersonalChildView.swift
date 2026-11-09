@@ -11,7 +11,10 @@ struct PersonalChildView: View {
     @Environment(\.dismiss) private var dismiss
     @Bindable var session: GameSessionViewModel
     
-    @State private var activeLuggage: LuggageType
+    let activeLuggage: LuggageType
+    
+    // State Scanner
+    @State private var isShowingScanner: Bool = false
     
     // State drag-and-drop (berlaku untuk drag dari staging maupun dari dalam grid)
     @State private var draggingStagingItem: StagedItem? = nil
@@ -21,30 +24,25 @@ struct PersonalChildView: View {
     @State private var isHoverValid: Bool = false
     @State private var gridFrame: CGRect = .zero
     
-    private let cellSize: CGFloat = 72
-    var initialLuggage: LuggageType = .suitcase
-    
     init(session: GameSessionViewModel, initialLuggage: LuggageType = .suitcase) {
         self.session = session
-        self.initialLuggage = initialLuggage
-        let startLuggage = session.stagedItems.first?.lockedLuggage ?? initialLuggage
-        _activeLuggage = State(initialValue: startLuggage)
+        self.activeLuggage = initialLuggage
+    }
+    
+    private var cellSize: CGFloat {
+        activeLuggage == .suitcase ? 82 : 114
+    }
+    
+    private var cellSpacing: CGFloat {
+        activeLuggage == .suitcase ? 5 : 6
+    }
+    
+    private var cellCornerRadius: CGFloat {
+        activeLuggage == .suitcase ? 8 : 13
     }
     
     private var activeGrid: LuggageGridModel {
         activeLuggage == .suitcase ? session.suitcaseGrid : session.carryOnGrid
-    }
-    
-    private var currentWeight: Int {
-        activeLuggage == .suitcase ? session.suitWeight : session.carryWeight
-    }
-    
-    private var maxWeight: Int {
-        activeLuggage == .suitcase ? session.displayedAirlineCard.maxCapacityKg : session.displayedAirlineCard.maxCarryOnKg
-    }
-    
-    private var isOverweight: Bool {
-        currentWeight > maxWeight
     }
     
     private var activeDraggedPieceAndRotation: (PieceModel, LuggageRotation)? {
@@ -67,88 +65,47 @@ struct PersonalChildView: View {
     
     var body: some View {
         ZStack {
-            VStack(spacing: 16) {
+            VStack(spacing: 14) {
                 headerBar
                 
-                Spacer()
+                Spacer(minLength: 0)
                 
-                // Koper + Tombol Arrow Kiri & Kanan
-                HStack(spacing: 12) {
-                    Button {
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-                            activeLuggage = .suitcase
+                LuggageGridView(
+                    grid: activeGrid,
+                    cellSize: cellSize,
+                    cellSpacing: cellSpacing,
+                    cellCornerRadius: cellCornerRadius,
+                    isInteractive: true,
+                    hoverCoords: hoverCoordinates,
+                    isHoverValid: isHoverValid,
+                    draggingPieceId: draggingPlacedPiece?.id,
+                    onGridFrameChange: { newFrame in
+                        gridFrame = newFrame
+                    },
+                    onRotatePiece: { placed in
+                        withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
+                            session.rotatePlacedPiece(placed)
                         }
-                    } label: {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundStyle(activeLuggage == .suitcase ? Color.secondary.opacity(0.3) : Color("TaxiYellow"))
-                            .frame(width: 36, height: 36)
-                            .background(Color("NavyBlack").opacity(activeLuggage == .suitcase ? 0.3 : 0.85))
-                            .clipShape(Circle())
+                    },
+                    onDragPieceChanged: { placed, value in
+                        draggingPlacedPiece = placed
+                        dragLocation = value.location
+                        updateHover(
+                            at: value.location,
+                            for: placed.piece,
+                            rotation: placed.rotation,
+                            ignoringPieceId: placed.id,
+                            lockedLuggage: placed.assignedLuggage
+                        )
+                    },
+                    onDragPieceEnded: { placed, value in
+                        handleDropPlacedPiece(placed, at: value.location)
                     }
-                    .disabled(activeLuggage == .suitcase)
-                    
-                    Spacer()
-                    
-                    LuggageGridView(
-                        grid: activeGrid,
-                        cellSize: cellSize,
-                        hoverCoords: hoverCoordinates,
-                        isHoverValid: isHoverValid,
-                        draggingPieceId: draggingPlacedPiece?.id,
-                        onRotatePiece: { placed in
-                            withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
-                                session.rotatePlacedPiece(placed)
-                            }
-                        },
-                        onDragPieceChanged: { placed, value in
-                            draggingPlacedPiece = placed
-                            dragLocation = value.location
-                            updateHover(
-                                at: value.location,
-                                for: placed.piece,
-                                rotation: placed.rotation,
-                                ignoringPieceId: placed.id,
-                                lockedLuggage: placed.assignedLuggage
-                            )
-                        },
-                        onDragPieceEnded: { placed, value in
-                            handleDropPlacedPiece(placed, at: value.location)
-                        }
-                    )
-//                    .rotationEffect(.degrees(90))
-                    .background(
-                        GeometryReader { geo in
-                            Color.clear
-                                .onAppear {
-                                    gridFrame = geo.frame(in: .named("LUGGAGE_CANVAS"))
-                                }
-                                .onChange(of: geo.frame(in: .named("LUGGAGE_CANVAS"))) { _, newFrame in
-                                    gridFrame = newFrame
-                                }
-                        }
-                    )
-
-                    Spacer()
-                    
-                    Button {
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-                            activeLuggage = .carryOn
-                        }
-                    } label: {
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundStyle(activeLuggage == .carryOn ? Color.secondary.opacity(0.3) : Color("TaxiYellow"))
-                            .frame(width: 36, height: 36)
-                            .background(Color("NavyBlack").opacity(activeLuggage == .carryOn ? 0.3 : 0.85))
-                            .clipShape(Circle())
-                    }
-                    .disabled(activeLuggage == .carryOn)
-                }
+                )
                 
-                Spacer()
+//                Spacer(minLength: 0)
                 
-                // Area Bawah: Staging Kepingan
+                // Area Bawah: Staging Kepingan ("Drag items here to reorganize")
                 StagingSectionView(
                     items: session.stagedItems,
                     draggingItemId: draggingStagingItem?.id,
@@ -172,10 +129,32 @@ struct PersonalChildView: View {
                         handleDropStagedItem(item)
                     }
                 )
+//                .padding()
+                
+                // Tombol Scan Item
+                Button {
+                    isShowingScanner = true
+                } label: {
+                    Text("Scan Item")
+                }
+                .buttonStyle(
+                    PrimaryButtonStyle(
+                        backgroundColor: Color("ScanItem"),
+                        borderColor: Color("ScanItem"),
+                        shadowColor: Color("SuitcaseGrid"),
+                        foregroundColor: Color("SuitcaseFrame"),
+                        font: .shantellSans(16, .bold),
+                        cornerRadius: 14,
+                        borderWidth: 1.5,
+                        shadowOffset: 5,
+                        paddingVertical: 12,
+                        paddingHorizontal: 36
+                    )
+                )
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 16)
-            .padding(.bottom, 24)
+            .padding(.horizontal, 24)
+            .padding(.top, 12)
+            .padding(.bottom, 16)
             
             // Floating Piece saat di-drag (membesar ke ukuran asli grid koper)
             if let (draggedPiece, draggedRotation) = activeDraggedPieceAndRotation {
@@ -183,8 +162,8 @@ struct PersonalChildView: View {
                     piece: draggedPiece,
                     rotation: draggedRotation,
                     blockSize: cellSize,
-                    spacing: 4,
-                    cornerRadius: 10
+                    spacing: cellSpacing,
+                    cornerRadius: cellCornerRadius
                 )
                 .shadow(color: .black.opacity(0.45), radius: 12, y: 6)
                 .position(dragLocation)
@@ -192,14 +171,25 @@ struct PersonalChildView: View {
             }
         }
         .coordinateSpace(name: "LUGGAGE_CANVAS")
-        .appBackground()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(
+            Image("OpenSuitCaseChildViewBackground")
+                .resizable()
+                .overlay {
+                    Color.black.opacity(0.5)
+                }
+                .scaledToFill()
+                .ignoresSafeArea()
+        )
+        .fullScreenCover(isPresented: $isShowingScanner) {
+            QRScannerView(session: session, isSuitcase: activeLuggage == .suitcase) { piece, _, weight, _ in
+                if let piece = piece, let weight = weight {
+                    session.stageScannedPiece(piece, weight: weight, targetLuggage: activeLuggage)
+                }
+            }
+        }
         .onAppear {
             session.captureGridSnapshotIfNeeded()
-            if let locked = session.stagedItems.first?.lockedLuggage {
-                activeLuggage = locked
-            } else {
-                activeLuggage = initialLuggage
-            }
         }
     }
     
@@ -214,34 +204,25 @@ struct PersonalChildView: View {
                 }
                 dismiss()
             } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 16, weight: .bold))
-                    Text(session.stagedItems.isEmpty ? "Selesai" : "Batal")
-                        .font(.spaceGrotesk(14, .bold))
-                }
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 16, weight: .bold))
             }
-            .buttonStyle(PrimaryButtonStyle(
-                backgroundColor: .black,
-                borderColor: Color("TaxiYellow"),
-                foregroundColor: Color("TaxiYellow"),
-                cornerRadius: 12,
-                paddingVertical: 10,
-                paddingHorizontal: 14
-            ))
+            .buttonStyle(
+                PrimaryButtonStyle(
+                    backgroundColor: .white,
+                    borderColor: .white,
+                    shadowColor: Color("SuitcaseFrame"),
+                    foregroundColor: Color("SuitcaseFrame"),
+                    cornerRadius: 10,
+                    borderWidth: 1.5,
+                    shadowOffset: 4,
+                    paddingVertical: 8,
+                    paddingHorizontal: 12
+                )
+            )
+            .offset(x:0 ,y: 20)
             
             Spacer()
-            
-            VStack(alignment: .trailing, spacing: 2) {
-                Text("\(currentWeight) / \(maxWeight) KG")
-                    .font(.spaceGrotesk(18, .bold))
-                    .foregroundStyle(isOverweight ? Color("FragileRed") : Color("TaxiYellow"))
-                if isOverweight {
-                    Text("OVERWEIGHT (-1 pt/kg)")
-                        .font(.spaceGrotesk(10, .bold))
-                        .foregroundStyle(Color("FragileRed"))
-                }
-            }
         }
     }
     
@@ -265,15 +246,15 @@ struct PersonalChildView: View {
         let cols = (rotated.map(\.x).max() ?? 0) + 1
         let rows = (rotated.map(\.y).max() ?? 0) + 1
         
-        let step = cellSize + 4
-        let pieceWidth = CGFloat(cols) * cellSize + CGFloat(cols - 1) * 4
-        let pieceHeight = CGFloat(rows) * cellSize + CGFloat(rows - 1) * 4
+        let step = cellSize + cellSpacing
+        let pieceWidth = CGFloat(cols) * cellSize + CGFloat(cols - 1) * cellSpacing
+        let pieceHeight = CGFloat(rows) * cellSize + CGFloat(rows - 1) * cellSpacing
         
         let pieceTopLeftX = location.x - pieceWidth / 2.0
         let pieceTopLeftY = location.y - pieceHeight / 2.0
         
-        let gridOriginX = gridFrame.minX + 12
-        let gridOriginY = gridFrame.minY + 12
+        let gridOriginX = gridFrame.minX
+        let gridOriginY = gridFrame.minY
         
         let estimatedX = Int(round((pieceTopLeftX - gridOriginX) / step))
         let estimatedY = Int(round((pieceTopLeftY - gridOriginY) / step))
@@ -323,7 +304,7 @@ struct PersonalChildView: View {
     }
 }
 
-// MARK: - Subview: Area Staging Kepingan
+// MARK: - Subview: Area Staging Kepingan ("Drag items here to reorganize")
 private struct StagingSectionView: View {
     let items: [StagedItem]
     let draggingItemId: UUID?
@@ -332,26 +313,21 @@ private struct StagingSectionView: View {
     let onDragItemEnded: (StagedItem, DragGesture.Value) -> Void
     
     var body: some View {
-        VStack(spacing: 10) {
-            Text(
-                items.isEmpty
-                    ? "Tarik barang di koper untuk geser / keluarkan • Double-tap untuk putar"
-                    : "Double-tap untuk memutar • Tarik ke koper"
-            )
-            .font(.spaceGrotesk(11, .medium))
-            .foregroundStyle(.secondary)
-            .multilineTextAlignment(.center)
+        ZStack {
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.white.opacity(0.2))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .strokeBorder(style: StrokeStyle(lineWidth: 2, dash: [8, 6]))
+                        .foregroundStyle(Color.white.opacity(0.85))
+                )
             
             if items.isEmpty {
-                RoundedRectangle(cornerRadius: 14)
-                    .strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [6, 5]))
-                    .foregroundStyle(Color.secondary.opacity(0.35))
-                    .frame(height: 96)
-                    .overlay(
-                        Text("Tarik barang ke sini untuk dikeluarkan sementara")
-                            .font(.spaceGrotesk(12, .regular))
-                            .foregroundStyle(.secondary.opacity(0.6))
-                    )
+                Text("Drag items here to reorganize")
+                    .font(.shantellSans(14, .regular))
+                    .foregroundStyle(.white)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 16)
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 20) {
@@ -379,13 +355,11 @@ private struct StagingSectionView: View {
                             }
                         }
                     }
-                    .padding(.horizontal, 12)
-                    .frame(minHeight: 96)
+                    .padding(.horizontal, 16)
                 }
-                .frame(height: 104)
             }
         }
-        .frame(height: 130)
+        .frame(height: 112)
     }
 }
 
@@ -446,10 +420,12 @@ private struct PieceBlockCellView: View {
 }
 
 // MARK: - Preview
-#Preview("PersonalChildView") {
+#Preview("Suitcase Child View") {
     let session = GameSessionViewModel()
-    session.stagingPiece = PieceCatalog.allPieces.first(where: { $0.shape == .smallL })
-    session.stagingWeight = 3
-    
-    return PersonalChildView(session: session)
+    return PersonalChildView(session: session, initialLuggage: .suitcase)
+}
+
+#Preview("Carry-On Child View") {
+    let session = GameSessionViewModel()
+    return PersonalChildView(session: session, initialLuggage: .carryOn)
 }

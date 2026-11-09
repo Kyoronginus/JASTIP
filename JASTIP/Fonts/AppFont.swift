@@ -7,8 +7,26 @@
 
 
 import SwiftUI
+import CoreText
 
 enum AppFont {
+    private static let registerCustomFonts: Void = {
+        let fonts = [
+            "ShantellSans-Bold.ttf", "ShantellSans-BoldItalic.ttf",
+            "ShantellSans-ExtraBold.ttf", "ShantellSans-ExtraBoldItalic.ttf",
+            "ShantellSans-Italic.ttf", "ShantellSans-Light.ttf",
+            "ShantellSans-LightItalic.ttf", "ShantellSans-Medium.ttf",
+            "ShantellSans-MediumItalic.ttf", "ShantellSans-Regular.ttf",
+            "ShantellSans-SemiBold.ttf", "ShantellSans-SemiBoldItalic.ttf"
+        ]
+        for font in fonts {
+            if let url = Bundle.main.url(forResource: font, withExtension: nil) {
+                var error: Unmanaged<CFError>?
+                CTFontManagerRegisterFontsForURL(url as CFURL, .process, &error)
+            }
+        }
+    }()
+
     // Plus Jakarta Sans
     static func plusJakarta(size: CGFloat, weight: Font.Weight = .regular) -> Font {
         switch weight {
@@ -45,7 +63,10 @@ enum AppFont {
     
     // Shantell Sans
     static func shantellSans(size: CGFloat, weight: Font.Weight = .regular) -> Font {
+        _ = registerCustomFonts
         switch weight {
+        case .heavy:
+            return .custom("ShantellSans-ExtraBold", size: size)
         case .bold:
             return .custom("ShantellSans-Bold", size: size)
         case .semibold:

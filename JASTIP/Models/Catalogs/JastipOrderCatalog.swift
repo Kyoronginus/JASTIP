@@ -20,7 +20,7 @@ enum JastipOrderCatalog {
             points: 4,
             chatMessage: "Bro, nitip pajangan antik bentuk T ya! Kalo ga ada, jaket butik bentuk L juga boleh.",
             requirementImageName: "req_thomas",
-            requirementDescription: "1 Blue Antique (T) OR 1 Green Boutique (L)"
+            requirementDescription: "1 Green Antique (T) OR 1 Blue Boutique (L)"
         ),
         
         // 2. Toyib (+4)
@@ -30,7 +30,7 @@ enum JastipOrderCatalog {
             points: 4,
             chatMessage: "Titip jajan delicacy atau mainan anak dong, bentuknya yang unik sesuai foto ya!",
             requirementImageName: "req_toyib",
-            requirementDescription: "1 Yellow Delicacy OR 1 Pink Kids (Unique)"
+            requirementDescription: "1 Orange Delicacy OR 1 Red Toys (Unique)"
         ),
         
         // 3. Quincy (+4)
@@ -40,7 +40,7 @@ enum JastipOrderCatalog {
             points: 4,
             chatMessage: "Eh jangan lupa titipan gua, cariin antique atau buku sesuai foto ya!",
             requirementImageName: "req_quincy",
-            requirementDescription: "1 Blue Antique OR 1 Red Books (Unique)"
+            requirementDescription: "1 Green Antique OR 1 Purple Wellness (Unique)"
         ),
         
         // 4. Henry (+5)
@@ -50,7 +50,7 @@ enum JastipOrderCatalog {
             points: 5,
             chatMessage: "Nitip buku novel tebal (L) plus satu jajan kecil 1 slot ya bro, tengkyu!",
             requirementImageName: "req_henry",
-            requirementDescription: "1 Red Books (L) + 1 Single (Yellow/Pink/Blue/Green)"
+            requirementDescription: "1 Purple Wellness (L) + 1 Single (Orange/Red/Blue/Green)"
         ),
         
         // 5. Molly (+4)
@@ -60,7 +60,7 @@ enum JastipOrderCatalog {
             points: 4,
             chatMessage: "Guys, tolong bawain 2 makanan dari Delicacy ya, bentuknya yang kotak/L/T/I yaa.",
             requirementImageName: "req_molly",
-            requirementDescription: "2 Yellow Delicacy (Square / L / T / I)"
+            requirementDescription: "2 Orange Delicacy (Square / L / T / I)"
         ),
         
         // 6. Mackenzie (+3)
@@ -70,7 +70,7 @@ enum JastipOrderCatalog {
             points: 3,
             chatMessage: "Titip barang antik atau baju dong, tapi harus yang bentuk domino 2 slot ya!",
             requirementImageName: "req_mackenzie",
-            requirementDescription: "2 Dominoes from Blue Antique or Green Boutique"
+            requirementDescription: "2 Dominoes from Green Antique or Blue Boutique"
         ),
         
         // 7. Joe (+3)
@@ -80,7 +80,7 @@ enum JastipOrderCatalog {
             points: 3,
             chatMessage: "Bawain barang panjang (3 slot) dari toko buku/mainan/antik/butik, plus jajan kecil 1 slot!",
             requirementImageName: "req_joe",
-            requirementDescription: "1 Triomino I (Red/Pink/Blue/Green) + 1 Single (Yellow Delicacy)"
+            requirementDescription: "1 Triomino I (Purple/Red/Blue/Green) + 1 Single (Orange Delicacy)"
         ),
         
         // 8. Billie (+5)
@@ -90,7 +90,7 @@ enum JastipOrderCatalog {
             points: 5,
             chatMessage: "Nitip jajan atau mainan, cari yang porsi gede ya! Total ukuran berdua minimal 8 grid.",
             requirementImageName: "req_billie",
-            requirementDescription: "2 Items (Yellow/Pink) with Total Size >= 8 grids"
+            requirementDescription: "2 Items (Orange/Red) with Total Size >= 8 grids"
         ),
         
         // 9. Jude (+4)
@@ -114,7 +114,7 @@ enum JastipOrderCatalog {
             points: 5,
             chatMessage: "Tolong borong 3 barang dari Butik ya! Yang satu lurus, satu lagi bentuk T/kotak, satunya bebas.",
             requirementImageName: "req_brie",
-            requirementDescription: "3 Green Boutique: 1 Line + 1 (T/Square) + 1 Any"
+            requirementDescription: "3 Blue Boutique: 1 Line + 1 (T/Square) + 1 Any"
         ),
         
         // 11. Bella (+5)
@@ -124,7 +124,7 @@ enum JastipOrderCatalog {
             points: 5,
             chatMessage: "Nitip 3 buku dari toko Books! Minimal 2 buku harus bentuk lurus (domino/triomino/tetromino I).",
             requirementImageName: "req_bella",
-            requirementDescription: "3 Red Books: at least 2 Line shapes"
+            requirementDescription: "3 Purple Wellness: at least 2 Line shapes"
         ),
         
         // 12. Roxanne (+4)
@@ -134,7 +134,7 @@ enum JastipOrderCatalog {
             points: 4,
             chatMessage: "Titip 2 barang dari toko Antik atau Butik ya, bentuknya yang standar kayak di foto.",
             requirementImageName: "req_roxanne",
-            requirementDescription: "2 Items (Blue/Green) with shapes: Domino/Triomino/T/L/Square"
+            requirementDescription: "2 Items (Green/Blue) with shapes: Domino/Triomino/T/L/Square"
         ),
         
         // 13. Diana (+4)
@@ -144,7 +144,7 @@ enum JastipOrderCatalog {
             points: 4,
             chatMessage: "Nitip 2 barang dari toko Makanan atau Buku: satu bentuk L/T, dan satu lagi yang lurus!",
             requirementImageName: "req_diana",
-            requirementDescription: "2 Items (Yellow/Red): 1 (L/T) + 1 Line shape"
+            requirementDescription: "2 Items (Orange/Purple): 1 (L/T) + 1 Line shape"
         ),
         
         // 14. Caroline (+5)
@@ -178,7 +178,7 @@ enum JastipOrderCatalog {
             points: 4,
             chatMessage: "Nitip 2 barang dari Buku atau Mainan: satu bentuk L/T, dan satu lagi bentuk lurus pendek.",
             requirementImageName: "req_fernando",
-            requirementDescription: "2 Items (Red/Pink): 1 (L/T) + 1 (Domino/Triomino I)"
+            requirementDescription: "2 Items (Purple/Red): 1 (L/T) + 1 (Domino/Triomino I)"
         ),
         
         // 17. Alvin (+5)
@@ -198,7 +198,7 @@ enum JastipOrderCatalog {
             points: 4,
             chatMessage: "Titip 2 barang dari toko Antik atau Butik, pilih bentuk balok kotak/L/T ya.",
             requirementImageName: "req_enzo",
-            requirementDescription: "2 Items (Blue/Green) with shapes: Square/Tetromino L/Tetromino T"
+            requirementDescription: "2 Items (Green/Blue) with shapes: Square/Tetromino L/Tetromino T"
         ),
         
         // 19. Taylor (+5)
@@ -228,7 +228,7 @@ enum JastipOrderCatalog {
             points: 3,
             chatMessage: "Borong 3 barang dari toko Antik ya! Yang penting ada yang bentuk kotak/T dan bentuk panjang.",
             requirementImageName: "req_david",
-            requirementDescription: "3 Blue Antique: 1 (Square/T) + 1 (Line/Small L/Unique) + 1 Any"
+            requirementDescription: "3 Green Antique: 1 (Square/T) + 1 (Line/Small L/Unique) + 1 Any"
         ),
         
         // 22. Jimmy (+5)
@@ -238,7 +238,7 @@ enum JastipOrderCatalog {
             points: 5,
             chatMessage: "Beliin 3 mainan anak dari toko Kids, tapi jangan kembar semua ya, minimal ada 2 bentuk berbeda!",
             requirementImageName: "req_jimmy",
-            requirementDescription: "3 Pink Kids items with at least 2 different shapes"
+            requirementDescription: "3 Red Toys items with at least 2 different shapes"
         ),
         
         // 23. Wayne (+5)
@@ -248,7 +248,7 @@ enum JastipOrderCatalog {
             points: 5,
             chatMessage: "Lagi laper banget nih, tolong borong 3 makanan Delicacy! Total ukurannya minimal 8 grid ya.",
             requirementImageName: "req_wayne",
-            requirementDescription: "3 Yellow Delicacy items with Total Size >= 8 grids"
+            requirementDescription: "3 Orange Delicacy items with Total Size >= 8 grids"
         ),
 
         // ==========================================
@@ -262,7 +262,7 @@ enum JastipOrderCatalog {
             points: 4,
             chatMessage: "Titip 2 barang bentuk lurus (domino/triomino/tetromino I) dari toko Antik atau Buku ya!",
             requirementImageName: "req_kevin_straight",
-            requirementDescription: "2 Items (Blue/Red) with Line shapes (Domino/Triomino/Tetromino I)"
+            requirementDescription: "2 Items (Green/Purple) with Line shapes (Domino/Triomino/Tetromino I)"
         ),
         
         // 25. Lloyd (+4)
@@ -272,7 +272,7 @@ enum JastipOrderCatalog {
             points: 4,
             chatMessage: "Beliin 2 barang bentuk huruf L dari toko Delicacy atau toko Mainan ya bro!",
             requirementImageName: "req_lloyd",
-            requirementDescription: "2 Tetromino L from Yellow Delicacy or Pink Kids"
+            requirementDescription: "2 Tetromino L from Orange Delicacy or Red Toys"
         ),
         
         // 26. Kevin - Square (+4)
@@ -282,7 +282,7 @@ enum JastipOrderCatalog {
             points: 4,
             chatMessage: "Nitip 2 barang yang bentuknya kotak 2x2 (square) dari toko Makanan atau Butik ya!",
             requirementImageName: "req_kevin_square",
-            requirementDescription: "2 Square shapes from Yellow Delicacy or Green Boutique"
+            requirementDescription: "2 Square shapes from Orange Delicacy or Blue Boutique"
         ),
         
         // 27. Elliot (+5)
@@ -292,7 +292,7 @@ enum JastipOrderCatalog {
             points: 5,
             chatMessage: "Titip 1 barang bentuk T dan 1 barang bentuk L dari toko Butik atau Mainan ya!",
             requirementImageName: "req_elliot",
-            requirementDescription: "1 Tetromino T + 1 Tetromino L (from Green Boutique or Pink Kids)"
+            requirementDescription: "1 Tetromino T + 1 Tetromino L (from Blue Boutique or Red Toys)"
         ),
         
         // 28. Jake (+5)
@@ -302,7 +302,7 @@ enum JastipOrderCatalog {
             points: 5,
             chatMessage: "Beliin 2 barang gede (masing-masing minimal 4 kotak) dari toko Makanan atau Mainan!",
             requirementImageName: "req_jake",
-            requirementDescription: "2 Items (Pink/Yellow), each with minimum 4 grids"
+            requirementDescription: "2 Items (Red/Orange), each with minimum 4 grids"
         ),
         
         // 29. Leon (+4)
@@ -312,7 +312,7 @@ enum JastipOrderCatalog {
             points: 4,
             chatMessage: "Nitip 2 cemilan bentuk stik/lurus (domino atau triomino I) dari toko Delicacy ya!",
             requirementImageName: "req_leon",
-            requirementDescription: "2 Yellow Delicacy with shapes: Domino or Triomino I"
+            requirementDescription: "2 Orange Delicacy with shapes: Domino or Triomino I"
         ),
         
         // 30. Matheo - Tetris T (+4)
@@ -342,7 +342,7 @@ enum JastipOrderCatalog {
             points: 4,
             chatMessage: "Titip 2 barang mungil 1 slot (single) dari toko Mainan atau Delicacy ya!",
             requirementImageName: "req_minnie",
-            requirementDescription: "2 Single (1-grid) items from Pink Kids or Yellow Delicacy"
+            requirementDescription: "2 Single (1-grid) items from Red Toys or Orange Delicacy"
         )
     ]
     
@@ -351,40 +351,40 @@ enum JastipOrderCatalog {
         switch orderKey {
         // --- 1. Thomas ---
         case "thomas":
-            return items.contains { ($0.color == .blue || $0.color == .green) && $0.isAnomaly }
+            return items.contains { ($0.color == .green || $0.color == .blue) && $0.isAnomaly }
             
         // --- 2. Toyib ---
         case "toyib":
-            return items.contains { ($0.color == .yellow || $0.color == .pink) && $0.isAnomaly }
+            return items.contains { ($0.color == .orange || $0.color == .red) && $0.isAnomaly }
             
         // --- 3. Quincy ---
         case "quincy":
-            return items.contains { ($0.color == .blue || $0.color == .red) && $0.isAnomaly }
+            return items.contains { ($0.color == .green || $0.color == .purple) && $0.isAnomaly }
             
         // --- 4. Henry ---
         case "henry":
-            let hasRedL = items.contains { $0.color == .red && $0.shape == .tetrominoL }
-            let hasNonRedSingle = items.contains { $0.color != .red && $0.shape == .single }
-            return hasRedL && hasNonRedSingle
+            let hasPurpleL = items.contains { $0.color == .purple && $0.shape == .tetrominoL }
+            let hasNonPurpleSingle = items.contains { $0.color != .purple && $0.shape == .single }
+            return hasPurpleL && hasNonPurpleSingle
             
         // --- 5. Molly ---
         case "molly":
             let validShapes: [PieceShape] = [.square, .tetrominoL, .tetrominoT, .tetrominoI]
-            return items.filter { $0.color == .yellow && validShapes.contains($0.shape) }.count >= 2
+            return items.filter { $0.color == .orange && validShapes.contains($0.shape) }.count >= 2
             
         // --- 6. Mackenzie ---
         case "mackenzie":
-            return items.filter { $0.shape == .domino && ($0.color == .blue || $0.color == .green) }.count >= 2
+            return items.filter { $0.shape == .domino && ($0.color == .green || $0.color == .blue) }.count >= 2
             
         // --- 7. Joe ---
         case "joe":
-            let hasTriomino = items.contains { [.red, .pink, .blue, .green].contains($0.color) && $0.shape == .triominoI }
-            let hasSingleYellow = items.contains { $0.color == .yellow && $0.shape == .single }
-            return hasTriomino && hasSingleYellow
+            let hasTriomino = items.contains { [.purple, .red, .green, .blue].contains($0.color) && $0.shape == .triominoI }
+            let hasSingleOrange = items.contains { $0.color == .orange && $0.shape == .single }
+            return hasTriomino && hasSingleOrange
             
         // --- 8. Billie ---
         case "billie":
-            let targetItems = items.filter { $0.color == .yellow || $0.color == .pink }
+            let targetItems = items.filter { $0.color == .orange || $0.color == .red }
             guard targetItems.count >= 2 else { return false }
             for i in 0..<targetItems.count {
                 for j in (i + 1)..<targetItems.count {
@@ -405,29 +405,29 @@ enum JastipOrderCatalog {
             
         // --- 10. Brie ---
         case "brie":
-            let greenItems = items.filter { $0.color == .green }
-            guard greenItems.count >= 3 else { return false }
+            let blueItems = items.filter { $0.color == .blue }
+            guard blueItems.count >= 3 else { return false }
             let lineShapes: [PieceShape] = [.domino, .triominoI, .tetrominoI]
             let tOrSquare: [PieceShape] = [.tetrominoT, .square]
-            let hasLine = greenItems.contains { lineShapes.contains($0.shape) }
-            let hasTOrSq = greenItems.contains { tOrSquare.contains($0.shape) }
+            let hasLine = blueItems.contains { lineShapes.contains($0.shape) }
+            let hasTOrSq = blueItems.contains { tOrSquare.contains($0.shape) }
             return hasLine && hasTOrSq
             
         // --- 11. Bella ---
         case "bella":
-            let redItems = items.filter { $0.color == .red }
-            guard redItems.count >= 3 else { return false }
+            let purpleItems = items.filter { $0.color == .purple }
+            guard purpleItems.count >= 3 else { return false }
             let lineShapes: [PieceShape] = [.domino, .triominoI, .tetrominoI]
-            return redItems.filter { lineShapes.contains($0.shape) }.count >= 2
+            return purpleItems.filter { lineShapes.contains($0.shape) }.count >= 2
             
         // --- 12. Roxanne ---
         case "roxanne":
             let validShapes: [PieceShape] = [.domino, .triominoI, .tetrominoT, .tetrominoL, .square]
-            return items.filter { ($0.color == .blue || $0.color == .green) && validShapes.contains($0.shape) }.count >= 2
+            return items.filter { ($0.color == .green || $0.color == .blue) && validShapes.contains($0.shape) }.count >= 2
             
         // --- 13. Diana ---
         case "diana":
-            let pool = items.filter { $0.color == .yellow || $0.color == .red }
+            let pool = items.filter { $0.color == .orange || $0.color == .purple }
             guard pool.count >= 2 else { return false }
             let hasLT = pool.contains { $0.shape == .tetrominoL || $0.shape == .tetrominoT }
             let hasLine = pool.contains { $0.shape == .domino || $0.shape == .triominoI || $0.shape == .tetrominoI }
@@ -454,7 +454,7 @@ enum JastipOrderCatalog {
             
         // --- 16. Fernando ---
         case "fernando":
-            let pool = items.filter { $0.color == .red || $0.color == .pink }
+            let pool = items.filter { $0.color == .purple || $0.color == .red }
             guard pool.count >= 2 else { return false }
             let hasLT = pool.contains { $0.shape == .tetrominoL || $0.shape == .tetrominoT }
             let hasLine = pool.contains { $0.shape == .domino || $0.shape == .triominoI }
@@ -468,7 +468,7 @@ enum JastipOrderCatalog {
         // --- 18. Enzo ---
         case "enzo":
             let validShapes: [PieceShape] = [.square, .tetrominoL, .tetrominoT]
-            return items.filter { ($0.color == .blue || $0.color == .green) && validShapes.contains($0.shape) }.count >= 2
+            return items.filter { ($0.color == .green || $0.color == .blue) && validShapes.contains($0.shape) }.count >= 2
             
         // --- 19. Taylor ---
         case "taylor":
@@ -491,52 +491,52 @@ enum JastipOrderCatalog {
             
         // --- 21. David ---
         case "david":
-            let blueItems = items.filter { $0.color == .blue }
-            guard blueItems.count >= 3 else { return false }
-            let hasSqOrT = blueItems.contains { $0.shape == .square || $0.shape == .tetrominoT }
-            let hasLongOrUnique = blueItems.contains { $0.shape == .tetrominoI || $0.shape == .smallL || $0.isAnomaly }
+            let greenItems = items.filter { $0.color == .green }
+            guard greenItems.count >= 3 else { return false }
+            let hasSqOrT = greenItems.contains { $0.shape == .square || $0.shape == .tetrominoT }
+            let hasLongOrUnique = greenItems.contains { $0.shape == .tetrominoI || $0.shape == .smallL || $0.isAnomaly }
             return hasSqOrT && hasLongOrUnique
             
         // --- 22. Jimmy ---
         case "jimmy":
-            let pinkItems = items.filter { $0.color == .pink }
-            guard pinkItems.count >= 3 else { return false }
-            let distinctShapes = Set(pinkItems.map { $0.shape })
+            let redItems = items.filter { $0.color == .red }
+            guard redItems.count >= 3 else { return false }
+            let distinctShapes = Set(redItems.map { $0.shape })
             return distinctShapes.count >= 2
             
         // --- 23. Wayne ---
         case "wayne":
-            let yellowItems = items.filter { $0.color == .yellow }
-            guard yellowItems.count >= 3 else { return false }
-            return yellowItems.reduce(0) { $0 + $1.gridCount } >= 8
+            let orangeItems = items.filter { $0.color == .orange }
+            guard orangeItems.count >= 3 else { return false }
+            return orangeItems.reduce(0) { $0 + $1.gridCount } >= 8
             
         // --- 24. Kevin (Straight) ---
         case "kevin_straight":
             let validShapes: [PieceShape] = [.domino, .triominoI, .tetrominoI]
-            return items.filter { ($0.color == .blue || $0.color == .red) && validShapes.contains($0.shape) }.count >= 2
+            return items.filter { ($0.color == .green || $0.color == .purple) && validShapes.contains($0.shape) }.count >= 2
             
         // --- 25. Lloyd ---
         case "lloyd":
-            return items.filter { ($0.color == .yellow || $0.color == .pink) && $0.shape == .tetrominoL }.count >= 2
+            return items.filter { ($0.color == .orange || $0.color == .red) && $0.shape == .tetrominoL }.count >= 2
             
         // --- 26. Kevin (Square) ---
         case "kevin_square":
-            return items.filter { ($0.color == .yellow || $0.color == .green) && $0.shape == .square }.count >= 2
+            return items.filter { ($0.color == .orange || $0.color == .blue) && $0.shape == .square }.count >= 2
             
         // --- 27. Elliot ---
         case "elliot":
-            let pool = items.filter { $0.color == .green || $0.color == .pink }
+            let pool = items.filter { $0.color == .blue || $0.color == .red }
             let hasT = pool.contains { $0.shape == .tetrominoT }
             let hasL = pool.contains { $0.shape == .tetrominoL }
             return hasT && hasL
             
         // --- 28. Jake ---
         case "jake":
-            return items.filter { ($0.color == .pink || $0.color == .yellow) && $0.gridCount >= 4 }.count >= 2
+            return items.filter { ($0.color == .red || $0.color == .orange) && $0.gridCount >= 4 }.count >= 2
             
         // --- 29. Leon ---
         case "leon":
-            return items.filter { $0.color == .yellow && ($0.shape == .domino || $0.shape == .triominoI) }.count >= 2
+            return items.filter { $0.color == .orange && ($0.shape == .domino || $0.shape == .triominoI) }.count >= 2
             
         // --- 30. Matheo (Tetris T) ---
         case "matheo_tetris_t":
@@ -550,7 +550,7 @@ enum JastipOrderCatalog {
             
         // --- 32. Minnie ---
         case "minnie":
-            return items.filter { ($0.color == .pink || $0.color == .yellow) && $0.shape == .single }.count >= 2
+            return items.filter { ($0.color == .red || $0.color == .orange) && $0.shape == .single }.count >= 2
             
         default:
             return false
