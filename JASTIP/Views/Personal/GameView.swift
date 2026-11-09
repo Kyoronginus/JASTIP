@@ -72,16 +72,7 @@ struct GameView: View {
                 // MARK: - Bottom Section: Slot UI HP Jastip Order (Dihandle oleh Dev Lain)
             }
             
-            // MARK: - Popup Event Aktif
-            if let event = viewModel.currentEvent, !viewModel.isGameOver {
-                EventAlertView(event: event) {
-                    withAnimation {
-                        viewModel.dismissEvent()
-                    }
-                }
-                .transition(.opacity)
-                .zIndex(100)
-            }
+
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(
