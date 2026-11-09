@@ -13,6 +13,7 @@ struct PrimaryButtonStyle: ButtonStyle {
     var borderColor: Color = Color("TaxiYellow")
     var shadowColor: Color? = nil
     var foregroundColor: Color = .white
+    var font: Font? = nil
     var cornerRadius: CGFloat = 15
     var borderWidth: CGFloat = 2
     var shadowOffset: CGFloat = 6
@@ -36,7 +37,7 @@ struct PrimaryButtonStyle: ButtonStyle {
         HStack(spacing: 12) {
             configuration.label
         }
-        .font(.plusJakarta(16, .bold))
+        .font(font ?? .plusJakarta(16, .bold))
         .foregroundStyle(isEnabled ? foregroundColor : Color(uiColor: .systemGray))
         .padding(.vertical, paddingVertical)
         .padding(.horizontal, paddingHorizontal)
