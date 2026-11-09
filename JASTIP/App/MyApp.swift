@@ -23,9 +23,15 @@ struct MyApp: App {
                             gameSessionVM.hasProceededToGame = true
                         }
                     }
+                } else if !gameSessionVM.hasSeenStoryboard {
+                    // 3. STORYBOARD CUTSCENE
+                    StoryboardView(session: gameSessionVM) {
+                        withAnimation {
+                            gameSessionVM.hasSeenStoryboard = true
+                        }
+                    }
                 } else {
-                    // 3. MAIN GAMEPLAY
-//                    GameView(viewModel: gameSessionVM)
+                    // 4. MAIN GAMEPLAY
                     MainTabView(viewModel: gameSessionVM)
                 }
             }

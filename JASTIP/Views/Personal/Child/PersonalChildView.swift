@@ -116,6 +116,7 @@ struct PersonalChildView: View {
                             handleDropPlacedPiece(placed, at: value.location)
                         }
                     )
+//                    .rotationEffect(.degrees(90))
                     .background(
                         GeometryReader { geo in
                             Color.clear
