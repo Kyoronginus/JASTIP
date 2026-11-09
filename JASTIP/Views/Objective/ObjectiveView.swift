@@ -54,22 +54,18 @@ struct ObjectiveView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // 1. Anchored Header Bar
-            headerView
+            // 1. Header Bar
+            VStack(spacing: 0){
+                   Text("Jastip Order")
+                    .font(.spaceGrotesk(33.4, .bold))
+                
+                    Image("HeaderLine")
+            }
             
             // 2. Scrollable Chat Content
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(spacing: 12) {
-                        // Date Separator
-                        Text("TODAY")
-                            .font(.plusJakarta(11, .semibold))
-                            .foregroundStyle(.secondary)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 4)
-                            .background(Color(uiColor: .systemGray5))
-                            .clipShape(Capsule())
-                            .padding(.vertical, 8)
                         
                         // A. 3 SHARED JASTIP ORDERS AWAL
                         ForEach(sharedOrders) { order in
@@ -142,39 +138,9 @@ struct ObjectiveView: View {
             // 3. Dynamic Bottom Action Bar
             bottomActionBar
         }
-        .appBackground()
+        .background(Color("BackgroundChat"))
     }
-    
-    // MARK: - Subview: Header Bar
-    private var headerView: some View {
-        HStack(spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(Color.gray.opacity(0.3))
-                    .frame(width: 44, height: 44)
-                Image(systemName: "person.3.fill")
-                    .font(.system(size: 18))
-                    .foregroundStyle(.white)
-            }
-            
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Jastip Meepolis 🚩")
-                    .font(.spaceGrotesk(16, .bold))
-                    .foregroundStyle(.primary)
-                
-                Text("Thomas, Toyib, Quincy, Henry, Molly...")
-                    .font(.plusJakarta(12, .regular))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
-            Spacer()
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .background(Color(.secondarySystemBackground))
-        .overlay(Divider(), alignment: .bottom)
-    }
-    
+
     // MARK: - Subview: Bubble Chat Player (Biru di Kanan)
     private func playerChatBubble(text: String) -> some View {
         HStack {
@@ -210,62 +176,80 @@ struct ObjectiveView: View {
         HStack(spacing: 10) {
             if !isDrafting {
                 // TAMPILAN NORMAL (SELALU KEMBALI KE SINI SETELAH DRAFT SELESAI)
-                HStack {
-                    Text("any1 else need anything?")
-                        .font(.plusJakarta(14, .regular))
-                        .foregroundColor(.secondary)
-                    Spacer()
-                }
-                .padding(.horizontal, 14)
-                .frame(height: 42)
-                .background(Color(.systemBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .overlay(alignment: .trailing) {
-                    Button {
-                        startDraftingFlow()
-                    } label: {
-                        Text("Request more order")
-                            .font(.plusJakarta(12, .bold))
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .foregroundColor(.white)
-                            .background(Color.blue)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                ZStack{
+                    Image("tfback")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 260)
+                    HStack{
+                        Spacer()
+                            .frame(width: 10)
+                        Text("anyone else need anything?")
+                            .font(.system(size: 16, weight: .regular))
+                            .foregroundColor(Color("TextActive"))
+                        Spacer()
                     }
-                    .padding(.trailing, 6)
+                }
+                .padding(.vertical, 10)
+                Button {
+                    startDraftingFlow()
+                } label: {
+                    ZStack{
+                        Image("addorderback")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 100)
+                        Text("Add Order")
+                            .font(.system(size: 16, weight: .regular))
+                            .foregroundColor(.white)
+                    }
                 }
             } else {
                 // TAMPILAN MODE DRAFTING (Saat memilih kartu)
-                HStack {
-                    Text(confirmationTemplateText)
-                        .font(.plusJakarta(13, .regular))
-                        .foregroundColor(selectedOrderIds.isEmpty ? .secondary : .primary)
-                        .lineLimit(1)
-                    Spacer()
+                ZStack{
+                    Image("tfback")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 260)
+                    HStack{
+                        Spacer()
+                            .frame(width: 10)
+                        Text(confirmationTemplateText)
+                            .font(.system(size: 16, weight: .regular))
+                            .foregroundColor(selectedOrderIds.isEmpty ? Color("TextDisabled") : Color("TextActive"))
+                        Spacer()
+                    }
                 }
-                .padding(.horizontal, 14)
-                .frame(height: 42)
-                .background(Color(.systemBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .padding(.vertical, 10)
                 
-                // Tombol Send Message
+                // Tombol Send / Accept Message
                 Button {
                     confirmSelectedDraftOrders()
                 } label: {
-                    Text("Send message")
-                        .font(.plusJakarta(12, .bold))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 10)
-                        .foregroundColor(.white)
-                        .background(selectedOrderIds.isEmpty ? Color.gray.opacity(0.5) : Color.blue)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                    ZStack{
+                        if (selectedOrderIds.isEmpty){
+                            Image("addorderbackdisabled")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 100)
+                        }
+                        else{
+                            Image("addorderback")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 100)
+                        }
+                        Text("Accept")
+                            .font(.system(size: 16, weight: .regular))
+                            .foregroundColor(.white)
+                    }
                 }
                 .disabled(selectedOrderIds.isEmpty)
             }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .background(Color(.secondarySystemBackground))
+        .background(Color(.backgroundReply))
     }
     
     // MARK: - Flow Logics
@@ -337,3 +321,7 @@ struct ObjectiveView: View {
 #Preview {
     ObjectiveView(viewModel: GameSessionViewModel())
 }
+
+//#Preview {
+//    MainTabView(viewModel: GameSessionViewModel())
+//}

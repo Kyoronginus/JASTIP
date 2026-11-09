@@ -415,10 +415,10 @@ struct StoryboardOrderCardItemView: View {
                 Image(systemName: "bag.fill")
                     .font(.system(size: 10))
                     .foregroundStyle(.secondary)
-                Text(order.requirementDescription)
-                    .font(.plusJakarta(10, .regular))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+//                Text(order.requirementDescription)
+//                    .font(.plusJakarta(10, .regular))
+//                    .foregroundStyle(.secondary)
+//                    .lineLimit(1)
             }
         }
         .padding(12)
