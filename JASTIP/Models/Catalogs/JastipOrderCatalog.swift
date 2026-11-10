@@ -313,8 +313,8 @@ enum JastipOrderCatalog {
             points: 4,
             chatMessage: "gurl cn u get me these??",
             requirementItems: [
-                JastipRequirementItem(requirementImage: "req_kevin_straight", shapeDescription: "Green/Purple Line"),
-                JastipRequirementItem(requirementImage: "req_kevin_straight2", shapeDescription: "Green/Purple Line")
+                JastipRequirementItem(requirementImage: "req_kevin", shapeDescription: "Green/Purple Line"),
+                JastipRequirementItem(requirementImage: "req_kevin2", shapeDescription: "Green/Purple Line")
             ]
         ),
         

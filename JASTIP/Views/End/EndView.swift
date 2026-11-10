@@ -11,7 +11,7 @@ struct EndView: View {
     var viewModel: GameSessionViewModel
     var onFinishGame: () -> Void = {}
     
-    // MARK: - Manual Penalty State (Sesuai request, dropped block tetap stepper)
+    // MARK: - Manual Penalty State (Dropped block tetap stepper)
     @State private var droppedBlockKg: Int = 0
     
     // MARK: - Automated Data dari ViewModel
@@ -31,30 +31,31 @@ struct EndView: View {
     private var carryOnOverweight: Int { max(0, currentPlayer.carryOnWeight - currentPlayer.carryOnMax) }
     private var totalOverweightPenalty: Int { suitcaseOverweight + carryOnOverweight }
     
-    // MARK: - Automated Combos
-    private var isPerfectWeight: Bool {
-        guard currentPlayer.suitcaseMax > 0 && currentPlayer.carryOnMax > 0 else { return false }
-        let totalCurrent = currentPlayer.suitcaseWeight + currentPlayer.carryOnWeight
-        let totalMax = currentPlayer.suitcaseMax + currentPlayer.carryOnMax
-        return totalCurrent == totalMax && totalOverweightPenalty == 0
+    // MARK: - Perfect Weight (Split Suitcase & Carry-On)
+    private var isSuitcasePerfectWeight: Bool {
+        currentPlayer.suitcaseMax > 0 && currentPlayer.suitcaseWeight == currentPlayer.suitcaseMax
     }
     
-    private var isPerfectShape: Bool {
-        viewModel.isPerfectShapeFill
+    private var isCarryOnPerfectWeight: Bool {
+        currentPlayer.carryOnMax > 0 && currentPlayer.carryOnWeight == currentPlayer.carryOnMax
     }
     
-    // First to board: pemain yang pertama kali menyelesaikan boarding
-    private var isFirstToBoard: Bool {
-        let boardedPlayers = viewModel.leaderboardPlayers.filter { $0.isBoarded }
-        return boardedPlayers.first?.id == currentPlayer.id
+    // MARK: - Perfect Shape / Size (Split Suitcase & Carry-On)
+    private var isSuitcasePerfectShape: Bool {
+        viewModel.isSuitcasePerfectShape
+    }
+    
+    private var isCarryOnPerfectShape: Bool {
+        viewModel.isCarryOnPerfectShape
     }
     
     // MARK: - Final Score Calculation
     private var totalScore: Int {
-        let bonuses = (isPerfectWeight ? 5 : 0) + (isPerfectShape ? 2 : 0) + (isFirstToBoard ? 2 : 0)
+        let weightBonus = (isSuitcasePerfectWeight ? 3 : 0) + (isCarryOnPerfectWeight ? 2 : 0)
+        let shapeBonus = (isSuitcasePerfectShape ? 2 : 0) + (isCarryOnPerfectShape ? 1 : 0)
         let penalties = droppedBlockKg + totalOverweightPenalty
         
-        return gridPoints + jastipCardPoints + bonuses - penalties
+        return gridPoints + jastipCardPoints + weightBonus + shapeBonus - penalties
     }
     
     var body: some View {
@@ -164,29 +165,38 @@ struct EndView: View {
                     
                     // MARK: - 3. Bonus Combos Section (AUTO)
                     sectionCard(title: "BONUS COMBOS (AUTO)") {
-                        // Perfect Weight
+                        // Perfect Weight - Suitcase
                         autoBonusRow(
-                            label: "Perfect Weight",
-                            isAchieved: isPerfectWeight,
-                            rewardText: "+5 pts"
+                            label: "Suitcase Perfect Weight (\(currentPlayer.suitcaseWeight)/\(currentPlayer.suitcaseMax) kg)",
+                            isAchieved: isSuitcasePerfectWeight,
+                            rewardText: "+3 pts"
                         )
                         
                         Divider()
                         
-                        // Perfect Shape Fill
+                        // Perfect Weight - Carry-On
                         autoBonusRow(
-                            label: "Perfect Shape Fill (19/19 slots)",
-                            isAchieved: isPerfectShape,
+                            label: "Carry-On Perfect Weight (\(currentPlayer.carryOnWeight)/\(currentPlayer.carryOnMax) kg)",
+                            isAchieved: isCarryOnPerfectWeight,
                             rewardText: "+2 pts"
                         )
                         
                         Divider()
                         
-                        // First to Board
+                        // Perfect Shape - Suitcase
                         autoBonusRow(
-                            label: "First to Board",
-                            isAchieved: isFirstToBoard,
+                            label: "Suitcase Perfect Shape (15/15 slots)",
+                            isAchieved: isSuitcasePerfectShape,
                             rewardText: "+2 pts"
+                        )
+                        
+                        Divider()
+                        
+                        // Perfect Shape - Carry-On
+                        autoBonusRow(
+                            label: "Carry-On Perfect Shape (4/4 slots)",
+                            isAchieved: isCarryOnPerfectShape,
+                            rewardText: "+1 pt"
                         )
                     }
                     
@@ -210,7 +220,7 @@ struct EndView: View {
                                         .font(.plusJakarta(15, .semibold))
                                     autoBadge
                                 }
-                                Text("Overweight: \(totalOverweightPenalty) kg (-1 pt / kg)")
+                                Text("Suitcase: +\(suitcaseOverweight) kg, Carry-On: +\(carryOnOverweight) kg (-1 pt / kg)")
                                     .font(.plusJakarta(12, .regular))
                                     .foregroundStyle(.secondary)
                             }

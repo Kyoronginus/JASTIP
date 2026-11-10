@@ -521,12 +521,13 @@ class GameSessionViewModel {
     // MARK: - Automated Scoring Helpers
     
     
-    /// Jumlah sel terisi di Koper Besar (Suitcase)
+    
+    /// Jumlah sel terisi di Koper Besar (Suitcase, max 15)
     var suitcaseFilledCells: Int {
         LuggagePlacementEngine.occupiedCoordinates(in: suitcaseGrid).count
     }
     
-    /// Jumlah sel terisi di Koper Jinjing (Carry-On)
+    /// Jumlah sel terisi di Koper Jinjing (Carry-On, max 4)
     var carryOnFilledCells: Int {
         LuggagePlacementEngine.occupiedCoordinates(in: carryOnGrid).count
     }
@@ -536,14 +537,18 @@ class GameSessionViewModel {
         suitcaseFilledCells + carryOnFilledCells
     }
     
-    /// Cek apakah bentuk koper terisi sempurna tanpa rongga (Suitcase 15 sel & Carry-On 4 sel)
-    var isPerfectShapeFill: Bool {
-        suitcaseFilledCells == 15 && carryOnFilledCells == 4
+    /// Perfect Shape: Suitcase terisi penuh 15/15 sel
+    var isSuitcasePerfectShape: Bool {
+        suitcaseFilledCells == 15
     }
     
-    /// Daftar order jastip yang saat ini berhasil diselesaikan di koper
+    /// Perfect Shape: Carry-On terisi penuh 4/4 sel
+    var isCarryOnPerfectShape: Bool {
+        carryOnFilledCells == 4
+    }
+    
+    /// Daftar order jastip yang berhasil diselesaikan di koper
     var completedJastipOrders: [JastipOrderModel] {
-        // Gabungkan shared orders (dan drafted orders jika ada)
         sharedJastipOrders.filter { order in
             order.isFulfilled(by: allLuggagePieces)
         }
