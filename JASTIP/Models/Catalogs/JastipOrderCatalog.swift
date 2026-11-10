@@ -342,15 +342,15 @@ enum JastipOrderCatalog {
             ]
         ),
         
-        // 27. Elliot (+5) -> 2 items (Blue/Red Tetromino T & Blue/Red L)
+        // 27. Elliott (+5) -> 2 items (Blue/Red Tetromino T & Blue/Red L)
         JastipOrderModel(
-            orderKey: "elliot",
-            customerName: "Elliot",
+            orderKey: "elliott",
+            customerName: "Elliott",
             points: 5,
             chatMessage: "gurl cn u get me these??",
             requirementItems: [
-                JastipRequirementItem(requirementImage: "req_elliot", shapeDescription: "Blue/Red Tetromino T"),
-                JastipRequirementItem(requirementImage: "req_elliot2", shapeDescription: "Blue/Red Small L / Tetromino L")
+                JastipRequirementItem(requirementImage: "req_elliott", shapeDescription: "Blue/Red Tetromino T"),
+                JastipRequirementItem(requirementImage: "req_elliott2", shapeDescription: "Blue/Red Small L / Tetromino L")
             ]
         ),
         
@@ -587,7 +587,7 @@ enum JastipOrderCatalog {
             return items.filter { ($0.color == .orange || $0.color == .blue) && $0.shape == .square }.count >= 2
             
             // --- 27. Elliot ---
-        case "elliot":
+        case "elliott":
             let pool = items.filter { $0.color == .blue || $0.color == .red }
             let hasT = pool.contains { $0.shape == .tetrominoT }
             let hasL = pool.contains { $0.shape == .tetrominoL || $0.shape == .smallL }
