@@ -24,8 +24,8 @@ struct ToastModifier: ViewModifier {
                 }
             }
             .animation(.spring(response: 0.38, dampingFraction: 0.72), value: toast != nil)
-            .onChange(of: toast != nil) { _, isShowing in
-                if isShowing {
+            .onChange(of: toast?.id) { _, toastID in
+                if toastID != nil {
                     scheduleDismissal()
                 }
             }

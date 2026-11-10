@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import AudioToolbox
 
 // Model pencatat riwayat per sesi draft yang berhasil
 struct DraftRoundHistory: Identifiable {
@@ -15,6 +16,11 @@ struct DraftRoundHistory: Identifiable {
 }
 
 struct ObjectiveView: View {
+    private enum MessageSound {
+        static let received: SystemSoundID = 1003
+        static let sent: SystemSoundID = 1004
+    }
+
     // Terima viewModel dari MainTabView
     var viewModel: GameSessionViewModel
     
@@ -36,6 +42,12 @@ struct ObjectiveView: View {
     @State private var selectedOrderIds: Set<String> = []
     
     @State private var isConfirmingAddOrder: Bool = false
+    private let selectionFeedback = UISelectionFeedbackGenerator()
+    private let successFeedback = UINotificationFeedbackGenerator()
+
+    private var actionBarPrompt: String {
+        viewModel.isMyTurn ? "anyone else need anything?" : "Wait for your turn"
+    }
     
     // MARK: - Helper Formatting Teks Input Bar
     private var confirmationTemplateText: String {
@@ -104,6 +116,7 @@ struct ObjectiveView: View {
                                     isSelectable: true,
                                     isSelected: selectedOrderIds.contains(order.id),
                                     onToggleSelect: {
+                                        selectionFeedback.selectionChanged()
                                         withAnimation(.easeInOut(duration: 0.2)) {
                                             if selectedOrderIds.contains(order.id) {
                                                 selectedOrderIds.remove(order.id)
@@ -194,7 +207,7 @@ struct ObjectiveView: View {
                     HStack{
                         Spacer()
                             .frame(width: 10)
-                        Text("anyone else need anything?")
+                        Text(actionBarPrompt)
                             .font(.system(size: 16, weight: .regular))
                             .foregroundColor(Color("TextActive"))
                         Spacer()
@@ -297,11 +310,18 @@ struct ObjectiveView: View {
     
     /// Memulai alur request chat & memunculkan 3 kandidat dengan jeda 0.5s
     private func startDraftingFlow() {
+        AudioServicesPlaySystemSound(MessageSound.sent)
         withAnimation {
             isDrafting = true
             selectedOrderIds.removeAll()
             visibleCandidateOrders.removeAll()
         }
+
+        let playerName = viewModel.playerName.trimmingCharacters(in: .whitespacesAndNewlines)
+        viewModel.showToast(
+            "\(playerName.isEmpty ? "A player" : playerName) is taking a personal Jastip order.",
+            type: .info
+        )
         
         // Kumpulkan semua ID yang sudah pernah ada di shared atau di accepted history
         var existingIds = Set(sharedOrders.map { $0.id })
@@ -331,6 +351,7 @@ struct ObjectiveView: View {
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
                     if self.isDrafting {
                         self.visibleCandidateOrders.append(self.candidateOrders[index])
+                        AudioServicesPlaySystemSound(MessageSound.received)
                     }
                 }
             }
@@ -340,6 +361,8 @@ struct ObjectiveView: View {
     /// Mengonfirmasi order yacloudng dipilih, simpan ke histori, dan reset input bar
     private func confirmSelectedDraftOrders() {
         let templateMessage = confirmationTemplateText
+        AudioServicesPlaySystemSound(MessageSound.sent)
+        successFeedback.notificationOccurred(.success)
         
         // Ambil order yang dicentang & tandai sebagai Personal
         let selected = candidateOrders.filter { selectedOrderIds.contains($0.id) }

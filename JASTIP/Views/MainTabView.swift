@@ -9,11 +9,11 @@ import SwiftUI
 
 struct MainTabView: View {
     @Bindable var viewModel: GameSessionViewModel
-    @State private var activeToast: ToastOptions? = nil
     
     // State Drawer Phone
     @State private var isObjectiveExpanded: Bool = false
     @State private var dragOffset: CGFloat = 0
+    private let drawerFeedback = UIImpactFeedbackGenerator(style: .light)
     
     // ==========================================
     // ⚙️ PENGATURAN UKURAN & POSISI HP (RESIZE & REPOSITION)
@@ -122,6 +122,9 @@ struct MainTabView: View {
             ScoringView(viewModel: viewModel) {
                 viewModel.resetToLobby()
             }
+        }
+        .onChange(of: isObjectiveExpanded) { _, _ in
+            drawerFeedback.impactOccurred()
         }
     }
 }
