@@ -150,6 +150,7 @@ final class FirebaseLobbyService {
                     "isBoarded": status.isBoarded,
                     "income": status.income,
                     "penalty": status.penalty,
+                    "isScoreSubmitted": status.isScoreSubmitted,
                     "updatedAt": FieldValue.serverTimestamp()
                 ])
         } catch {
@@ -361,6 +362,7 @@ final class FirebaseLobbyService {
                     }
                     let income = data["income"] as? Int ?? 0
                     let penalty = data["penalty"] as? Int ?? 0
+                    let isScoreSubmitted = data["isScoreSubmitted"] as? Bool ?? false
                     statuses[document.documentID] = PlayerSyncPayload(
                         peerId: document.documentID,
                         name: name,
@@ -368,7 +370,8 @@ final class FirebaseLobbyService {
                         carryOnWeight: carryOnWeight,
                         isBoarded: isBoarded,
                         income: income,
-                        penalty: penalty
+                        penalty: penalty,
+                        isScoreSubmitted: isScoreSubmitted
                     )
                 }
                 self.playerStatuses = statuses

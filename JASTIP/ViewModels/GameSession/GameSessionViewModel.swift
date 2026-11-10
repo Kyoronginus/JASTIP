@@ -117,6 +117,7 @@ class GameSessionViewModel {
     // MARK: - Player & Leaderboard
     var playerName: String = UIDevice.current.name
     var isBoarded: Bool = false
+    var isScoreSubmitted: Bool = false
     var droppedBlockKg: Int = 0
     var remotePlayers: [String: PlayerSyncPayload] = [:]
     
@@ -194,6 +195,7 @@ class GameSessionViewModel {
         activeHourEvent = nil
         isGameOver = false
         isBoarded = false
+        isScoreSubmitted = false
         hasProceededToGame = false
         hasSeenStoryboard = false
         triggeredUniqueEvents.removeAll()
@@ -585,27 +587,50 @@ class GameSessionViewModel {
     /// Daftar klasemen akhir seluruh pemain (diurutkan dari Total tertinggi)
     var finalStandings: [PlayerStandingModel] {
         let localID = lobbyService.currentPlayerID ?? "local_player"
-        var standings: [PlayerStandingModel] = [
-            PlayerStandingModel(
-                id: localID,
-                name: currentPlayerStatus.name,
-                income: calculatedIncome,
-                penalty: calculatedPenalty
-            )
-        ]
+        var map: [String: PlayerStandingModel] = [:]
         
+        // 1. Data pemain lokal
+        map[localID] = PlayerStandingModel(
+            id: localID,
+            name: currentPlayerStatus.name,
+            income: calculatedIncome,
+            penalty: calculatedPenalty
+        )
+        
+        // 2. Masukkan semua pemain yang terdaftar di room/lobby
+        if let lobbyPlayers = lobbyService.lobby?.players {
+            for lp in lobbyPlayers where lp.id != localID {
+                let synced = remotePlayers[lp.id]
+                map[lp.id] = PlayerStandingModel(
+                    id: lp.id,
+                    name: synced?.name ?? lp.name,
+                    income: synced?.income ?? 0,
+                    penalty: synced?.penalty ?? 0
+                )
+            }
+        }
+        
+        // 3. Masukkan juga jika ada di remotePlayers yang belum ada di map
         for synced in remotePlayers.values where synced.peerId != localID {
-            standings.append(
-                PlayerStandingModel(
+            if map[synced.peerId] == nil {
+                map[synced.peerId] = PlayerStandingModel(
                     id: synced.peerId,
                     name: synced.name,
                     income: synced.income,
                     penalty: synced.penalty
                 )
-            )
+            } else if synced.income != 0 || synced.penalty != 0 {
+                // Update dengan skor terbaru jika pemain baru submit
+                map[synced.peerId] = PlayerStandingModel(
+                    id: synced.peerId,
+                    name: synced.name,
+                    income: synced.income,
+                    penalty: synced.penalty
+                )
+            }
         }
         
-        return standings.sorted {
+        return Array(map.values).sorted {
             if $0.total != $1.total {
                 return $0.total > $1.total
             }
@@ -614,6 +639,27 @@ class GameSessionViewModel {
             }
             return $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
         }
+    }
+    
+    /// Apakah semua pemain di room sudah menekan "Finished Playing"
+    var areAllPlayersSubmitted: Bool {
+        guard isScoreSubmitted else { return false }
+        guard let players = lobbyService.lobby?.players, !players.isEmpty else { return true }
+        let otherPlayers = players.filter { $0.id != lobbyService.currentPlayerID }
+        return otherPlayers.allSatisfy { remotePlayers[$0.id]?.isScoreSubmitted == true }
+    }
+    
+    /// Jumlah pemain yang sudah submit skor
+    var submittedPlayerCount: Int {
+        let localCount = isScoreSubmitted ? 1 : 0
+        guard let players = lobbyService.lobby?.players else { return localCount }
+        let otherCount = players.filter { $0.id != lobbyService.currentPlayerID && remotePlayers[$0.id]?.isScoreSubmitted == true }.count
+        return localCount + otherCount
+    }
+    
+    /// Total pemain yang ada di room
+    var totalLobbyPlayerCount: Int {
+        max(1, lobbyService.lobby?.players.count ?? 1)
     }
     
 }

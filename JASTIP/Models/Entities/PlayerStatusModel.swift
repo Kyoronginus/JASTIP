@@ -30,6 +30,7 @@ struct PlayerSyncPayload: Codable {
     let isBoarded: Bool
     var income: Int = 0
     var penalty: Int = 0
+    var isScoreSubmitted: Bool = false
 }
 
 struct PlayerStandingModel: Identifiable, Equatable {

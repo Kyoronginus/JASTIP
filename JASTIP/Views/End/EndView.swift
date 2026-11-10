@@ -11,8 +11,6 @@ struct EndView: View {
     @Bindable var viewModel: GameSessionViewModel
     var onFinishGame: () -> Void = {}
     
-    @State private var showFinalScore: Bool = false
-    
     // MARK: - Automated Data dari ViewModel
     private var currentPlayer: PlayerStatusModel {
         viewModel.currentPlayerStatus
@@ -53,10 +51,14 @@ struct EndView: View {
         viewModel.calculatedIncome - viewModel.calculatedPenalty
     }
     
+    private var showFinalScore: Bool {
+        viewModel.areAllPlayersSubmitted
+    }
+    
     var body: some View {
         if showFinalScore {
             FinalScoreView(
-                standings: viewModel.finalStandings,
+                viewModel: viewModel,
                 onBackToHome: onFinishGame
             )
             .transition(.opacity)
@@ -222,6 +224,7 @@ struct EndView: View {
                             range: 0...30,
                             isNegative: true
                         )
+                        .disabled(viewModel.isScoreSubmitted)
                         
                         Divider()
                         
@@ -252,15 +255,33 @@ struct EndView: View {
                     }
                     
                     // MARK: - Finish Action Button
-                    Button("FINISHED PLAYING") {
-                        viewModel.broadcastMyStatus()
-                        withAnimation(.easeInOut(duration: 0.25)) {
-                            showFinalScore = true
+                    if viewModel.isScoreSubmitted {
+                        HStack(spacing: 10) {
+                            ProgressView()
+                                .tint(.black)
+                            Text("Waiting for others… (\(viewModel.submittedPlayerCount)/\(viewModel.totalLobbyPlayerCount))")
+                                .font(.shantellSans(15, .bold))
+                                .foregroundStyle(Color("NavyBlack"))
                         }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(Color("TaxiYellow").opacity(0.85))
+                        .clipShape(RoundedRectangle(cornerRadius: 15))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 15)
+                                .stroke(Color("NavyBlack"), lineWidth: 1.5)
+                        )
+                        .padding(.top, 8)
+                        .padding(.bottom, 24)
+                    } else {
+                        Button("FINISHED PLAYING") {
+                            viewModel.isScoreSubmitted = true
+                            viewModel.broadcastMyStatus()
+                        }
+                        .buttonStyle(PrimaryButtonStyle())
+                        .padding(.top, 8)
+                        .padding(.bottom, 24)
                     }
-                    .buttonStyle(PrimaryButtonStyle())
-                    .padding(.top, 8)
-                    .padding(.bottom, 24)
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 14)

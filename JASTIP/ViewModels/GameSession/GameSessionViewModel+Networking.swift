@@ -111,7 +111,8 @@ extension GameSessionViewModel {
             carryOnWeight: carryWeight,
             isBoarded: isBoarded || isGameOver,
             income: calculatedIncome,
-            penalty: calculatedPenalty
+            penalty: calculatedPenalty,
+            isScoreSubmitted: isScoreSubmitted
         )
         Task {
             await lobbyService.publishPlayerStatus(payload)

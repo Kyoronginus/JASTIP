@@ -8,7 +8,8 @@
 import SwiftUI
 
 struct FinalScoreView: View {
-    let standings: [PlayerStandingModel]
+    var viewModel: GameSessionViewModel? = nil
+    var standings: [PlayerStandingModel] = []
     var onBackToHome: () -> Void = {}
     
     @State private var revealedRowCount: Int = 0
@@ -19,8 +20,15 @@ struct FinalScoreView: View {
     private let rowImpact = UIImpactFeedbackGenerator(style: .light)
     private let winnerFeedback = UINotificationFeedbackGenerator()
     
+    private var activeStandings: [PlayerStandingModel] {
+        if let vm = viewModel {
+            return vm.finalStandings
+        }
+        return standings
+    }
+    
     private var displayedStandings: [PlayerStandingModel] {
-        Array(standings.prefix(5))
+        Array(activeStandings.prefix(5))
     }
     
     private var winnerName: String {
@@ -230,6 +238,14 @@ struct FinalScoreView: View {
         }
         .onDisappear {
             animationTask?.cancel()
+        }
+        .onChange(of: activeStandings) { _, newStandings in
+            // Jika data pemain lain baru masuk setelah animasi selesai atau sedang jalan:
+            if isWinnerVisible {
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                    revealedRowCount = min(5, newStandings.count)
+                }
+            }
         }
     }
     
