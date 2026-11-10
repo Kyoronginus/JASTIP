@@ -32,6 +32,8 @@ struct ObjectiveView: View {
     @State private var visibleCandidateOrders: [JastipOrderModel] = []
     @State private var selectedOrderIds: Set<String> = []
     
+    @State private var isConfirmingAddOrder: Bool = false
+    
     // MARK: - Helper Formatting Teks Input Bar
     private var confirmationTemplateText: String {
         let selectedNames = candidateOrders
@@ -198,7 +200,23 @@ struct ObjectiveView: View {
                 
                 .padding(.vertical, 10)
                 Button {
-                    startDraftingFlow()
+                    if !isConfirmingAddOrder {
+                        // Tap 1: Masuk mode konfirmasi
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            isConfirmingAddOrder = true
+                        }
+                        
+                        // Auto-cancel setelah 4 detik jika tidak dikonfirmasi
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                self.isConfirmingAddOrder = false
+                            }
+                        }
+                    } else {
+                        // Tap 2: Pemain yakin -> eksekusi!
+                        isConfirmingAddOrder = false
+                        startDraftingFlow()
+                    }
                 } label: {
                     ZStack{
                         if !viewModel.isMyTurn {
@@ -206,13 +224,19 @@ struct ObjectiveView: View {
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: 100)
-                        } else {
+                            
+                        } else if isConfirmingAddOrder {
+                            Image("addordergreen")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 100)
+                        } else  {
                             Image("addorderback")
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: 100)
                         }
-                        Text("Add Order")
+                        Text(isConfirmingAddOrder ? "Confirm" : "Add Order")
                             .font(.system(size: 16, weight: .regular))
                             .foregroundColor(.white)
                     }
@@ -348,17 +372,27 @@ struct ObjectiveView: View {
     }
     
     /// Update status isFulfilled pada item order sesuai kondisi koper saat ini
-    private func validatedOrder(_ order: JastipOrderModel) -> JastipOrderModel {
-        var updated = order
-        let completed = viewModel.isOrderFulfilled(order)
-        
-        // Tandai slot item-nya sebagai fulfilled jika order sudah terpenuhi
-        for index in updated.requirementItems.indices {
-            updated.requirementItems[index].isFulfilled = completed
-        }
-        return updated
-    }
-}
+        private func validatedOrder(_ order: JastipOrderModel) -> JastipOrderModel {
+            var updated = order
+            
+            // 1. Ambil status centang per slot item dari kepingan yang ada di koper
+            let itemStatuses = JastipOrderCatalog.checkItemFulfillment(
+                orderKey: order.orderKey,
+                items: viewModel.allLuggagePieces
+            )
+            
+            // 2. Set isFulfilled untuk masing-masing slot kartu secara independen
+            for index in updated.requirementItems.indices {
+                if index < itemStatuses.count {
+                    updated.requirementItems[index].isFulfilled = itemStatuses[index]
+                }
+            }
+            
+            // 3. Status order selesai jika semua slot item sudah tercentang
+            updated.isCompleted = viewModel.isOrderFulfilled(order)
+            
+            return updated
+        }}
 
 #Preview {
     ObjectiveView(viewModel: GameSessionViewModel())

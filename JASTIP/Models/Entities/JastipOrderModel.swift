@@ -48,4 +48,9 @@ struct JastipOrderModel: Identifiable, Hashable, Codable {
     func isFulfilled(by items: [PieceModel]) -> Bool {
         JastipOrderCatalog.checkOrderCompletion(orderKey: self.orderKey, items: items)
     }
+    
+    /// Status centang untuk masing-masing slot gambar item
+    func itemStatuses(by pieces: [PieceModel]) -> [Bool] {
+        JastipOrderCatalog.checkItemFulfillment(orderKey: self.orderKey, items: pieces)
+    }
 }
