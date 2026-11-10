@@ -201,15 +201,23 @@ struct ObjectiveView: View {
                     startDraftingFlow()
                 } label: {
                     ZStack{
-                        Image("addorderback")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 100)
+                        if !viewModel.isMyTurn {
+                            Image("addorderbackdisabled")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 100)
+                        } else {
+                            Image("addorderback")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 100)
+                        }
                         Text("Add Order")
                             .font(.system(size: 16, weight: .regular))
                             .foregroundColor(.white)
                     }
                 }
+                .disabled(!viewModel.isMyTurn)
             } else {
                 // TAMPILAN MODE DRAFTING (Saat memilih kartu)
                 ZStack{
@@ -350,10 +358,6 @@ struct ObjectiveView: View {
         }
         return updated
     }
-}
-
-#Preview {
-    ObjectiveView(viewModel: GameSessionViewModel())
 }
 
 #Preview {
