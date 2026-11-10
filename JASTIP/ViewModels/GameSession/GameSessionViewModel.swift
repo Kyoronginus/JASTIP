@@ -27,6 +27,7 @@ class GameSessionViewModel {
     var hasProceededToGame: Bool = false
     var hasSeenStoryboard: Bool = false
     var sharedJastipOrders: [JastipOrderModel] = JastipOrderCatalog.getRandomSharedOrders(count: 3)
+    var personalJastipOrders: [JastipOrderModel] = []   // hasil drafting, lokal per device
     
     // MARK: - Turn & Round System
     var turnOrder: [TurnPlayer] = []
@@ -130,6 +131,12 @@ class GameSessionViewModel {
     // MARK: - Firebase Lobby
     var lobbyService = FirebaseLobbyService()
     
+    var isDraftingObjective: Bool = false
+
+    var canEndTurn: Bool {
+        isMyTurn && !isDraftingObjective
+    }
+    
     // MARK: - Initialization
     init(airlineCard: AirlineCardModel = AirlineCardCatalog.getRandomCard()) {
         self.airlineCard = airlineCard
@@ -171,10 +178,26 @@ class GameSessionViewModel {
     // MARK: - Global Toast System
     var activeToast: ToastOptions? = nil
     
-    func showToast(_ message: String, type: ToastModel = .info, duration: TimeInterval = 2.5, broadcast: Bool = true) {
-        let toast = ToastOptions(id: UUID().uuidString, message: message, type: type, duration: duration)
-        withAnimation {
-            self.activeToast = toast
+    func showToast(
+        _ message: String,
+        type: ToastModel = .info,
+        duration: TimeInterval = 2.5,
+        broadcast: Bool = true,
+        displayLocally: Bool = true,
+        playNotificationSound: Bool = false
+    ) {
+        let toast = ToastOptions(
+            id: UUID().uuidString,
+            message: message,
+            type: type,
+            duration: duration,
+            playsNotificationSound: playNotificationSound ? true : nil,
+            senderID: broadcast ? lobbyService.currentPlayerID : nil
+        )
+        if displayLocally {
+            withAnimation {
+                self.activeToast = toast
+            }
         }
         
         // Kirim ke semua device lain via Firebase
@@ -212,6 +235,8 @@ class GameSessionViewModel {
         generateRandomizedWeights()
         self.airlineCard = AirlineCardCatalog.getRandomCard()
         self.sharedJastipOrders = JastipOrderCatalog.getRandomSharedOrders(count: 3)
+        self.personalJastipOrders.removeAll()
+        self.isDraftingObjective = false
         self.turnOrder.removeAll()
         self.currentTurnIndex = 0
         self.daysToGo = 7
@@ -553,7 +578,7 @@ class GameSessionViewModel {
     
     /// Daftar order jastip yang berhasil diselesaikan di koper
     var completedJastipOrders: [JastipOrderModel] {
-        sharedJastipOrders.filter { order in
+        (sharedJastipOrders + personalJastipOrders).filter { order in
             order.isFulfilled(by: allLuggagePieces)
         }
     }

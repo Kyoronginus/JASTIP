@@ -64,6 +64,8 @@ final class FirebaseLobbyService {
     @ObservationIgnored private var playerListener: ListenerRegistration?
     @ObservationIgnored private var scanListener: ListenerRegistration?
     @ObservationIgnored private var lastObservedGameState: CloudGameState?
+    @ObservationIgnored private var lastObservedToastID: String?
+    @ObservationIgnored private var hasReceivedInitialLobbySnapshot = false
 
     func createLobby(playerName: String) async {
         await performLobbyAction {
@@ -340,6 +342,8 @@ final class FirebaseLobbyService {
     private func listen(to reference: DocumentReference) {
         stopListening()
         lastObservedGameState = nil
+        lastObservedToastID = nil
+        hasReceivedInitialLobbySnapshot = false
 
         lobbyListener = reference.addSnapshotListener { [weak self] snapshot, error in
             Task { @MainActor [weak self] in
@@ -361,10 +365,16 @@ final class FirebaseLobbyService {
                     self.errorMessage = LobbyError.invalidLobbyData.localizedDescription
                     return
                 }
-                // Cek apakah ada broadcast toast baru dari pemain lain
+                let isInitialSnapshot = !self.hasReceivedInitialLobbySnapshot
+                self.hasReceivedInitialLobbySnapshot = true
                 if let toastData = data["latestToast"] as? [String: Any],
                    let toast = try? Self.decode(ToastOptions.self, from: toastData) {
-                    self.onToastReceived?(toast)
+                    if self.lastObservedToastID != toast.id {
+                        self.lastObservedToastID = toast.id
+                        if !isInitialSnapshot, toast.senderID != self.currentPlayerID {
+                            self.onToastReceived?(toast)
+                        }
+                    }
                 }
 
                 let players = playersData.values.compactMap { player -> LobbyPlayer? in
