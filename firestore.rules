@@ -26,21 +26,34 @@ service cloud.firestore {
 
       allow create: if signedIn()
         && code.matches('^[A-Z]{4}$')
-        && request.resource.data.keys().hasOnly(['hostUID', 'status', 'players', 'createdAt', 'updatedAt'])
+        && request.resource.data.keys().hasOnly(['hostUID', 'status', 'players', 'playerOrder', 'createdAt', 'updatedAt'])
         && request.resource.data.hostUID == request.auth.uid
         && request.resource.data.status == 'waiting'
         && request.resource.data.players.keys().hasOnly([request.auth.uid])
         && request.resource.data.players.size() == 1
+        && request.resource.data.playerOrder == [request.auth.uid]
         && validPlayer(request.resource.data.players[request.auth.uid], request.auth.uid);
 
       allow update: if signedIn() && (
         (
           resource.data.status == 'waiting'
           && request.resource.data.status == 'waiting'
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['players', 'updatedAt'])
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['players', 'playerOrder', 'updatedAt'])
           && request.resource.data.players.size() <= 5
           && request.resource.data.players.diff(resource.data.players).affectedKeys().hasOnly([request.auth.uid])
           && validPlayer(request.resource.data.players[request.auth.uid], request.auth.uid)
+          && request.resource.data.playerOrder is list
+          && request.resource.data.playerOrder.size() == request.resource.data.players.size()
+          && request.resource.data.playerOrder.hasAll(request.resource.data.players.keys())
+        )
+        || (
+          resource.data.hostUID == request.auth.uid
+          && resource.data.status == 'waiting'
+          && request.resource.data.status == 'waiting'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['playerOrder', 'updatedAt'])
+          && request.resource.data.playerOrder is list
+          && request.resource.data.playerOrder.size() == resource.data.players.size()
+          && request.resource.data.playerOrder.hasAll(resource.data.players.keys())
         )
         || (
           resource.data.hostUID == request.auth.uid
@@ -75,6 +88,15 @@ service cloud.firestore {
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['players', 'updatedAt'])
           && resource.data.players.diff(request.resource.data.players).affectedKeys().hasOnly([request.auth.uid])
           && !request.resource.data.players.keys().hasAny([request.auth.uid])
+        )
+        || (
+          resource.data.players.keys().hasAny([request.auth.uid])
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['players', 'playerOrder', 'updatedAt'])
+          && resource.data.players.diff(request.resource.data.players).affectedKeys().hasOnly([request.auth.uid])
+          && !request.resource.data.players.keys().hasAny([request.auth.uid])
+          && request.resource.data.playerOrder is list
+          && request.resource.data.playerOrder.size() == request.resource.data.players.size()
+          && request.resource.data.playerOrder.hasAll(request.resource.data.players.keys())
         )
       );
 

@@ -106,8 +106,27 @@ final class FirebaseLobbyService {
             let players = data["players"] as? [String: [String: String]] ?? [:]
             if players[uid] == nil {
                 guard players.count < 5 else { throw LobbyError.lobbyFull }
+
+                let existingPlayerIDs = Set(players.keys)
+                let storedPlayerOrder = data["playerOrder"] as? [String]
+                let playerOrder: Any
+                if let storedPlayerOrder,
+                   storedPlayerOrder.count == existingPlayerIDs.count,
+                   Set(storedPlayerOrder) == existingPlayerIDs {
+                    playerOrder = FieldValue.arrayUnion([uid])
+                } else {
+                    let existingPlayers = players.values.compactMap { player -> (String, String)? in
+                        guard let uid = player["uid"], let name = player["name"] else { return nil }
+                        return (uid, name)
+                    }.sorted {
+                        $0.1.localizedCaseInsensitiveCompare($1.1) == .orderedAscending
+                    }
+                    playerOrder = existingPlayers.map(\.0) + [uid]
+                }
+
                 try await reference.updateData([
                     "players.\(uid)": ["uid": uid, "name": Self.validatedName(playerName)],
+                    "playerOrder": playerOrder,
                     "updatedAt": FieldValue.serverTimestamp()
                 ])
             }
@@ -124,6 +143,41 @@ final class FirebaseLobbyService {
                 "game": try Self.encode(state),
                 "updatedAt": FieldValue.serverTimestamp()
             ])
+        }
+    }
+
+    func reorderPlayers(_ playerIDs: [String]) async {
+        guard let lobby, lobby.isHost, lobby.status == "waiting" else { return }
+
+        let currentPlayerIDs = lobby.players.map(\.id)
+        guard playerIDs.count == currentPlayerIDs.count,
+              Set(playerIDs) == Set(currentPlayerIDs) else {
+            errorMessage = LobbyError.invalidPlayerOrder.localizedDescription
+            return
+        }
+        guard !isLoading else { return }
+
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
+
+        do {
+            try await database.collection("lobbies").document(lobby.code).updateData([
+                "playerOrder": playerIDs,
+                "updatedAt": FieldValue.serverTimestamp()
+            ])
+            let playersByID = Dictionary(
+                lobby.players.map { ($0.id, $0) },
+                uniquingKeysWith: { first, _ in first }
+            )
+            self.lobby = GameLobby(
+                code: lobby.code,
+                hostUID: lobby.hostUID,
+                status: lobby.status,
+                players: playerIDs.compactMap { playersByID[$0] }
+            )
+        } catch {
+            errorMessage = error.localizedDescription
         }
     }
 
@@ -204,6 +258,7 @@ final class FirebaseLobbyService {
                 try await reference.collection("playerStates").document(uid).delete()
                 try await reference.updateData([
                     "players.\(uid)": FieldValue.delete(),
+                    "playerOrder": lobby.players.filter { $0.id != uid }.map(\.id),
                     "updatedAt": FieldValue.serverTimestamp()
                 ])
             }
@@ -263,6 +318,7 @@ final class FirebaseLobbyService {
                         "hostUID": uid,
                         "status": "waiting",
                         "players": [uid: ["uid": uid, "name": playerName]],
+                        "playerOrder": [uid],
                         "createdAt": FieldValue.serverTimestamp(),
                         "updatedAt": FieldValue.serverTimestamp()
                     ], forDocument: reference)
@@ -320,17 +376,26 @@ final class FirebaseLobbyService {
                         }
                     }
                 }
+
+                let players = playersData.values.compactMap { player -> LobbyPlayer? in
+                    guard let uid = player["uid"], let name = player["name"] else { return nil }
+                    return LobbyPlayer(id: uid, name: name)
+                }
+                var playersByID = Dictionary(
+                    players.map { ($0.id, $0) },
+                    uniquingKeysWith: { first, _ in first }
+                )
+                let playerOrder = data["playerOrder"] as? [String] ?? []
+                let orderedPlayers = playerOrder.compactMap { playersByID.removeValue(forKey: $0) }
+                let remainingPlayers = playersByID.values.sorted {
+                    $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+                }
                 
                 self.lobby = GameLobby(
                     code: reference.documentID,
                     hostUID: hostUID,
                     status: status,
-                    players: playersData.values.compactMap { player in
-                        guard let uid = player["uid"], let name = player["name"] else { return nil }
-                        return LobbyPlayer(id: uid, name: name)
-                    }.sorted {
-                        $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-                    }
+                    players: orderedPlayers + remainingPlayers
                 )
 
                 if status == "playing" {
@@ -456,6 +521,7 @@ private enum LobbyError: LocalizedError {
     case invalidLobbyData
     case invalidGameData
     case invalidPlayerData
+    case invalidPlayerOrder
 
     var errorDescription: String? {
         switch self {
@@ -470,6 +536,7 @@ private enum LobbyError: LocalizedError {
         case .invalidLobbyData: "The lobby document is missing required data."
         case .invalidGameData: "The lobby game state is missing or invalid."
         case .invalidPlayerData: "A player status document is missing required data."
+        case .invalidPlayerOrder: "The player order does not match the lobby players."
         }
     }
 }

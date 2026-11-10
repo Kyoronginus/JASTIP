@@ -48,10 +48,9 @@ extension GameSessionViewModel {
             sharedJastipOrders = JastipOrderCatalog.getRandomSharedOrders(count: 3)
         }
         
-        // 1. Inisialisasi daftar giliran acak dari semua pemain di lobby
+        // Gunakan urutan pemain dari lobby sebagai urutan giliran awal.
         if let lobbyPlayers = lobbyService.lobby?.players, !lobbyPlayers.isEmpty {
-            let players = lobbyPlayers.map { TurnPlayer(id: $0.id, name: $0.name) }
-            self.turnOrder = players.shuffled() // Acak urutan pertama kali!
+            self.turnOrder = lobbyPlayers.map { TurnPlayer(id: $0.id, name: $0.name) }
         } else {
             self.turnOrder = [TurnPlayer(id: lobbyService.currentPlayerID ?? "local", name: playerName)]
         }

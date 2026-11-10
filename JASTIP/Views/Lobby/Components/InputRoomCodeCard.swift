@@ -5,98 +5,79 @@
 //  Created by Tohru Djunaedi Sato on 26/10/26.
 //
 
-//
-//  InputRoomCodeCard.swift
-//  JASTIP
-//
-
 import SwiftUI
 
 struct InputRoomCodeCard: View {
     @Binding var code: String
     var codeLength: Int = 4
-    var onSubmit: () -> Void
 
     @FocusState private var isFocused: Bool
 
-    private var isCodeComplete: Bool {
-        code.count == codeLength
-    }
-
     var body: some View {
-        VStack(spacing: 16) {
-            Text("Input Room Code")
-                .font(.plusJakarta(15, .bold))
-                .foregroundStyle(Color("TaxiYellow"))
-
-            // FlipTile Row with Tap-to-Focus
-            ZStack {
-                // Invisible input capturing keystrokes
-                TextField("", text: $code)
-                    .focused($isFocused)
-                    .textInputAutocapitalization(.characters)
-                    .autocorrectionDisabled()
-                    .keyboardType(.asciiCapable)
-                    .opacity(0.01)
-                    .frame(width: 1, height: 1)
-                    .onChange(of: code) { _, newValue in
-                        let alphabet = Set("ABCDEFGHJKLMNPQRSTUVWXYZ")
-                        let filtered = newValue.uppercased().filter { alphabet.contains($0) }
-                        code = String(filtered.prefix(codeLength))
-                    }
-
-                HStack(spacing: 6) {
-                    ForEach(0..<codeLength, id: \.self) { index in
-                        let char: Character = index < code.count
-                            ? code[code.index(code.startIndex, offsetBy: index)]
-                            : " "
-                        let isCurrentTile = (index == code.count) && isFocused
-
-                        ZStack {
-                            FlipTile(
-                                character: char,
-                                width: 36,
-                                height: 52,
-                                fontSize: 30
-                            )
-
-                            if isCurrentTile {
-                                Text("|")
-                                    .font(.spaceGrotesk(26, .bold))
-                                    .foregroundStyle(Color("TaxiYellow"))
-                            }
-                        }
-                    }
+        ZStack {
+            // Invisible TextField penangkap input keyboard
+            TextField("", text: $code)
+                .focused($isFocused)
+                .textInputAutocapitalization(.characters)
+                .autocorrectionDisabled()
+                .keyboardType(.asciiCapable)
+                .opacity(0.01)
+                .frame(width: 1, height: 1)
+                .onChange(of: code) { _, newValue in
+                    let alphabet = Set("ABCDEFGHJKLMNPQRSTUVWXYZ")
+                    let filtered = newValue.uppercased().filter { alphabet.contains($0) }
+                    code = String(filtered.prefix(codeLength))
                 }
-            }
-            .contentShape(Rectangle())
-            .onTapGesture {
-                isFocused = true
-            }
 
-            // Submit Button inside the card
-            Button(isCodeComplete ? "Enter Room" : "Start Game") {
-                onSubmit()
+            // Background Asset Luggage Tag
+            Image("RoomCodeTagEmpty")
+                .resizable()
+                .scaledToFit()
+
+            // Overlay Content (Enter Room Code + Box Putus-putus)
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Enter Room Code")
+                    .font(.shantellSans(18, .semibold))
+                    .foregroundColor(.black)
+
+                // Inner Box Putus-putus
+                ZStack(alignment: .leading) {
+                    HStack {
+                        if code.isEmpty {
+                            if isFocused {
+                                Text("|")
+                                    .font(.spaceGrotesk(28, .bold))
+                                    .foregroundColor(.black)
+                            }
+                        } else {
+                            Text(code)
+                                .font(.spaceGrotesk(48, .medium))
+                                .tracking(6)
+                                .foregroundColor(.black)
+                        }
+                        Spacer()
+                    }
+                    .padding(.horizontal, 12)
+                }
+                .frame(height: 50)
+                .background(Color.white)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(
+                            Color(red: 0.45, green: 0.15, blue: 0.15),
+                            style: StrokeStyle(lineWidth: 1.5, dash: [4, 3])
+                        )
+                )
             }
-            .buttonStyle(PrimaryButtonStyle(isFullWidth: true))
-            .disabled(!isCodeComplete)
+            .padding(.leading, 24)
+            .padding(.trailing, 160) // Memberi ruang agar ikon pesawat tidak tertutup
+            .padding(.vertical, 16)
         }
-        .padding(20)
-        .background(
-            ZStack(alignment: .trailing) {
-                RoundedRectangle(cornerRadius: 18)
-                    .fill(Color("TileDivider"))
-
-                Image("AsteriskYellow")
-                    .resizable()
-                    .renderingMode(.template)
-                    .foregroundStyle(Color.white.opacity(0.06))
-                    .scaledToFit()
-                    .frame(width: 150, height: 150)
-                    .offset(x: 24, y: 35)
-            }
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .contentShape(Rectangle())
+        .onTapGesture {
+            isFocused = true
+        }
         .onAppear {
             isFocused = true
         }
@@ -104,6 +85,9 @@ struct InputRoomCodeCard: View {
 }
 
 #Preview {
-    InputRoomCodeCard(code: .constant("DAWG")) {}
-        .padding()
+    ZStack {
+        Color.gray.ignoresSafeArea()
+        InputRoomCodeCard(code: .constant("DRPF"))
+            .padding()
+    }
 }
