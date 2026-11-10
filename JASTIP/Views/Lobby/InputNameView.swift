@@ -69,5 +69,6 @@ struct InputNameView: View {
 
             Spacer()
         }
+        .lobbyBackground()
     }
 }

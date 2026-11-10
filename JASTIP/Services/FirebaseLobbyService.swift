@@ -499,7 +499,7 @@ final class FirebaseLobbyService {
 
     private static func validatedName(_ name: String) -> String {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        return String((trimmedName.isEmpty ? "Player" : trimmedName).prefix(30))
+        return String((trimmedName.isEmpty ? "Player" : trimmedName).prefix(10))
     }
 
     private static func makeCode() -> String {

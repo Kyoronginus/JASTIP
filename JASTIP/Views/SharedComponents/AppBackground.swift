@@ -13,7 +13,7 @@ struct AppBackgroundModifier: ViewModifier {
         content
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(
-                Image("AppBackground")
+                Image("HomeBackground")
                     .resizable()
                     .scaledToFill()
                     .ignoresSafeArea()

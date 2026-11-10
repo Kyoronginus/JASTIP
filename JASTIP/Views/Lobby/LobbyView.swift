@@ -34,95 +34,87 @@ struct LobbyView: View {
     }
     
     var body: some View {
-        ZStack {
-            // MARK: - Custom Background Asset
-            Image("LobbyBackground")
-                .resizable()
-                .scaledToFill()
-                .ignoresSafeArea()
-            
-            // Konten Utama Lobby
-            VStack(spacing: 16) {
-                // MARK: - Top Navigation Bar (Leave Button)
-                HStack {
-                    // Back Button
-                    Button {
-                        showLeaveConfirmation = true
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 14, weight: .bold))
+        VStack(spacing: 16) {
+            // MARK: - Top Navigation Bar (Leave Button)
+            HStack {
+                // Back Button
+                Button {
+                    showLeaveConfirmation = true
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 14, weight: .bold))
 //                            Text(lobby.isHost ? "Close Lobby" : "Leave")
 ////                                .font(.plusJakarta(13, .bold))
-                        }
                     }
-                    .buttonStyle(PrimaryButtonStyle(
-                        backgroundColor: .white,
+                }
+                .buttonStyle(PrimaryButtonStyle(
+                    backgroundColor: .white,
 //                        borderColor: Color("TaxiYellow"),
-                        foregroundColor: Color(.black),
-                        cornerRadius: 14,
-                        paddingVertical: 14,
-                        paddingHorizontal: 15
-                    ))
-                    .padding(.trailing, 10)
-                    
-                    // MARK: - Room Code Display
-                    RoomCodeCard(code: code)
-//                        .scaleEffect(0.8)
-                        .padding(.horizontal, 24)
-                    
-                    Spacer()
-                }
+                    foregroundColor: Color(.black),
+                    cornerRadius: 14,
+                    paddingVertical: 14,
+                    paddingHorizontal: 15
+                ))
+                .padding(.trailing, 10)
                 
-                // MARK: - Lobby Players List (Scrollable)
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 12) {
-                        ForEach(lobby.players) { player in
-                            let index = lobby.players.firstIndex { $0.id == player.id } ?? 0
-                            playerCard(player, at: index)
-                                .background {
-                                    GeometryReader { geometry in
-                                        Color.clear.preference(
-                                            key: LobbyPlayerFramePreferenceKey.self,
-                                            value: [player.id: geometry.frame(in: .named("lobbyPlayers"))]
-                                        )
-                                    }
-                                }
-                                .offset(y: draggingPlayerID == player.id ? dragOffset : 0)
-                                .scaleEffect(draggingPlayerID == player.id ? 1.03 : 1)
-                                .zIndex(draggingPlayerID == player.id ? 1 : 0)
-                        }
-                    }
-                    .padding(.vertical, 4)
-                }
-                .coordinateSpace(name: "lobbyPlayers")
-                .onPreferenceChange(LobbyPlayerFramePreferenceKey.self) { playerFrames = $0 }
+                // MARK: - Room Code Display
+                RoomCodeCard(code: code)
+//                        .scaleEffect(0.8)
+                    .padding(.horizontal, 24)
                 
                 Spacer()
-                
-                // MARK: - Bottom Action
-                if lobby.isHost {
-                    Button("Start Game") {
-                        onStartGame()
-                    }
-                    .buttonStyle(PrimaryButtonStyle(isFullWidth: true))
-                    .disabled(isLoading || lobby.status != "waiting")
-                } else {
-                    HStack(spacing: 8) {
-                        ProgressView()
-                        Text(lobby.status == "playing" ? "Starting game…" : "Waiting for host to start…")
-                            .font(.spaceGrotesk(15, .medium))
-                            .foregroundStyle(.secondary)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                }
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 30)
-            .safeAreaPadding(.top)
-            .padding(.bottom, 30)
+            
+            // MARK: - Lobby Players List (Scrollable)
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 12) {
+                    ForEach(lobby.players) { player in
+                        let index = lobby.players.firstIndex { $0.id == player.id } ?? 0
+                        playerCard(player, at: index)
+                            .background {
+                                GeometryReader { geometry in
+                                    Color.clear.preference(
+                                        key: LobbyPlayerFramePreferenceKey.self,
+                                        value: [player.id: geometry.frame(in: .named("lobbyPlayers"))]
+                                    )
+                                }
+                            }
+                            .offset(y: draggingPlayerID == player.id ? dragOffset : 0)
+                            .scaleEffect(draggingPlayerID == player.id ? 1.03 : 1)
+                            .zIndex(draggingPlayerID == player.id ? 1 : 0)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+            .coordinateSpace(name: "lobbyPlayers")
+            .onPreferenceChange(LobbyPlayerFramePreferenceKey.self) { playerFrames = $0 }
+            
+            Spacer()
+            
+            // MARK: - Bottom Action
+            if lobby.isHost {
+                Button("Start Game") {
+                    onStartGame()
+                }
+                .buttonStyle(PrimaryButtonStyle(isFullWidth: true))
+                .disabled(isLoading || lobby.status != "waiting")
+            } else {
+                HStack(spacing: 8) {
+                    ProgressView()
+                    Text(lobby.status == "playing" ? "Starting game…" : "Waiting for host to start…")
+                        .font(.spaceGrotesk(15, .medium))
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+            }
         }
+        .padding(.horizontal, 20)
+//        .padding()
+        .safeAreaPadding(.top)
+        .padding(.bottom, 30)
+        .lobbyBackground()
         .confirmationDialog(
             Text(lobby.isHost ? "Close this lobby for all players?" : "Leave this lobby?"),
             isPresented: $showLeaveConfirmation,
