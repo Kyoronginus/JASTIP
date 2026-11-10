@@ -7,47 +7,32 @@
 
 import SwiftUI
 
-// MARK: - 2. Input Room Code View
 struct InputRoomCodeView: View {
     @Binding var code: String
+    var codeLength: Int = 4
     var onBack: () -> Void = {}
     var onSubmit: () -> Void
 
+    private var isCodeComplete: Bool {
+        code.count == codeLength
+    }
+
     var body: some View {
-        VStack(spacing: 0) {
+        // MARK: - View Layout
+        VStack {
             // Top Bar: Back Button
             HStack {
-//                Button {
-//                    onBack()
-//                } label: {
-//                    Image(systemName: "chevron.left")
-//                        .font(.system(size: 16, weight: .bold))
-//                        .foregroundStyle(Color("NavyBlack"))
-//                        .frame(width: 44, height: 44)
-//                        .background(Color("TaxiYellow"))
-//                        .clipShape(RoundedRectangle(cornerRadius: 12))
-//                        .overlay(
-//                            RoundedRectangle(cornerRadius: 12)
-//                                .stroke(Color("NavyBlack"), lineWidth: 2)
-//                        )
-//                }
-                
-                // Back Button
-                Button {
+                Button(action: {
                     onBack()
-                } label: {
+                }) {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.black)
+                        .frame(width: 44, height: 44)
+                        .background(Color.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
                 }
-                .buttonStyle(PrimaryButtonStyle(
-                    backgroundColor: .black,
-                    borderColor: Color("TaxiYellow"),
-                    foregroundColor: Color("TaxiYellow"),
-                    cornerRadius: 14,
-                    paddingVertical: 14,
-                    paddingHorizontal: 15
-                ))
-                .padding(.trailing, 10)
                 Spacer()
             }
             .padding(.horizontal, 24)
@@ -55,12 +40,32 @@ struct InputRoomCodeView: View {
 
             Spacer()
 
-            InputRoomCodeCard(code: $code) {
-                onSubmit()
-            }
-            .padding(.horizontal, 24)
+            // Card Room Code di Tengah
+            InputRoomCodeCard(code: $code, codeLength: codeLength)
+                .padding(.horizontal, 24)
 
             Spacer()
+
+            // Bottom Action Button: Join Game
+            Button("Join Game") {
+                onSubmit()
+            }
+            .buttonStyle(PrimaryButtonStyle(
+                font: .shantellSans(20, .bold),
+                isFullWidth: true
+            ))
+            .disabled(!isCodeComplete)
+            .padding(.horizontal, 24)
+            .padding(.bottom, 24)
         }
+        .lobbyBackground()
     }
+}
+
+#Preview("Empty State") {
+    InputRoomCodeView(code: .constant(""), onBack: {}, onSubmit: {})
+}
+
+#Preview("Filled State") {
+    InputRoomCodeView(code: .constant("DRPF"), onBack: {}, onSubmit: {})
 }

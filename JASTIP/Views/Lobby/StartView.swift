@@ -39,6 +39,9 @@ struct StartView: View {
                                 joinCode = ""
                             }
                         }
+                    },
+                    onReorderPlayers: { playerIDs in
+                        Task { await viewModel.lobbyService.reorderPlayers(playerIDs) }
                     }
                 )
             } else {

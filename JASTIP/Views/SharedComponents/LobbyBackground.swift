@@ -8,12 +8,12 @@
 import SwiftUI
 
 // MARK: - ViewModifier
-struct AppBackgroundModifier: ViewModifier {
+struct LobbyBackgroundModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(
-                Image("AppBackground")
+                Image("LobbyBackground")
                     .resizable()
                     .scaledToFill()
                     .ignoresSafeArea()
@@ -22,8 +22,8 @@ struct AppBackgroundModifier: ViewModifier {
 }
 // MARK: - View Extension (Agar mudah dipanggil)
 extension View {
-    func appBackground() -> some View {
-        modifier(AppBackgroundModifier())
+    func lobbyBackground() -> some View {
+        modifier(LobbyBackgroundModifier())
     }
 }
 
@@ -36,5 +36,5 @@ extension View {
         Button("Sample Button") {}
             .buttonStyle(PrimaryButtonStyle())
     }
-    .appBackground()
+    .lobbyBackground()
 }

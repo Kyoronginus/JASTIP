@@ -13,6 +13,7 @@ struct LobbyView: View {
     var isLoading: Bool = false
     var onStartGame: () -> Void = {}
     var onLeaveLobby: () -> Void = {}
+    var onReorderPlayers: ([String]) -> Void = { _ in }
     
     @State private var showLeaveConfirmation = false
     
@@ -23,7 +24,6 @@ struct LobbyView: View {
     var body: some View {
         ZStack {
             // MARK: - Custom Background Asset
-            // Ganti "nama_asset_background_lu" dengan nama gambar di Assets.xcassets
             Image("LobbyBackground")
                 .resizable()
                 .scaledToFill()
@@ -66,14 +66,7 @@ struct LobbyView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 12) {
                         ForEach(Array(lobby.players.enumerated()), id: \.element.id) { index, player in
-                            LobbyPlayerCard(
-                                name: player.name,
-                                index: index,
-                                isHost: player.id == lobby.hostUID,
-                                showHostActions: lobby.isHost,
-                                onKick: {},
-                                onAddHost: {}
-                            )
+                            playerCard(player, at: index)
                         }
                     }
                     .padding(.vertical, 4)
@@ -116,6 +109,48 @@ struct LobbyView: View {
             }
             Button("Cancel", role: .cancel) {}
         }
+    }
+
+    @ViewBuilder
+    private func playerCard(_ player: LobbyPlayer, at index: Int) -> some View {
+        let card = LobbyPlayerCard(
+            name: player.name,
+            index: index,
+            isHost: player.id == lobby.hostUID,
+            showHostActions: lobby.isHost,
+            onKick: {},
+            onAddHost: {}
+        )
+
+        if lobby.isHost && lobby.status == "waiting" && !isLoading {
+            card
+                .draggable(player.id)
+                .dropDestination(for: String.self) { draggedIDs, location in
+                    guard let draggedID = draggedIDs.first,
+                          !isLoading else { return false }
+                    return movePlayer(draggedID, over: player.id, at: location)
+                }
+        } else {
+            card
+        }
+    }
+
+    private func movePlayer(_ draggedID: String, over targetID: String, at location: CGPoint) -> Bool {
+        let players = lobby.players
+        guard let sourceIndex = players.firstIndex(where: { $0.id == draggedID }),
+              let targetIndex = players.firstIndex(where: { $0.id == targetID }) else {
+            return false
+        }
+
+        let insertionIndex = targetIndex + (location.y > 32 ? 1 : 0)
+        var reorderedIDs = players.map(\.id)
+        let movedID = reorderedIDs.remove(at: sourceIndex)
+        let adjustedIndex = insertionIndex > sourceIndex ? insertionIndex - 1 : insertionIndex
+        reorderedIDs.insert(movedID, at: adjustedIndex)
+
+        guard reorderedIDs != players.map(\.id) else { return true }
+        onReorderPlayers(reorderedIDs)
+        return true
     }
 }
 
