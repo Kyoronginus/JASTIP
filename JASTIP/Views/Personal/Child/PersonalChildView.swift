@@ -352,7 +352,7 @@ private struct StagingSectionView: View {
                                         onDragItemEnded(item, value)
                                     }
                             )
-                            .onTapGesture(count: 2) {
+                            .onTapGesture() {
                                 onRotateItem(item)
                             }
                         }

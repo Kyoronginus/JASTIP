@@ -148,6 +148,9 @@ final class FirebaseLobbyService {
                     "suitcaseWeight": status.suitcaseWeight,
                     "carryOnWeight": status.carryOnWeight,
                     "isBoarded": status.isBoarded,
+                    "income": status.income,
+                    "penalty": status.penalty,
+                    "isScoreSubmitted": status.isScoreSubmitted,
                     "updatedAt": FieldValue.serverTimestamp()
                 ])
         } catch {
@@ -357,12 +360,18 @@ final class FirebaseLobbyService {
                         self.errorMessage = LobbyError.invalidPlayerData.localizedDescription
                         return
                     }
+                    let income = data["income"] as? Int ?? 0
+                    let penalty = data["penalty"] as? Int ?? 0
+                    let isScoreSubmitted = data["isScoreSubmitted"] as? Bool ?? false
                     statuses[document.documentID] = PlayerSyncPayload(
                         peerId: document.documentID,
                         name: name,
                         suitcaseWeight: suitcaseWeight,
                         carryOnWeight: carryOnWeight,
-                        isBoarded: isBoarded
+                        isBoarded: isBoarded,
+                        income: income,
+                        penalty: penalty,
+                        isScoreSubmitted: isScoreSubmitted
                     )
                 }
                 self.playerStatuses = statuses

@@ -117,6 +117,8 @@ class GameSessionViewModel {
     // MARK: - Player & Leaderboard
     var playerName: String = UIDevice.current.name
     var isBoarded: Bool = false
+    var isScoreSubmitted: Bool = false
+    var droppedBlockKg: Int = 0
     var remotePlayers: [String: PlayerSyncPayload] = [:]
     
     // MARK: - Random Events State
@@ -167,21 +169,21 @@ class GameSessionViewModel {
     }
     
     // MARK: - Global Toast System
-        var activeToast: ToastOptions? = nil
+    var activeToast: ToastOptions? = nil
+    
+    func showToast(_ message: String, type: ToastModel = .info, duration: TimeInterval = 2.5, broadcast: Bool = true) {
+        let toast = ToastOptions(id: UUID().uuidString, message: message, type: type, duration: duration)
+        withAnimation {
+            self.activeToast = toast
+        }
         
-        func showToast(_ message: String, type: ToastModel = .info, duration: TimeInterval = 2.5, broadcast: Bool = true) {
-            let toast = ToastOptions(id: UUID().uuidString, message: message, type: type, duration: duration)
-            withAnimation {
-                self.activeToast = toast
-            }
-            
-            // Kirim ke semua device lain via Firebase
-            if broadcast {
-                Task {
-                    await lobbyService.publishToast(toast)
-                }
+        // Kirim ke semua device lain via Firebase
+        if broadcast {
+            Task {
+                await lobbyService.publishToast(toast)
             }
         }
+    }
     
     // MARK: - Game Lifecycle
     func startNewGame() {
@@ -193,12 +195,14 @@ class GameSessionViewModel {
         activeHourEvent = nil
         isGameOver = false
         isBoarded = false
+        isScoreSubmitted = false
         hasProceededToGame = false
         hasSeenStoryboard = false
         triggeredUniqueEvents.removeAll()
         lastRoundEventType = nil
         suitWeight = 0
         carryWeight = 0
+        droppedBlockKg = 0
         suitcaseGrid = .suitcase
         carryOnGrid = .carryOn
         stagedItems.removeAll()
@@ -506,4 +510,156 @@ class GameSessionViewModel {
         }
         return movePlacedPiece(placedPiece, to: result.origin, rotation: result.rotation)
     }
+    
+    // MARK: - Jastip Validation
+    /// Semua piece yang saat ini sudah masuk ke koper (Suitcase + Carry-on)
+    var allLuggagePieces: [PieceModel] {
+        (suitcaseGrid.placedPieces + carryOnGrid.placedPieces).map { $0.piece }
+    }
+    
+    /// Cek apakah suatu order sudah terpenuhi oleh barang di koper
+    func isOrderFulfilled(_ order: JastipOrderModel) -> Bool {
+        order.isFulfilled(by: allLuggagePieces)
+    }
+    
+    // MARK: - Automated Scoring Helpers
+    
+    
+    
+    /// Jumlah sel terisi di Koper Besar (Suitcase, max 15)
+    var suitcaseFilledCells: Int {
+        LuggagePlacementEngine.occupiedCoordinates(in: suitcaseGrid).count
+    }
+    
+    /// Jumlah sel terisi di Koper Jinjing (Carry-On, max 4)
+    var carryOnFilledCells: Int {
+        LuggagePlacementEngine.occupiedCoordinates(in: carryOnGrid).count
+    }
+    
+    /// Total poin dari grid koper yang terisi (1 sel = 1 pt)
+    var totalGridPoints: Int {
+        suitcaseFilledCells + carryOnFilledCells
+    }
+    
+    /// Perfect Shape: Suitcase terisi penuh 15/15 sel
+    var isSuitcasePerfectShape: Bool {
+        suitcaseFilledCells == 15
+    }
+    
+    /// Perfect Shape: Carry-On terisi penuh 4/4 sel
+    var isCarryOnPerfectShape: Bool {
+        carryOnFilledCells == 4
+    }
+    
+    /// Daftar order jastip yang berhasil diselesaikan di koper
+    var completedJastipOrders: [JastipOrderModel] {
+        sharedJastipOrders.filter { order in
+            order.isFulfilled(by: allLuggagePieces)
+        }
+    }
+    
+    /// Total poin dari order jastip yang selesai
+    var totalCompletedJastipPoints: Int {
+        completedJastipOrders.reduce(0) { $0 + $1.points }
+    }
+    
+    /// Total overweight penalty (-1 pt / kg)
+    var totalOverweightPenalty: Int {
+        let suitcaseOver = max(0, suitWeight - displayedAirlineCard.maxCapacityKg)
+        let carryOnOver = max(0, carryWeight - displayedAirlineCard.maxCarryOnKg)
+        return suitcaseOver + carryOnOver
+    }
+    
+    /// Total pemasukan poin (Grid + Jastip + Bonus Weight & Shape)
+    var calculatedIncome: Int {
+        let isSuitcasePerfectWeight = displayedAirlineCard.maxCapacityKg > 0 && suitWeight == displayedAirlineCard.maxCapacityKg
+        let isCarryOnPerfectWeight = displayedAirlineCard.maxCarryOnKg > 0 && carryWeight == displayedAirlineCard.maxCarryOnKg
+        let weightBonus = (isSuitcasePerfectWeight ? 3 : 0) + (isCarryOnPerfectWeight ? 2 : 0)
+        let shapeBonus = (isSuitcasePerfectShape ? 2 : 0) + (isCarryOnPerfectShape ? 1 : 0)
+        return totalGridPoints + totalCompletedJastipPoints + weightBonus + shapeBonus
+    }
+    
+    /// Total penalti (Dropped block + Overweight)
+    var calculatedPenalty: Int {
+        droppedBlockKg + totalOverweightPenalty
+    }
+    
+    /// Daftar klasemen akhir seluruh pemain (diurutkan dari Total tertinggi)
+    var finalStandings: [PlayerStandingModel] {
+        let localID = lobbyService.currentPlayerID ?? "local_player"
+        var map: [String: PlayerStandingModel] = [:]
+        
+        // 1. Data pemain lokal
+        map[localID] = PlayerStandingModel(
+            id: localID,
+            name: currentPlayerStatus.name,
+            income: calculatedIncome,
+            penalty: calculatedPenalty
+        )
+        
+        // 2. Masukkan semua pemain yang terdaftar di room/lobby
+        if let lobbyPlayers = lobbyService.lobby?.players {
+            for lp in lobbyPlayers where lp.id != localID {
+                let synced = remotePlayers[lp.id]
+                map[lp.id] = PlayerStandingModel(
+                    id: lp.id,
+                    name: synced?.name ?? lp.name,
+                    income: synced?.income ?? 0,
+                    penalty: synced?.penalty ?? 0
+                )
+            }
+        }
+        
+        // 3. Masukkan juga jika ada di remotePlayers yang belum ada di map
+        for synced in remotePlayers.values where synced.peerId != localID {
+            if map[synced.peerId] == nil {
+                map[synced.peerId] = PlayerStandingModel(
+                    id: synced.peerId,
+                    name: synced.name,
+                    income: synced.income,
+                    penalty: synced.penalty
+                )
+            } else if synced.income != 0 || synced.penalty != 0 {
+                // Update dengan skor terbaru jika pemain baru submit
+                map[synced.peerId] = PlayerStandingModel(
+                    id: synced.peerId,
+                    name: synced.name,
+                    income: synced.income,
+                    penalty: synced.penalty
+                )
+            }
+        }
+        
+        return Array(map.values).sorted {
+            if $0.total != $1.total {
+                return $0.total > $1.total
+            }
+            if $0.income != $1.income {
+                return $0.income > $1.income
+            }
+            return $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+        }
+    }
+    
+    /// Apakah semua pemain di room sudah menekan "Finished Playing"
+    var areAllPlayersSubmitted: Bool {
+        guard isScoreSubmitted else { return false }
+        guard let players = lobbyService.lobby?.players, !players.isEmpty else { return true }
+        let otherPlayers = players.filter { $0.id != lobbyService.currentPlayerID }
+        return otherPlayers.allSatisfy { remotePlayers[$0.id]?.isScoreSubmitted == true }
+    }
+    
+    /// Jumlah pemain yang sudah submit skor
+    var submittedPlayerCount: Int {
+        let localCount = isScoreSubmitted ? 1 : 0
+        guard let players = lobbyService.lobby?.players else { return localCount }
+        let otherCount = players.filter { $0.id != lobbyService.currentPlayerID && remotePlayers[$0.id]?.isScoreSubmitted == true }.count
+        return localCount + otherCount
+    }
+    
+    /// Total pemain yang ada di room
+    var totalLobbyPlayerCount: Int {
+        max(1, lobbyService.lobby?.players.count ?? 1)
+    }
+    
 }

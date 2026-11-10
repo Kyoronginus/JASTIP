@@ -56,7 +56,7 @@ extension GameSessionViewModel {
             self.turnOrder = [TurnPlayer(id: lobbyService.currentPlayerID ?? "local", name: playerName)]
         }
         self.currentTurnIndex = 0
-        self.daysToGo = 7
+        self.daysToGo = max(1, boardingHour - 8)
         
         await lobbyService.startGame(state: cloudGameState)
     }
@@ -70,25 +70,26 @@ extension GameSessionViewModel {
             currentTurnIndex += 1
         } else {
             // Kasus 2: Semua pemain di round ini sudah main!
-            // -> Rotasi urutan: Pemain pertama geser jadi pemain terakhir
-            var newOrder = turnOrder
-            let previousFirst = newOrder.removeFirst()
-            newOrder.append(previousFirst)
-            self.turnOrder = newOrder
-            
-            // Pemain kedua (yang sekarang jadi index 0) mulai duluan di round baru
-            self.currentTurnIndex = 0
-            
             // Kurangi kalender hari (Days to go)
-            if daysToGo > 1 {
+            if daysToGo > 0 {
+                // Masih ada hari tersisa (termasuk masuk ke Last Day saat 1 -> 0)
                 daysToGo -= 1
+                
+                // Rotasi giliran: pemain pertama geser ke paling belakang
+                var newOrder = turnOrder
+                let previousFirst = newOrder.removeFirst()
+                newOrder.append(previousFirst)
+                self.turnOrder = newOrder
+                // Pemain kedua (yang sekarang jadi index 0) mulai duluan di round baru
+                self.currentTurnIndex = 0
+                
+                // Majukan jam game & roll event
+                nextHour()
             } else {
-                daysToGo = 0
+                // Round "LAST DAY" sudah selesai dimainkan semua orang -> GAME OVER!
                 isGameOver = true
+                broadcastMyStatus()
             }
-            
-            // Opsional: maju jam & roll random event untuk round baru
-            nextHour()
         }
         
         // Broadcast perubahan giliran ke semua device di Firebase!
@@ -108,7 +109,10 @@ extension GameSessionViewModel {
             name: currentPlayerStatus.name,
             suitcaseWeight: suitWeight,
             carryOnWeight: carryWeight,
-            isBoarded: isBoarded || isGameOver
+            isBoarded: isBoarded || isGameOver,
+            income: calculatedIncome,
+            penalty: calculatedPenalty,
+            isScoreSubmitted: isScoreSubmitted
         )
         Task {
             await lobbyService.publishPlayerStatus(payload)

@@ -56,10 +56,10 @@ struct ObjectiveView: View {
         VStack(spacing: 0) {
             // 1. Header Bar
             VStack(spacing: 0){
-                   Text("Jastip Order")
+                Text("Jastip Order")
                     .font(.spaceGrotesk(33.4, .bold))
                 
-                    Image("HeaderLine")
+                Image("HeaderLine")
             }
             
             // 2. Scrollable Chat Content
@@ -69,7 +69,7 @@ struct ObjectiveView: View {
                         
                         // A. 3 SHARED JASTIP ORDERS AWAL
                         ForEach(sharedOrders) { order in
-                            JastipChatBubble(order: order)
+                            JastipChatBubble(order: validatedOrder(order))
                         }
                         
                         // B. HISTORI SESI-SESI DRAFT YANG SUDAH SELESAI SEBELUMNYA
@@ -79,7 +79,7 @@ struct ObjectiveView: View {
                             
                             // Kartu-kartu yang di-accept di sesi itu
                             ForEach(round.acceptedOrders) { order in
-                                JastipChatBubble(order: order)
+                                JastipChatBubble(order: validatedOrder(order))
                             }
                             
                             // Chat balasan konfirmasi
@@ -115,32 +115,37 @@ struct ObjectiveView: View {
                                 ))
                             }
                         }
+                        Color.clear
+                            .frame(height: 1)
+                            .id("CHAT_BOTTOM")
                     }
                     .padding(.vertical, 8)
                 }
-                // Tambahkan listener ini tepat di bawah .onChange(of: visibleCandidateOrders.count):
-                .onChange(of: isDrafting) { _, newValue in
-                    if newValue {
-                        // Begitu tombol diklik, LANGSUNG scroll ke chat biru player di detik 0!
-                        withAnimation(.easeOut(duration: 0.3)) {
-                            proxy.scrollTo("activePlayerRequest", anchor: .bottom)
-                        }
+                // 1. Scroll saat pertama kali layar dibuka
+                .onAppear {
+                    scrollToBottom(proxy: proxy, animated: false)
+                }
+                // 2. Scroll setiap kali draft dimulai (chat player muncul)
+                .onChange(of: isDrafting) { _, isStarting in
+                    if isStarting {
+                        scrollToBottom(proxy: proxy)
                     }
                 }
-                // Auto scroll ke konfirmasi pesan terakhir
+                // 3. Scroll setiap kali KARTU BARU MUNCUL satu per satu
+                .onChange(of: visibleCandidateOrders.count) { _, _ in
+                    scrollToBottom(proxy: proxy)
+                }
+                // 4. Scroll setiap kali SESI DRAFT DI-ACCEPT (pesan konfirmasi muncul)
                 .onChange(of: draftHistory.count) { _, _ in
-                    if let lastRound = draftHistory.last {
-                        withAnimation { proxy.scrollTo(lastRound.id, anchor: .bottom) }
-                    }
-                }
-            }
+                    scrollToBottom(proxy: proxy)
+                }            }
             
             // 3. Dynamic Bottom Action Bar
             bottomActionBar
         }
         .background(Color("BackgroundChat"))
     }
-
+    
     // MARK: - Subview: Bubble Chat Player (Biru di Kanan)
     private func playerChatBubble(text: String) -> some View {
         HStack {
@@ -190,20 +195,29 @@ struct ObjectiveView: View {
                         Spacer()
                     }
                 }
+                
                 .padding(.vertical, 10)
                 Button {
                     startDraftingFlow()
                 } label: {
                     ZStack{
-                        Image("addorderback")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 100)
+                        if !viewModel.isMyTurn {
+                            Image("addorderbackdisabled")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 100)
+                        } else {
+                            Image("addorderback")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 100)
+                        }
                         Text("Add Order")
                             .font(.system(size: 16, weight: .regular))
                             .foregroundColor(.white)
                     }
                 }
+                .disabled(!viewModel.isMyTurn)
             } else {
                 // TAMPILAN MODE DRAFTING (Saat memilih kartu)
                 ZStack{
@@ -270,8 +284,14 @@ struct ObjectiveView: View {
             }
         }
         
-        // Ambil 3 kartu baru yang belum pernah muncul sama sekali
-        candidateOrders = JastipOrderCatalog.getDraftOrders(count: 3, excludingIds: existingIds)
+        // 👇 GANTI BAGIAN INI:
+        let rawCandidates = JastipOrderCatalog.getDraftOrders(count: 3, excludingIds: existingIds)
+        candidateOrders = rawCandidates.map {
+            var order = $0
+            order.isPersonal = true
+            return order
+        }
+        // 👆 SAMPAI SINI
         
         // 1. Tentukan jeda tunggu setelah chat player terkirim (misal 1.0 detik)
         let initialPause: Double = 1.0
@@ -315,6 +335,28 @@ struct ObjectiveView: View {
             visibleCandidateOrders.removeAll()
             selectedOrderIds.removeAll()
         }
+    }
+    
+    private func scrollToBottom(proxy: ScrollViewProxy, animated: Bool = true) {
+        if animated {
+            withAnimation(.easeOut(duration: 0.25)) {
+                proxy.scrollTo("CHAT_BOTTOM", anchor: .bottom)
+            }
+        } else {
+            proxy.scrollTo("CHAT_BOTTOM", anchor: .bottom)
+        }
+    }
+    
+    /// Update status isFulfilled pada item order sesuai kondisi koper saat ini
+    private func validatedOrder(_ order: JastipOrderModel) -> JastipOrderModel {
+        var updated = order
+        let completed = viewModel.isOrderFulfilled(order)
+        
+        // Tandai slot item-nya sebagai fulfilled jika order sudah terpenuhi
+        for index in updated.requirementItems.indices {
+            updated.requirementItems[index].isFulfilled = completed
+        }
+        return updated
     }
 }
 

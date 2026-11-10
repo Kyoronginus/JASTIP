@@ -123,10 +123,10 @@ struct GameView: View {
                     .buttonStyle(
                         PrimaryButtonStyle(
                             backgroundColor: viewModel.isMyTurn ? Color("EndTurn") : Color.gray,
-                            borderColor: .white,
+                            borderColor: Color("EndTurn"),
                             shadowColor: Color("EndTurn").opacity(0.65),
                             foregroundColor: .white,
-                            cornerRadius: 12,
+                            cornerRadius: 8,
                             borderWidth: 1.5,
                             yShadowOffset: 4,
                             xShadowOffset: 2,
@@ -143,6 +143,7 @@ struct GameView: View {
             
             // 3. KANAN: KALENDER OTOMATIS BERKURANG TIAP ROUND
             CalendarCountdownView(daysToGo: displayedDaysToGo)
+                .animation(.spring(response: 0.45, dampingFraction: 0.7), value: displayedDaysToGo)
         }
     }
     
@@ -205,21 +206,21 @@ struct GameView: View {
 struct CalendarCountdownView: View {
     let daysToGo: Int
     
+    // Memilih nama asset otomatis: "Calendar-7", "Calendar-6", dst.
+    private var calendarImageName: String {
+        let clamped = max(0, min(10, daysToGo))
+        return "Calendar-\(clamped)"
+    }
+    
     var body: some View {
-        ZStack {
-            Image("Calendar-1")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 100, height: 148)
-            
-//            Text("\(daysToGo)")
-//                .font(.shantellSans(64, .bold))
-//                .foregroundStyle(Color("SuitcaseFrame"))
-//                .offset(y: 16)
-        }
+        Image(calendarImageName)
+            .resizable()
+            .scaledToFit()
+            .frame(width: 100, height: 148)
+            .id(daysToGo) // Memicu re-render & animasi saat harinya berkurang
+            .transition(.scale.combined(with: .opacity))
     }
 }
-
 // MARK: - Subview: Weight label for baggages
 struct LuggageWeightLabel: View {
     let currentWeight: Int

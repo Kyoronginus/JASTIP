@@ -16,12 +16,9 @@ extension GameSessionViewModel {
     
     // MARK: - Business Logic Methods
     func nextHour() {
-        guard lobbyService.lobby?.isHost == true else { return }
-
         if currentHour > boardingHour {
             isGameOver = true
             broadcastMyStatus()
-            Task { await publishCloudGameState() }
             return
         }
         
@@ -34,6 +31,7 @@ extension GameSessionViewModel {
         
         if event?.type == .flightDelay {
             delayHours += 1
+            daysToGo += 1
         }
         
         if event?.type == .relativeCanceled, !sharedJastipOrders.isEmpty {
@@ -46,7 +44,6 @@ extension GameSessionViewModel {
         if gameOverStatus {
             broadcastMyStatus()
         }
-        Task { await publishCloudGameState() }
     }
     
     func dismissEvent() {

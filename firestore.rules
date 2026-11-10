@@ -48,19 +48,27 @@ service cloud.firestore {
           && request.resource.data.status == 'playing'
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'game', 'updatedAt'])
           && request.resource.data.game.keys().hasOnly([
-            'card', 'pieceWeights', 'currentHour', 'delayHours', 'isGameOver',
-            'currentEvent', 'activeHourEvent', 'triggeredUniqueEvents', 'lastRoundEventType'
+            'card', 'pieceWeights', 'sharedJastipOrders', 'currentHour', 'delayHours', 'isGameOver',
+            'currentEvent', 'activeHourEvent', 'triggeredUniqueEvents', 'lastRoundEventType',
+            'turnOrder', 'currentTurnIndex', 'daysToGo'
           ])
         )
         || (
-          resource.data.hostUID == request.auth.uid
+          resource.data.players.keys().hasAny([request.auth.uid])
           && resource.data.status == 'playing'
           && request.resource.data.status == 'playing'
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['game', 'updatedAt'])
-          && request.resource.data.game.keys().hasOnly([
-            'card', 'pieceWeights', 'currentHour', 'delayHours', 'isGameOver',
-            'currentEvent', 'activeHourEvent', 'triggeredUniqueEvents', 'lastRoundEventType'
-          ])
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['game', 'latestToast', 'updatedAt'])
+          && (!('game' in request.resource.data) || request.resource.data.game.keys().hasOnly([
+            'card', 'pieceWeights', 'sharedJastipOrders', 'currentHour', 'delayHours', 'isGameOver',
+            'currentEvent', 'activeHourEvent', 'triggeredUniqueEvents', 'lastRoundEventType',
+            'turnOrder', 'currentTurnIndex', 'daysToGo'
+          ]))
+        )
+        || (
+          resource.data.players.keys().hasAny([request.auth.uid])
+          && resource.data.status == 'waiting'
+          && request.resource.data.status == 'waiting'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['latestToast', 'updatedAt'])
         )
         || (
           resource.data.players.keys().hasAny([request.auth.uid])
@@ -77,7 +85,7 @@ service cloud.firestore {
         allow create, update: if isLobbyMember(code)
           && request.auth.uid == uid
           && request.resource.data.keys().hasOnly([
-            'peerId', 'name', 'suitcaseWeight', 'carryOnWeight', 'isBoarded', 'updatedAt'
+            'peerId', 'name', 'suitcaseWeight', 'carryOnWeight', 'isBoarded', 'income', 'penalty', 'isScoreSubmitted', 'updatedAt'
           ])
           && request.resource.data.peerId == uid
           && request.resource.data.name is string
@@ -85,7 +93,10 @@ service cloud.firestore {
           && request.resource.data.name.size() <= 30
           && request.resource.data.suitcaseWeight is int
           && request.resource.data.carryOnWeight is int
-          && request.resource.data.isBoarded is bool;
+          && request.resource.data.isBoarded is bool
+          && (!('income' in request.resource.data) || request.resource.data.income is int)
+          && (!('penalty' in request.resource.data) || request.resource.data.penalty is int)
+          && (!('isScoreSubmitted' in request.resource.data) || request.resource.data.isScoreSubmitted is bool);
         allow delete: if isLobbyMember(code)
           && (
             request.auth.uid == uid

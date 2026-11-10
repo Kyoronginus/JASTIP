@@ -8,52 +8,72 @@
 import SwiftUI
 
 struct EndView: View {
-    var players: [PlayerStatusModel] = []
+    @Bindable var viewModel: GameSessionViewModel
     var onFinishGame: () -> Void = {}
     
-    // MARK: - Manual Inputs State
-    @State private var suitcaseGridFilled: Int = 0
-    @State private var carryOnGridFilled: Int = 0
-    @State private var jastipCardPoints: Int = 0
-    @State private var isPerfectShape: Bool = false
-    @State private var isFirstToBoard: Bool = false
-    @State private var droppedBlockKg: Int = 0
-    
-    // MARK: - Current Player Data (Dari App)
-    private var currentPlayer: PlayerStatusModel? {
-        players.first(where: { $0.isCurrentDevice }) ?? players.first
+    // MARK: - Automated Data dari ViewModel
+    private var currentPlayer: PlayerStatusModel {
+        viewModel.currentPlayerStatus
     }
     
-    private var suitcaseWeight: Int { currentPlayer?.suitcaseWeight ?? 0 }
-    private var suitcaseMax: Int { currentPlayer?.suitcaseMax ?? 20 }
-    private var carryWeight: Int { currentPlayer?.carryOnWeight ?? 0 }
-    private var carryMax: Int { currentPlayer?.carryOnMax ?? 7 }
+    private var suitcaseFilled: Int { viewModel.suitcaseFilledCells }
+    private var carryOnFilled: Int { viewModel.carryOnFilledCells }
+    private var gridPoints: Int { viewModel.totalGridPoints }
     
-    // MARK: - Automated Logic
-    // Overweight Penalty: -1 pt per kg kelebihan
-    private var suitcaseOverweight: Int { max(0, suitcaseWeight - suitcaseMax) }
-    private var carryOnOverweight: Int { max(0, carryWeight - carryMax) }
+    private var completedOrders: [JastipOrderModel] { viewModel.completedJastipOrders }
+    private var jastipCardPoints: Int { viewModel.totalCompletedJastipPoints }
+    
+    // MARK: - Overweight Penalty (-1 pt per kg)
+    private var suitcaseOverweight: Int { max(0, currentPlayer.suitcaseWeight - currentPlayer.suitcaseMax) }
+    private var carryOnOverweight: Int { max(0, currentPlayer.carryOnWeight - currentPlayer.carryOnMax) }
     private var totalOverweightPenalty: Int { suitcaseOverweight + carryOnOverweight }
     
-    // Perfect Weight Combo: Pas di batas maksimal tanpa overweight (+5 pts)
-    private var isPerfectWeight: Bool {
-        guard suitcaseMax > 0 && carryMax > 0 else { return false }
-        let totalCurrent = suitcaseWeight + carryWeight
-        let totalMax = suitcaseMax + carryMax
-        return totalCurrent == totalMax && totalOverweightPenalty == 0
+    // MARK: - Perfect Weight (Split Suitcase & Carry-On)
+    private var isSuitcasePerfectWeight: Bool {
+        currentPlayer.suitcaseMax > 0 && currentPlayer.suitcaseWeight == currentPlayer.suitcaseMax
+    }
+    
+    private var isCarryOnPerfectWeight: Bool {
+        currentPlayer.carryOnMax > 0 && currentPlayer.carryOnWeight == currentPlayer.carryOnMax
+    }
+    
+    // MARK: - Perfect Shape / Size (Split Suitcase & Carry-On)
+    private var isSuitcasePerfectShape: Bool {
+        viewModel.isSuitcasePerfectShape
+    }
+    
+    private var isCarryOnPerfectShape: Bool {
+        viewModel.isCarryOnPerfectShape
     }
     
     // MARK: - Final Score Calculation
     private var totalScore: Int {
-        let gridPoints = suitcaseGridFilled + carryOnGridFilled
-        let cardPoints = jastipCardPoints
-        let bonusPoints = (isPerfectWeight ? 5 : 0) + (isPerfectShape ? 2 : 0) + (isFirstToBoard ? 2 : 0)
-        let penalties = droppedBlockKg + totalOverweightPenalty
-        
-        return gridPoints + cardPoints + bonusPoints - penalties
+        viewModel.calculatedIncome - viewModel.calculatedPenalty
+    }
+    
+    private var showFinalScore: Bool {
+        viewModel.areAllPlayersSubmitted
     }
     
     var body: some View {
+        if showFinalScore {
+            FinalScoreView(
+                viewModel: viewModel,
+                onBackToHome: onFinishGame
+            )
+            .transition(.opacity)
+        } else {
+            calculatorBody
+                .onAppear {
+                    viewModel.broadcastMyStatus()
+                }
+                .onChange(of: viewModel.droppedBlockKg) { _, _ in
+                    viewModel.broadcastMyStatus()
+                }
+        }
+    }
+    
+    private var calculatorBody: some View {
         VStack(spacing: 0) {
             // MARK: - Top Header Bar
             ZStack(alignment: .trailing) {
@@ -70,20 +90,18 @@ struct EndView: View {
                     .offset(x: 52, y: 27)
                 
                 HStack {
-                    Text("Scoring Calculator")
+                    Text("Scoring Summary")
                         .font(.spaceGrotesk(18, .bold))
                         .foregroundStyle(Color("TaxiYellow"))
                     Spacer()
                     
-                    if let name = currentPlayer?.name {
-                        Text(name.uppercased())
-                            .font(.plusJakarta(12, .bold))
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(Color.white.opacity(0.2))
-                            .foregroundStyle(.white)
-                            .clipShape(Capsule())
-                    }
+                    Text(currentPlayer.name.uppercased())
+                        .font(.plusJakarta(12, .bold))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.white.opacity(0.2))
+                        .foregroundStyle(.white)
+                        .clipShape(Capsule())
                 }
                 .padding(.horizontal, 16)
             }
@@ -91,8 +109,6 @@ struct EndView: View {
             .clipShape(RoundedRectangle(cornerRadius: 14))
             .padding(.horizontal, 20)
             .padding(.top, 16)
-            
-            
             
             ScrollView {
                 VStack(spacing: 16) {
@@ -117,116 +133,110 @@ struct EndView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 16))
                     .shadow(color: .black.opacity(0.04), radius: 6, x: 0, y: 3)
                     
-                    // MARK: - 1. Grid Points Section
-                    sectionCard(title: "GRID FILLED POINTS") {
-                        stepperRow(label: "Suitcase Grid", value: $suitcaseGridFilled, range: 0...15)
+                    // MARK: - 1. Grid Points Section (AUTO)
+                    sectionCard(title: "GRID FILLED POINTS (AUTO)") {
+                        autoScoreRow(
+                            label: "Suitcase Grid",
+                            detail: "\(suitcaseFilled) / 15 slots",
+                            scoreText: "+\(suitcaseFilled) pts"
+                        )
                         Divider()
-                        stepperRow(label: "Carry-On Grid", value: $carryOnGridFilled, range: 0...4)
+                        autoScoreRow(
+                            label: "Carry-On Grid",
+                            detail: "\(carryOnFilled) / 4 slots",
+                            scoreText: "+\(carryOnFilled) pts"
+                        )
                     }
                     
-                    // MARK: - 2. Jastip Cards Section
-                    sectionCard(title: "PRIVATE JASTIP CARDS") {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Total Card Points")
-                                    .font(.plusJakarta(15, .semibold))
-                            }
-                            Spacer()
-                            
-                            HStack(spacing: 4) {
-                                TextField("0", value: $jastipCardPoints, format: .number)
-                                    .keyboardType(.numberPad)
-                                    .multilineTextAlignment(.trailing)
-                                    .font(.spaceGrotesk(18, .bold))
-                                    .frame(width: 50)
-                                    .padding(.vertical, 6)
-                                    .padding(.horizontal, 8)
-                                    .background(Color(uiColor: .systemGray6))
-                                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                                
-                                Text("pts")
-                                    .font(.plusJakarta(13, .semibold))
+                    // MARK: - 2. Jastip Completed Cards Section (AUTO)
+                    sectionCard(title: "COMPLETED JASTIP ORDERS (AUTO)") {
+                        if completedOrders.isEmpty {
+                            HStack {
+                                Text("No orders completed")
+                                    .font(.plusJakarta(14, .regular))
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                                Text("0 pts")
+                                    .font(.spaceGrotesk(14, .semibold))
                                     .foregroundStyle(.secondary)
                             }
-                        }
-                    }
-                    
-                    // MARK: - 3. Bonus Combos Section
-                    sectionCard(title: "BONUS COMBOS") {
-                        // Perfect Weight (Automated)
-                        HStack {
-                            VStack(alignment: .leading, spacing: 2) {
-                                HStack(spacing: 6) {
-                                    Text("Perfect Weight")
-                                        .font(.plusJakarta(15, .semibold))
-                                    Text("AUTO")
-                                        .font(.plusJakarta(10, .bold))
-                                        .padding(.horizontal, 5)
-                                        .padding(.vertical, 2)
-                                        .background(.gray)
-                                        .foregroundStyle(.white)
-                                        .clipShape(Capsule())
+                        } else {
+                            ForEach(completedOrders) { order in
+                                HStack {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundStyle(.green)
+                                        Text(order.customerName)
+                                            .font(.plusJakarta(15, .semibold))
+                                    }
+                                    Spacer()
+                                    Text("+\(order.points) pts")
+                                        .font(.spaceGrotesk(15, .bold))
+                                        .foregroundStyle(.green)
                                 }
                             }
-                            Spacer()
-                            
-                            if isPerfectWeight {
-                                Text("+5 pts")
-                                    .font(.spaceGrotesk(15, .bold))
-                                    .foregroundStyle(.green)
-                            } else {
-                                Text("0 pts")
-                                    .font(.spaceGrotesk(14, .medium))
-                                    .foregroundStyle(.secondary)
-                            }
                         }
-                        
-                        Divider()
-                        
-                        // Perfect Shape Fill Toggle
-                        Toggle(isOn: $isPerfectShape) {
-                            Text("Perfect Shape Fill")
-                                .font(.plusJakarta(15, .semibold))
-                        }
-                        .tint(.blue)
-                        
-                        Divider()
-                        
-                        // First to Board Toggle
-                        Toggle(isOn: $isFirstToBoard) {
-                            Text("First to Board")
-                                .font(.plusJakarta(15, .semibold))
-                        }
-                        .tint(.blue)
                     }
                     
-                    // MARK: - 4. Penalties Section
-                    sectionCard(title: "PENALTIES") {
-                        // Dropped Block Stepper
-                        stepperRow(
-                            label: "Dropped Block (-1 pt / kg)",
-                            value: $droppedBlockKg,
-                            range: 0...30,
-                            isNegative: true
+                    // MARK: - 3. Bonus Combos Section (AUTO)
+                    sectionCard(title: "BONUS COMBOS (AUTO)") {
+                        // Perfect Weight - Suitcase
+                        autoBonusRow(
+                            label: "Suitcase Perfect Weight (\(currentPlayer.suitcaseWeight)/\(currentPlayer.suitcaseMax) kg)",
+                            isAchieved: isSuitcasePerfectWeight,
+                            rewardText: "+3 pts"
                         )
                         
                         Divider()
                         
-                        // Overweight Penalty (Automated)
+                        // Perfect Weight - Carry-On
+                        autoBonusRow(
+                            label: "Carry-On Perfect Weight (\(currentPlayer.carryOnWeight)/\(currentPlayer.carryOnMax) kg)",
+                            isAchieved: isCarryOnPerfectWeight,
+                            rewardText: "+2 pts"
+                        )
+                        
+                        Divider()
+                        
+                        // Perfect Shape - Suitcase
+                        autoBonusRow(
+                            label: "Suitcase Perfect Shape (15/15 slots)",
+                            isAchieved: isSuitcasePerfectShape,
+                            rewardText: "+2 pts"
+                        )
+                        
+                        Divider()
+                        
+                        // Perfect Shape - Carry-On
+                        autoBonusRow(
+                            label: "Carry-On Perfect Shape (4/4 slots)",
+                            isAchieved: isCarryOnPerfectShape,
+                            rewardText: "+1 pt"
+                        )
+                    }
+                    
+                    // MARK: - 4. Penalties Section
+                    sectionCard(title: "PENALTIES") {
+                        // Dropped Block (MANUAL STEPPER)
+                        stepperRow(
+                            label: "Dropped Block (-1 pt / kg)",
+                            value: $viewModel.droppedBlockKg,
+                            range: 0...30,
+                            isNegative: true
+                        )
+                        .disabled(viewModel.isScoreSubmitted)
+                        
+                        Divider()
+                        
+                        // Overweight Penalty (AUTO)
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
                                 HStack(spacing: 6) {
                                     Text("Overweight Bag")
                                         .font(.plusJakarta(15, .semibold))
-                                    Text("AUTO")
-                                        .font(.plusJakarta(10, .bold))
-                                        .padding(.horizontal, 5)
-                                        .padding(.vertical, 2)
-                                        .background(.gray)
-                                        .foregroundStyle(.white)
-                                        .clipShape(Capsule())
+                                    autoBadge
                                 }
-                                Text("Overweight: \(totalOverweightPenalty) kg (-1 pt / kg)")
+                                Text("Suitcase: +\(suitcaseOverweight) kg, Carry-On: +\(carryOnOverweight) kg (-1 pt / kg)")
                                     .font(.plusJakarta(12, .regular))
                                     .foregroundStyle(.secondary)
                             }
@@ -245,12 +255,33 @@ struct EndView: View {
                     }
                     
                     // MARK: - Finish Action Button
-                    Button("FINISHED PLAYING") {
-                        onFinishGame()
+                    if viewModel.isScoreSubmitted {
+                        HStack(spacing: 10) {
+                            ProgressView()
+                                .tint(.black)
+                            Text("Waiting for others… (\(viewModel.submittedPlayerCount)/\(viewModel.totalLobbyPlayerCount))")
+                                .font(.shantellSans(15, .bold))
+                                .foregroundStyle(Color("NavyBlack"))
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(Color("TaxiYellow").opacity(0.85))
+                        .clipShape(RoundedRectangle(cornerRadius: 15))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 15)
+                                .stroke(Color("NavyBlack"), lineWidth: 1.5)
+                        )
+                        .padding(.top, 8)
+                        .padding(.bottom, 24)
+                    } else {
+                        Button("FINISHED PLAYING") {
+                            viewModel.isScoreSubmitted = true
+                            viewModel.broadcastMyStatus()
+                        }
+                        .buttonStyle(PrimaryButtonStyle())
+                        .padding(.top, 8)
+                        .padding(.bottom, 24)
                     }
-                    .buttonStyle(PrimaryButtonStyle())
-                    .padding(.top, 8)
-                    .padding(.bottom, 24)
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 14)
@@ -260,6 +291,57 @@ struct EndView: View {
     }
     
     // MARK: - Subviews & Helpers
+    private var autoBadge: some View {
+        Text("AUTO")
+            .font(.plusJakarta(10, .bold))
+            .padding(.horizontal, 5)
+            .padding(.vertical, 2)
+            .background(Color.blue.opacity(0.15))
+            .foregroundStyle(.blue)
+            .clipShape(Capsule())
+    }
+    
+    @ViewBuilder
+    private func autoScoreRow(label: String, detail: String, scoreText: String) -> some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
+                    Text(label)
+                        .font(.plusJakarta(15, .semibold))
+                    autoBadge
+                }
+                Text(detail)
+                    .font(.plusJakarta(12, .regular))
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Text(scoreText)
+                .font(.spaceGrotesk(15, .bold))
+                .foregroundStyle(Color("PassportBlue850"))
+        }
+    }
+    
+    @ViewBuilder
+    private func autoBonusRow(label: String, isAchieved: Bool, rewardText: String) -> some View {
+        HStack {
+            HStack(spacing: 6) {
+                Text(label)
+                    .font(.plusJakarta(15, .semibold))
+                autoBadge
+            }
+            Spacer()
+            if isAchieved {
+                Text(rewardText)
+                    .font(.spaceGrotesk(15, .bold))
+                    .foregroundStyle(.green)
+            } else {
+                Text("0 pts")
+                    .font(.spaceGrotesk(14, .medium))
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+    
     @ViewBuilder
     private func sectionCard<Content: View>(
         title: String,
@@ -325,41 +407,4 @@ struct EndView: View {
             }
         }
     }
-}
-
-// MARK: - Previews
-#Preview("Light") {
-    EndView(
-        players: [
-            PlayerStatusModel(
-                id: "1",
-                name: "Feivel",
-                isCurrentDevice: true,
-                suitcaseWeight: 22,
-                suitcaseMax: 20,
-                carryOnWeight: 8,
-                carryOnMax: 7,
-                isBoarded: true
-            )
-        ]
-    )
-    .preferredColorScheme(.light)
-}
-
-#Preview("Perfect Weight Scenario") {
-    EndView(
-        players: [
-            PlayerStatusModel(
-                id: "1",
-                name: "Qutby",
-                isCurrentDevice: true,
-                suitcaseWeight: 20,
-                suitcaseMax: 20,
-                carryOnWeight: 7,
-                carryOnMax: 7,
-                isBoarded: true
-            )
-        ]
-    )
-    .preferredColorScheme(.light)
 }

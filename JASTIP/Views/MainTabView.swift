@@ -119,7 +119,7 @@ struct MainTabView: View {
         .ignoresSafeArea(.keyboard, edges: .bottom)
         .toastNotification($viewModel.activeToast)
         .fullScreenCover(isPresented: $viewModel.isGameOver) {
-            EndView(players: viewModel.leaderboardPlayers) {
+            EndView(viewModel: viewModel) {
                 viewModel.resetToLobby()
             }
         }
@@ -149,6 +149,7 @@ struct ObjectivePhoneContainer: View {
                     .clipShape(RoundedRectangle(cornerRadius: 35))
                     .padding(.horizontal, 20)
                     .padding(.bottom, 40)
+                    .offset(y:20)
             }
             .contentShape(Rectangle())
             // Tap di kepala HP saat ngintip untuk membuka

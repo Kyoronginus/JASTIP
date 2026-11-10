@@ -174,7 +174,7 @@ private struct LuggageCellView: View {
                                 .onChanged(onDragChanged)
                                 .onEnded(onDragEnded)
                         )
-                        .onTapGesture(count: 2) {
+                        .onTapGesture() {
                             onDoubleTap()
                         }
                 } else {
