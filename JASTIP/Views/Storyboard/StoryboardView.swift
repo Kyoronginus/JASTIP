@@ -97,7 +97,7 @@ struct StoryboardView: View {
                     .buttonStyle(PrimaryButtonStyle(
                         cornerRadius: 12,
                         borderWidth: 1.5,
-                        shadowOffset: 3,
+                        yShadowOffset: 4,
                         paddingVertical: 8,
                         paddingHorizontal: 14
                     ))                }

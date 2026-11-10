@@ -128,7 +128,8 @@ struct GameView: View {
                             foregroundColor: .white,
                             cornerRadius: 12,
                             borderWidth: 1.5,
-                            shadowOffset: 4,
+                            yShadowOffset: 4,
+                            xShadowOffset: 2,
                             paddingVertical: 8,
                             paddingHorizontal: 16
                         )

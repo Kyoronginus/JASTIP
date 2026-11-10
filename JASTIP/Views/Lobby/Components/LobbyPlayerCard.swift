@@ -29,7 +29,7 @@ struct LobbyPlayerCard: View {
             
             // Nama Pemain
             Text(name)
-                .font(.spaceGrotesk(18, .bold))
+                .font(.shantellSans(20, .medium))
                 .foregroundStyle(Color(.black))
             
             // Penanda Host

@@ -9,14 +9,15 @@ import SwiftUI
 
 struct PrimaryButtonStyle: ButtonStyle {
     // Warna default mengambil dari Design System
-    var backgroundColor: Color = Color("NavyBlack")
-    var borderColor: Color = Color("TaxiYellow")
+    var backgroundColor: Color = Color("TaxiYellow")
+    var borderColor: Color = Color(.black)
     var shadowColor: Color? = nil
-    var foregroundColor: Color = .white
+    var foregroundColor: Color = .black
     var font: Font? = nil
     var cornerRadius: CGFloat = 15
-    var borderWidth: CGFloat = 2
-    var shadowOffset: CGFloat = 6
+    var borderWidth: CGFloat = 0
+    var yShadowOffset: CGFloat = 4
+    var xShadowOffset: CGFloat = 2
     
     // Apakah tombol memenuhi lebar layar (Full Width) atau wrap content
     var isFullWidth: Bool = false
@@ -34,15 +35,16 @@ struct PrimaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         let isPressed = configuration.isPressed && isEnabled
 
-        HStack(spacing: 12) {
+        // 1. TAMBAHKAN 'return' DI SINI
+        return HStack(spacing: 12) {
             configuration.label
         }
-        .font(font ?? .plusJakarta(16, .bold))
+        .font(font ?? .shantellSans(16, .bold))
         .foregroundStyle(isEnabled ? foregroundColor : Color(uiColor: .systemGray))
         .padding(.vertical, paddingVertical)
         .padding(.horizontal, paddingHorizontal)
         .frame(maxWidth: isFullWidth ? .infinity : nil)
-        // 1. LAYER DEPAN (Permukaan Tombol)
+        // LAYER DEPAN (Permukaan Tombol)
         .background(
             RoundedRectangle(cornerRadius: cornerRadius)
                 .fill(isEnabled ? backgroundColor : Color(uiColor: .systemGray4))
@@ -51,19 +53,20 @@ struct PrimaryButtonStyle: ButtonStyle {
             RoundedRectangle(cornerRadius: cornerRadius)
                 .stroke(isEnabled ? borderColor : Color.clear, lineWidth: borderWidth)
         )
-        // Efek tombol amblas saat ditekan
-        .offset(y: isPressed ? shadowOffset : 0)
-        // 2. LAYER BELAKANG (Bayangan 3D mengikuti lebar tombol)
+        // Efek tombol amblas saat ditekan (2. UBAH 0 JADI 0.0)
+        .offset(y: isPressed ? yShadowOffset : 0.0)
+        // LAYER BELAKANG (Bayangan 3D mengikuti lebar tombol)
         .background(
             Group {
                 if isEnabled {
                     RoundedRectangle(cornerRadius: cornerRadius)
                         .fill(resolvedShadowColor)
-                        .offset(y: shadowOffset)
+                        .offset(y: yShadowOffset)
+                        .offset(x: xShadowOffset)
                 }
             }
         )
-        .padding(.bottom, shadowOffset)
+        .padding(.bottom, yShadowOffset)
         .animation(.easeInOut(duration: 0.08), value: configuration.isPressed)
     }
 }
@@ -82,7 +85,8 @@ extension PrimaryButtonStyle {
             foregroundColor: color,
             cornerRadius: cornerRadius,
             borderWidth: 1.5,
-            shadowOffset: 4,
+            yShadowOffset: 4,
+            xShadowOffset: 2,
             isFullWidth: false,
             paddingVertical: 10,
             paddingHorizontal: 10
@@ -112,43 +116,41 @@ private struct ButtonPreviewContent: View {
                     Text("Compact Variants")
                         .font(.plusJakarta(14, .bold))
                         .foregroundStyle(.gray)
-
+                    
                     Button("Button") {}
                         .buttonStyle(PrimaryButtonStyle())
-
-                    Button {
-                    } label: {
+                    
+                    Button(action: {}) {
                         Image(systemName: "arrow.counterclockwise")
-                            .foregroundStyle(Color("TaxiYellow"))
+                            .foregroundStyle(Color(.black))
                         Text("Button")
                     }
                     .buttonStyle(PrimaryButtonStyle())
-
+                    
                     Button("Button") {}
                         .buttonStyle(PrimaryButtonStyle())
                         .disabled(true)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-
+                
                 Divider()
-
+                
                 // MARK: - FULL WIDTH BUTTONS
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Full Width Variants")
                         .font(.plusJakarta(14, .bold))
                         .foregroundStyle(.gray)
-
+                    
                     Button("Button") {}
                         .buttonStyle(PrimaryButtonStyle(isFullWidth: true))
-
-                    Button {
-                    } label: {
+                    
+                    Button(action: {}) {
                         Image(systemName: "arrow.counterclockwise")
-                            .foregroundStyle(Color("TaxiYellow"))
+                            .foregroundStyle(Color(.black))
                         Text("Button")
                     }
                     .buttonStyle(PrimaryButtonStyle(isFullWidth: true))
-
+                    
                     Button("Button") {}
                         .buttonStyle(PrimaryButtonStyle(isFullWidth: true))
                         .disabled(true)

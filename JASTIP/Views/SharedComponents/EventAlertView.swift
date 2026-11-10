@@ -74,14 +74,14 @@ struct EventAlertView: View {
                         dismissWithAnimation()
                     } label: {
                         Text("OK, GOT IT")
-                            .font(.system(size: 16, weight: .bold, design: .rounded))
+//                            .font(.system(size: 16, weight: .bold, design: .rounded))
                             .tracking(1)
                             .frame(maxWidth: 240)
                     }
                     .buttonStyle(PrimaryButtonStyle(
-                        backgroundColor: Color("NavyBlack"),
-                        borderColor: Color("TaxiYellow"),
-                        foregroundColor: .white,
+//                        backgroundColor: Color("NavyBlack"),
+//                        borderColor: Color("TaxiYellow"),
+                        foregroundColor: .black,
                         cornerRadius: 16,
                         paddingVertical: 14,
                         paddingHorizontal: 20

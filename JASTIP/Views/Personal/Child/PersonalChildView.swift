@@ -146,7 +146,8 @@ struct PersonalChildView: View {
                         font: .shantellSans(16, .bold),
                         cornerRadius: 14,
                         borderWidth: 1.5,
-                        shadowOffset: 5,
+                        yShadowOffset: 4,
+                        xShadowOffset: 2,
                         paddingVertical: 12,
                         paddingHorizontal: 36
                     )
@@ -215,7 +216,8 @@ struct PersonalChildView: View {
                     foregroundColor: Color("SuitcaseFrame"),
                     cornerRadius: 10,
                     borderWidth: 1.5,
-                    shadowOffset: 4,
+                    yShadowOffset: 4,
+                    xShadowOffset: 2,
                     paddingVertical: 8,
                     paddingHorizontal: 12
                 )

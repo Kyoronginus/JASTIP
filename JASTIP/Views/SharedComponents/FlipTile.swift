@@ -17,18 +17,18 @@ struct FlipTile: View {
     
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: cornerRadius)
-                .fill(Color(red: 0x14 / 255.0, green: 0x1A / 255.0, blue: 0x24 / 255.0))
-                .overlay(
-                    RoundedRectangle(cornerRadius: cornerRadius)
-                        .stroke(Color(red: 0x22 / 255.0, green: 0x2A / 255.0, blue: 0x38 / 255.0), lineWidth: 1))
-            Rectangle()
-                .fill(Color(red: 0x0A / 255.0, green: 0x0D / 255.0, blue: 0x14 / 255.0))
-                .frame(height: 1)
+//            RoundedRectangle(cornerRadius: cornerRadius)
+//                .fill(Color(red: 0x14 / 255.0, green: 0x1A / 255.0, blue: 0x24 / 255.0))
+//                .overlay(
+//                    RoundedRectangle(cornerRadius: cornerRadius)
+//                        .stroke(Color(red: 0x22 / 255.0, green: 0x2A / 255.0, blue: 0x38 / 255.0), lineWidth: 1))
+//            Rectangle()
+//                .fill(Color(red: 0x0A / 255.0, green: 0x0D / 255.0, blue: 0x14 / 255.0))
+//                .frame(height: 1)
             
             Text(String(character))
-                .font(.spaceGrotesk(fontSize, .bold))
-                .foregroundStyle(Color(red: 0xF5 / 255.0, green: 0xF4 / 255.0, blue: 0xEE / 255.0))
+                .font(.spaceGrotesk(48, .semibold))
+                .foregroundStyle(Color(.black))
         }
         .frame(width: width, height: height)
     }
