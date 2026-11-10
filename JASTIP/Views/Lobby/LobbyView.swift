@@ -7,6 +7,14 @@
 
 import SwiftUI
 
+private struct LobbyPlayerFramePreferenceKey: PreferenceKey {
+    static var defaultValue: [String: CGRect] = [:]
+
+    static func reduce(value: inout [String: CGRect], nextValue: () -> [String: CGRect]) {
+        value.merge(nextValue(), uniquingKeysWith: { _, latest in latest })
+    }
+}
+
 struct LobbyView: View {
     var lobby: GameLobby
     var roomCode: String? = nil
@@ -16,6 +24,10 @@ struct LobbyView: View {
     var onReorderPlayers: ([String]) -> Void = { _ in }
     
     @State private var showLeaveConfirmation = false
+    @State private var draggingPlayerID: String?
+    @State private var dragOffset: CGFloat = 0
+    @State private var dragStartMidY: CGFloat = 0
+    @State private var playerFrames: [String: CGRect] = [:]
     
     private var code: String {
         roomCode ?? lobby.code
@@ -65,12 +77,26 @@ struct LobbyView: View {
                 // MARK: - Lobby Players List (Scrollable)
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 12) {
-                        ForEach(Array(lobby.players.enumerated()), id: \.element.id) { index, player in
+                        ForEach(lobby.players) { player in
+                            let index = lobby.players.firstIndex { $0.id == player.id } ?? 0
                             playerCard(player, at: index)
+                                .background {
+                                    GeometryReader { geometry in
+                                        Color.clear.preference(
+                                            key: LobbyPlayerFramePreferenceKey.self,
+                                            value: [player.id: geometry.frame(in: .named("lobbyPlayers"))]
+                                        )
+                                    }
+                                }
+                                .offset(y: draggingPlayerID == player.id ? dragOffset : 0)
+                                .scaleEffect(draggingPlayerID == player.id ? 1.03 : 1)
+                                .zIndex(draggingPlayerID == player.id ? 1 : 0)
                         }
                     }
                     .padding(.vertical, 4)
                 }
+                .coordinateSpace(name: "lobbyPlayers")
+                .onPreferenceChange(LobbyPlayerFramePreferenceKey.self) { playerFrames = $0 }
                 
                 Spacer()
                 
@@ -124,33 +150,59 @@ struct LobbyView: View {
 
         if lobby.isHost && lobby.status == "waiting" && !isLoading {
             card
-                .draggable(player.id)
-                .dropDestination(for: String.self) { draggedIDs, location in
-                    guard let draggedID = draggedIDs.first,
-                          !isLoading else { return false }
-                    return movePlayer(draggedID, over: player.id, at: location)
-                }
+                .contentShape(RoundedRectangle(cornerRadius: 12))
+                .id(player.id)
+                .gesture(
+                    LongPressGesture(minimumDuration: 0.3)
+                        .sequenced(before: DragGesture(minimumDistance: 0, coordinateSpace: .named("lobbyPlayers")))
+                        .onChanged { value in
+                            switch value {
+                            case .first(true):
+                                beginDragging(player.id)
+                            case .second(true, let drag?):
+                                beginDragging(player.id)
+                                guard draggingPlayerID == player.id else { return }
+                                dragOffset = drag.translation.height
+                            default:
+                                break
+                            }
+                        }
+                        .onEnded { value in
+                            guard draggingPlayerID == player.id else { return }
+                            if case .second(true, let drag?) = value {
+                                finishDragging(player.id, translation: drag.translation.height)
+                            }
+                            draggingPlayerID = nil
+                            dragOffset = 0
+                        }
+                )
         } else {
             card
         }
     }
 
-    private func movePlayer(_ draggedID: String, over targetID: String, at location: CGPoint) -> Bool {
-        let players = lobby.players
-        guard let sourceIndex = players.firstIndex(where: { $0.id == draggedID }),
-              let targetIndex = players.firstIndex(where: { $0.id == targetID }) else {
-            return false
-        }
+    private func beginDragging(_ playerID: String) {
+        guard draggingPlayerID == nil,
+              let frame = playerFrames[playerID] else { return }
+        draggingPlayerID = playerID
+        dragStartMidY = frame.midY
+    }
 
-        let insertionIndex = targetIndex + (location.y > 32 ? 1 : 0)
-        var reorderedIDs = players.map(\.id)
-        let movedID = reorderedIDs.remove(at: sourceIndex)
-        let adjustedIndex = insertionIndex > sourceIndex ? insertionIndex - 1 : insertionIndex
-        reorderedIDs.insert(movedID, at: adjustedIndex)
+    private func finishDragging(_ playerID: String, translation: CGFloat) {
+        let projectedMidY = dragStartMidY + translation
+        guard let target = playerFrames
+            .filter({ $0.key != playerID })
+            .min(by: { abs($0.value.midY - projectedMidY) < abs($1.value.midY - projectedMidY) }) else { return }
 
-        guard reorderedIDs != players.map(\.id) else { return true }
+        var reorderedIDs = lobby.players.map(\.id)
+        guard let sourceIndex = reorderedIDs.firstIndex(of: playerID) else { return }
+        reorderedIDs.remove(at: sourceIndex)
+        guard let targetIndex = reorderedIDs.firstIndex(of: target.key) else { return }
+        let insertionIndex = targetIndex + (projectedMidY > target.value.midY ? 1 : 0)
+        reorderedIDs.insert(playerID, at: insertionIndex)
+
+        guard reorderedIDs != lobby.players.map(\.id) else { return }
         onReorderPlayers(reorderedIDs)
-        return true
     }
 }
 
