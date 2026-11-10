@@ -319,8 +319,10 @@ struct ObjectiveView: View {
 
         let playerName = viewModel.playerName.trimmingCharacters(in: .whitespacesAndNewlines)
         viewModel.showToast(
-            "\(playerName.isEmpty ? "A player" : playerName) is taking a personal Jastip order.",
-            type: .info
+            "\(playerName.isEmpty ? "A player" : playerName) just took a new personal order!",
+            type: .info,
+            displayLocally: false,
+            playNotificationSound: true
         )
         
         // Kumpulkan semua ID yang sudah pernah ada di shared atau di accepted history

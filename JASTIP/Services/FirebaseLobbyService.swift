@@ -315,7 +315,7 @@ final class FirebaseLobbyService {
                    let toast = try? Self.decode(ToastOptions.self, from: toastData) {
                     if self.lastObservedToastID != toast.id {
                         self.lastObservedToastID = toast.id
-                        if !isInitialSnapshot {
+                        if !isInitialSnapshot, toast.senderID != self.currentPlayerID {
                             self.onToastReceived?(toast)
                         }
                     }

@@ -178,10 +178,26 @@ class GameSessionViewModel {
     // MARK: - Global Toast System
     var activeToast: ToastOptions? = nil
     
-    func showToast(_ message: String, type: ToastModel = .info, duration: TimeInterval = 2.5, broadcast: Bool = true) {
-        let toast = ToastOptions(id: UUID().uuidString, message: message, type: type, duration: duration)
-        withAnimation {
-            self.activeToast = toast
+    func showToast(
+        _ message: String,
+        type: ToastModel = .info,
+        duration: TimeInterval = 2.5,
+        broadcast: Bool = true,
+        displayLocally: Bool = true,
+        playNotificationSound: Bool = false
+    ) {
+        let toast = ToastOptions(
+            id: UUID().uuidString,
+            message: message,
+            type: type,
+            duration: duration,
+            playsNotificationSound: playNotificationSound ? true : nil,
+            senderID: broadcast ? lobbyService.currentPlayerID : nil
+        )
+        if displayLocally {
+            withAnimation {
+                self.activeToast = toast
+            }
         }
         
         // Kirim ke semua device lain via Firebase
