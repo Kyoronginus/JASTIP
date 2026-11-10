@@ -15,42 +15,27 @@ struct RoomCodeCard: View {
     }
     
     var body: some View {
-        ZStack(alignment: .trailing) {
+        ZStack {
             // Background Card
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color("TileDivider"))
-                .frame(height: 120)
-            
-            // Asterisk
-            Image("AsteriskYellow")
+            Image("RoomCodeTag")
                 .resizable()
-                .renderingMode(.template)
-                .foregroundStyle(Color.white.opacity(0.06))
                 .scaledToFit()
-                .frame(width: 150, height: 150)
-                .offset(x: 24, y: 55)
+                .frame(height: 120) // <-- ATUR TINGGI TAG DI SINI. Lebarnya akan otomatis menyesuaikan (aspect ratio terjaga).
             
             // Content
-            VStack(spacing: 12) {
-                Text("Room Code")
-                    .font(.plusJakarta(15, .bold))
-                    .foregroundStyle(Color("TaxiYellow"))
-                
+            VStack(spacing: 8) {
                 HStack(spacing: 6) {
                     ForEach(Array(characters.enumerated()), id: \.offset) { _, char in
-                        FlipTile(
-                            character: char,
-                            width: 36,
-                            height: 52,
-                            fontSize: 30
-                        )
+                        // Gua asumsikan lu ganti FlipTile jadi Text biasa biar kayak di gambar,
+                        // atau lu tetep pake FlipTile tapi ukurannya disesuaiin.
+                        Text(String(char))
+                            .font(.spaceGrotesk(42, .medium))
+                            .foregroundColor(.black)
                     }
                 }
+                .offset(x: -40, y: 10) // Sesuaikan ulang X dan Y kalau tingginya diubah
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 18))
     }
 }
 
