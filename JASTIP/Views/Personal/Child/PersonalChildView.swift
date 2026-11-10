@@ -23,6 +23,9 @@ struct PersonalChildView: View {
     @State private var hoverOrigin: GridCoordinate? = nil
     @State private var isHoverValid: Bool = false
     @State private var gridFrame: CGRect = .zero
+    @State private var lastHapticCoord: GridCoordinate? = nil
+    
+    private let snapFeedback = UIImpactFeedbackGenerator(style: .light)
     
     init(session: GameSessionViewModel, initialLuggage: LuggageType = .suitcase) {
         self.session = session
@@ -62,6 +65,24 @@ struct PersonalChildView: View {
         }
         return LuggagePlacementEngine.absoluteCoordinates(for: piece, at: origin, rotation: rotation)
     }
+
+    private var floatingPiecePosition: CGPoint {
+        if let origin = hoverOrigin, let (piece, rotation) = activeDraggedPieceAndRotation {
+            let base = PieceCatalog.baseCoordinates(for: piece.shape, pieceId: piece.id)
+            let rotated = LuggagePlacementEngine.rotate(coordinates: base, by: rotation)
+            let cols = (rotated.map(\.x).max() ?? 0) + 1
+            let rows = (rotated.map(\.y).max() ?? 0) + 1
+            let step = cellSize + cellSpacing
+            let pieceWidth = CGFloat(cols) * cellSize + CGFloat(cols - 1) * cellSpacing
+            let pieceHeight = CGFloat(rows) * cellSize + CGFloat(rows - 1) * cellSpacing
+            
+            let snappedX = gridFrame.minX + CGFloat(origin.x) * step + pieceWidth / 2.0
+            let snappedY = gridFrame.minY + CGFloat(origin.y) * step + pieceHeight / 2.0
+            return CGPoint(x: snappedX, y: snappedY)
+        }
+        
+        return dragLocation
+    }
     
     var body: some View {
         ZStack {
@@ -83,9 +104,7 @@ struct PersonalChildView: View {
                         gridFrame = newFrame
                     },
                     onRotatePiece: { placed in
-                        withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
-                            session.rotatePlacedPiece(placed)
-                        }
+                        _ = session.rotatePlacedPiece(placed)
                     },
                     onDragPieceChanged: { placed, value in
                         draggingPlacedPiece = placed
@@ -102,8 +121,6 @@ struct PersonalChildView: View {
                         handleDropPlacedPiece(placed, at: value.location)
                     }
                 )
-                
-//                Spacer(minLength: 0)
                 
                 // Area Bawah: Staging Kepingan ("Drag items here to reorganize")
                 StagingSectionView(
@@ -129,9 +146,9 @@ struct PersonalChildView: View {
                         handleDropStagedItem(item)
                     }
                 )
-//                .padding()
                 
-                // Tombol Scan Item
+                // Tombol Scan Item (nonaktif jika masih ada piece di area staging)
+                let canScanItem = session.stagedItems.isEmpty
                 Button {
                     isShowingScanner = true
                 } label: {
@@ -139,19 +156,20 @@ struct PersonalChildView: View {
                 }
                 .buttonStyle(
                     PrimaryButtonStyle(
-                        backgroundColor: Color("ScanItem"),
-                        borderColor: Color("ScanItem"),
-                        shadowColor: Color("SuitcaseGrid"),
-                        foregroundColor: Color("SuitcaseFrame"),
+                        backgroundColor: canScanItem ? Color("ScanItem") : Color.gray.opacity(0.45),
+                        borderColor: canScanItem ? Color("ScanItem") : Color.gray.opacity(0.6),
+                        shadowColor: canScanItem ? Color("SuitcaseGrid") : Color.black.opacity(0.25),
+                        foregroundColor: canScanItem ? Color("SuitcaseFrame") : Color.white.opacity(0.6),
                         font: .shantellSans(16, .bold),
                         cornerRadius: 14,
                         borderWidth: 1.5,
-                        yShadowOffset: 4,
-                        xShadowOffset: 2,
+                        yShadowOffset: canScanItem ? 4 : 2,
+                        xShadowOffset: canScanItem ? 2 : 1,
                         paddingVertical: 12,
                         paddingHorizontal: 36
                     )
                 )
+                .disabled(!canScanItem)
             }
             .padding(.horizontal, 24)
             .padding(.top, 12)
@@ -167,7 +185,8 @@ struct PersonalChildView: View {
                     cornerRadius: cellCornerRadius
                 )
                 .shadow(color: .black.opacity(0.45), radius: 12, y: 6)
-                .position(dragLocation)
+                .position(floatingPiecePosition)
+                .animation(.interactiveSpring(response: 0.16, dampingFraction: 0.75), value: hoverOrigin)
                 .allowsHitTesting(false)
             }
         }
@@ -222,7 +241,7 @@ struct PersonalChildView: View {
                     paddingHorizontal: 12
                 )
             )
-            .offset(x:0 ,y: 20)
+            .offset(x: 0, y: 20)
             
             Spacer()
         }
@@ -240,6 +259,7 @@ struct PersonalChildView: View {
         guard expandedGridZone.contains(location) else {
             hoverOrigin = nil
             isHoverValid = false
+            lastHapticCoord = nil
             return
         }
         
@@ -262,6 +282,13 @@ struct PersonalChildView: View {
         let estimatedY = Int(round((pieceTopLeftY - gridOriginY) / step))
         
         let targetOrigin = GridCoordinate(x: estimatedX, y: estimatedY)
+
+        // Cek apakah berpindah sel di dalam grid
+        if targetOrigin != lastHapticCoord {
+            lastHapticCoord = targetOrigin
+            snapFeedback.impactOccurred()
+        }
+
         hoverOrigin = targetOrigin
         
         if let locked = lockedLuggage, locked != activeLuggage {
@@ -287,6 +314,7 @@ struct PersonalChildView: View {
             draggingStagingItem = nil
             hoverOrigin = nil
             isHoverValid = false
+            lastHapticCoord = nil
         }
     }
     
@@ -302,6 +330,7 @@ struct PersonalChildView: View {
             draggingPlacedPiece = nil
             hoverOrigin = nil
             isHoverValid = false
+            lastHapticCoord = nil
         }
     }
 }
@@ -331,37 +360,46 @@ private struct StagingSectionView: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 16)
             } else {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 20) {
-                        ForEach(items) { item in
-                            PieceShapeView(
-                                piece: item.piece,
-                                rotation: item.rotation,
-                                blockSize: 28,
-                                spacing: 2,
-                                cornerRadius: 5
-                            )
-                            .padding(8)
-                            .opacity(draggingItemId == item.id ? 0.15 : 1.0)
-                            .gesture(
-                                DragGesture(minimumDistance: 4, coordinateSpace: .named("LUGGAGE_CANVAS"))
-                                    .onChanged { value in
-                                        onDragItemChanged(item, value)
-                                    }
-                                    .onEnded { value in
-                                        onDragItemEnded(item, value)
-                                    }
-                            )
-                            .onTapGesture() {
-                                onRotateItem(item)
+                ZStack {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 20) {
+                            ForEach(items) { item in
+                                PieceShapeView(
+                                    piece: item.piece,
+                                    rotation: item.rotation,
+                                    blockSize: 28,
+                                    spacing: 2,
+                                    cornerRadius: 5
+                                )
+                                .padding(8)
+                                .opacity(draggingItemId == item.id ? 0.15 : 1.0)
+                                .gesture(
+                                    DragGesture(minimumDistance: 4, coordinateSpace: .named("LUGGAGE_CANVAS"))
+                                        .onChanged { value in
+                                            onDragItemChanged(item, value)
+                                        }
+                                        .onEnded { value in
+                                            onDragItemEnded(item, value)
+                                        }
+                                )
+                                .onTapGesture() {
+                                    onRotateItem(item)
+                                }
                             }
                         }
+                        .padding(.horizontal, 16)
                     }
-                    .padding(.horizontal, 16)
+                    
+                    Text("Tap to rotate • Drag to place")
+                        .font(.shantellSans(12, .regular))
+                        .foregroundStyle(.white.opacity(0.75))
+                        .allowsHitTesting(false)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                        .padding(.top, 10)
                 }
             }
         }
-        .frame(height: 112)
+        .frame(height: 120)
     }
 }
 
@@ -421,9 +459,59 @@ private struct PieceBlockCellView: View {
     }
 }
 
-// MARK: - Preview
-#Preview("Suitcase Child View") {
+// MARK: - Previews
+#Preview("Suitcase Empty") {
     let session = GameSessionViewModel()
+    return PersonalChildView(session: session, initialLuggage: .suitcase)
+}
+
+#Preview("Suitcase with Placed & Staged Pieces") {
+    let session = GameSessionViewModel()
+    
+    // 1. Tambah Placed Pieces di koper (Domino Merah + Small L Orange)
+    if let domino = PieceCatalog.allPieces.first(where: { $0.shape == .domino && $0.color == .red }),
+       let smallL = PieceCatalog.allPieces.first(where: { $0.shape == .smallL && $0.color == .orange }) {
+        session.suitcaseGrid.placedPieces = [
+            PlacedPiece(
+                id: UUID(),
+                piece: domino,
+                origin: GridCoordinate(x: 0, y: 0),
+                rotation: .deg0,
+                assignedLuggage: .suitcase
+            ),
+            PlacedPiece(
+                id: UUID(),
+                piece: smallL,
+                origin: GridCoordinate(x: 1, y: 1),
+                rotation: .deg90,
+                assignedLuggage: .suitcase
+            )
+        ]
+    }
+    
+    // 2. Tambah Staged Items di area bawah (Square Hijau + Tetromino T Ungu)
+    if let square = PieceCatalog.allPieces.first(where: { $0.shape == .square && $0.color == .green }),
+       let tetroT = PieceCatalog.allPieces.first(where: { $0.shape == .tetrominoT && $0.color == .purple }) {
+        session.stagedItems = [
+            StagedItem(
+                id: UUID(),
+                piece: square,
+                weight: 3,
+                rotation: .deg0,
+                lockedLuggage: .suitcase,
+                isAlreadyCountedInWeight: false
+            ),
+            StagedItem(
+                id: UUID(),
+                piece: tetroT,
+                weight: 4,
+                rotation: .deg0,
+                lockedLuggage: .suitcase,
+                isAlreadyCountedInWeight: false
+            )
+        ]
+    }
+    
     return PersonalChildView(session: session, initialLuggage: .suitcase)
 }
 
