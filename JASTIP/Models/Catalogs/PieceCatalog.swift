@@ -76,7 +76,7 @@ struct PieceCatalog {
         // xx
         //  xx
         //   x
-        PieceModel(id: "JASTIP5-9", shape:.unique, color: .red, gridCount: 3, isAnomaly: true),
+        PieceModel(id: "JASTIP5-9", shape:.unique, color: .purple, gridCount: 3, isAnomaly: true),
         
         // x x
         // xxx
@@ -94,7 +94,7 @@ struct PieceCatalog {
         
         // xxxx
         //  x x
-        PieceModel(id: "JASTIP1-9", shape:.unique, color: .purple, gridCount: 3, isAnomaly: true),
+        PieceModel(id: "JASTIP1-9", shape:.unique, color: .red, gridCount: 3, isAnomaly: true),
     ]
     
     static func findPiece(by id: String) -> PieceModel? {

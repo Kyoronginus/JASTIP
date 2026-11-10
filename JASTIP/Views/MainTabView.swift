@@ -119,7 +119,7 @@ struct MainTabView: View {
         .ignoresSafeArea(.keyboard, edges: .bottom)
         .toastNotification($viewModel.activeToast)
         .fullScreenCover(isPresented: $viewModel.isGameOver) {
-            EndView(players: viewModel.leaderboardPlayers) {
+            EndView(viewModel: viewModel) {
                 viewModel.resetToLobby()
             }
         }

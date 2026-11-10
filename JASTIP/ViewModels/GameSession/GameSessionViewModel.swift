@@ -167,21 +167,21 @@ class GameSessionViewModel {
     }
     
     // MARK: - Global Toast System
-        var activeToast: ToastOptions? = nil
+    var activeToast: ToastOptions? = nil
+    
+    func showToast(_ message: String, type: ToastModel = .info, duration: TimeInterval = 2.5, broadcast: Bool = true) {
+        let toast = ToastOptions(id: UUID().uuidString, message: message, type: type, duration: duration)
+        withAnimation {
+            self.activeToast = toast
+        }
         
-        func showToast(_ message: String, type: ToastModel = .info, duration: TimeInterval = 2.5, broadcast: Bool = true) {
-            let toast = ToastOptions(id: UUID().uuidString, message: message, type: type, duration: duration)
-            withAnimation {
-                self.activeToast = toast
-            }
-            
-            // Kirim ke semua device lain via Firebase
-            if broadcast {
-                Task {
-                    await lobbyService.publishToast(toast)
-                }
+        // Kirim ke semua device lain via Firebase
+        if broadcast {
+            Task {
+                await lobbyService.publishToast(toast)
             }
         }
+    }
     
     // MARK: - Game Lifecycle
     func startNewGame() {
@@ -508,13 +508,50 @@ class GameSessionViewModel {
     }
     
     // MARK: - Jastip Validation
-        /// Semua piece yang saat ini sudah masuk ke koper (Suitcase + Carry-on)
-        var allLuggagePieces: [PieceModel] {
-            (suitcaseGrid.placedPieces + carryOnGrid.placedPieces).map { $0.piece }
-        }
-        
-        /// Cek apakah suatu order sudah terpenuhi oleh barang di koper
-        func isOrderFulfilled(_ order: JastipOrderModel) -> Bool {
+    /// Semua piece yang saat ini sudah masuk ke koper (Suitcase + Carry-on)
+    var allLuggagePieces: [PieceModel] {
+        (suitcaseGrid.placedPieces + carryOnGrid.placedPieces).map { $0.piece }
+    }
+    
+    /// Cek apakah suatu order sudah terpenuhi oleh barang di koper
+    func isOrderFulfilled(_ order: JastipOrderModel) -> Bool {
+        order.isFulfilled(by: allLuggagePieces)
+    }
+    
+    // MARK: - Automated Scoring Helpers
+    
+    
+    /// Jumlah sel terisi di Koper Besar (Suitcase)
+    var suitcaseFilledCells: Int {
+        LuggagePlacementEngine.occupiedCoordinates(in: suitcaseGrid).count
+    }
+    
+    /// Jumlah sel terisi di Koper Jinjing (Carry-On)
+    var carryOnFilledCells: Int {
+        LuggagePlacementEngine.occupiedCoordinates(in: carryOnGrid).count
+    }
+    
+    /// Total poin dari grid koper yang terisi (1 sel = 1 pt)
+    var totalGridPoints: Int {
+        suitcaseFilledCells + carryOnFilledCells
+    }
+    
+    /// Cek apakah bentuk koper terisi sempurna tanpa rongga (Suitcase 15 sel & Carry-On 4 sel)
+    var isPerfectShapeFill: Bool {
+        suitcaseFilledCells == 15 && carryOnFilledCells == 4
+    }
+    
+    /// Daftar order jastip yang saat ini berhasil diselesaikan di koper
+    var completedJastipOrders: [JastipOrderModel] {
+        // Gabungkan shared orders (dan drafted orders jika ada)
+        sharedJastipOrders.filter { order in
             order.isFulfilled(by: allLuggagePieces)
         }
+    }
+    
+    /// Total poin dari order jastip yang selesai
+    var totalCompletedJastipPoints: Int {
+        completedJastipOrders.reduce(0) { $0 + $1.points }
+    }
+    
 }
