@@ -117,6 +117,7 @@ class GameSessionViewModel {
     // MARK: - Player & Leaderboard
     var playerName: String = UIDevice.current.name
     var isBoarded: Bool = false
+    var droppedBlockKg: Int = 0
     var remotePlayers: [String: PlayerSyncPayload] = [:]
     
     // MARK: - Random Events State
@@ -199,6 +200,7 @@ class GameSessionViewModel {
         lastRoundEventType = nil
         suitWeight = 0
         carryWeight = 0
+        droppedBlockKg = 0
         suitcaseGrid = .suitcase
         carryOnGrid = .carryOn
         stagedItems.removeAll()
@@ -557,6 +559,61 @@ class GameSessionViewModel {
     /// Total poin dari order jastip yang selesai
     var totalCompletedJastipPoints: Int {
         completedJastipOrders.reduce(0) { $0 + $1.points }
+    }
+    
+    /// Total overweight penalty (-1 pt / kg)
+    var totalOverweightPenalty: Int {
+        let suitcaseOver = max(0, suitWeight - displayedAirlineCard.maxCapacityKg)
+        let carryOnOver = max(0, carryWeight - displayedAirlineCard.maxCarryOnKg)
+        return suitcaseOver + carryOnOver
+    }
+    
+    /// Total pemasukan poin (Grid + Jastip + Bonus Weight & Shape)
+    var calculatedIncome: Int {
+        let isSuitcasePerfectWeight = displayedAirlineCard.maxCapacityKg > 0 && suitWeight == displayedAirlineCard.maxCapacityKg
+        let isCarryOnPerfectWeight = displayedAirlineCard.maxCarryOnKg > 0 && carryWeight == displayedAirlineCard.maxCarryOnKg
+        let weightBonus = (isSuitcasePerfectWeight ? 3 : 0) + (isCarryOnPerfectWeight ? 2 : 0)
+        let shapeBonus = (isSuitcasePerfectShape ? 2 : 0) + (isCarryOnPerfectShape ? 1 : 0)
+        return totalGridPoints + totalCompletedJastipPoints + weightBonus + shapeBonus
+    }
+    
+    /// Total penalti (Dropped block + Overweight)
+    var calculatedPenalty: Int {
+        droppedBlockKg + totalOverweightPenalty
+    }
+    
+    /// Daftar klasemen akhir seluruh pemain (diurutkan dari Total tertinggi)
+    var finalStandings: [PlayerStandingModel] {
+        let localID = lobbyService.currentPlayerID ?? "local_player"
+        var standings: [PlayerStandingModel] = [
+            PlayerStandingModel(
+                id: localID,
+                name: currentPlayerStatus.name,
+                income: calculatedIncome,
+                penalty: calculatedPenalty
+            )
+        ]
+        
+        for synced in remotePlayers.values where synced.peerId != localID {
+            standings.append(
+                PlayerStandingModel(
+                    id: synced.peerId,
+                    name: synced.name,
+                    income: synced.income,
+                    penalty: synced.penalty
+                )
+            )
+        }
+        
+        return standings.sorted {
+            if $0.total != $1.total {
+                return $0.total > $1.total
+            }
+            if $0.income != $1.income {
+                return $0.income > $1.income
+            }
+            return $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+        }
     }
     
 }

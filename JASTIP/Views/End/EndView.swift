@@ -8,11 +8,10 @@
 import SwiftUI
 
 struct EndView: View {
-    var viewModel: GameSessionViewModel
+    @Bindable var viewModel: GameSessionViewModel
     var onFinishGame: () -> Void = {}
     
-    // MARK: - Manual Penalty State (Dropped block tetap stepper)
-    @State private var droppedBlockKg: Int = 0
+    @State private var showFinalScore: Bool = false
     
     // MARK: - Automated Data dari ViewModel
     private var currentPlayer: PlayerStatusModel {
@@ -51,14 +50,28 @@ struct EndView: View {
     
     // MARK: - Final Score Calculation
     private var totalScore: Int {
-        let weightBonus = (isSuitcasePerfectWeight ? 3 : 0) + (isCarryOnPerfectWeight ? 2 : 0)
-        let shapeBonus = (isSuitcasePerfectShape ? 2 : 0) + (isCarryOnPerfectShape ? 1 : 0)
-        let penalties = droppedBlockKg + totalOverweightPenalty
-        
-        return gridPoints + jastipCardPoints + weightBonus + shapeBonus - penalties
+        viewModel.calculatedIncome - viewModel.calculatedPenalty
     }
     
     var body: some View {
+        if showFinalScore {
+            FinalScoreView(
+                standings: viewModel.finalStandings,
+                onBackToHome: onFinishGame
+            )
+            .transition(.opacity)
+        } else {
+            calculatorBody
+                .onAppear {
+                    viewModel.broadcastMyStatus()
+                }
+                .onChange(of: viewModel.droppedBlockKg) { _, _ in
+                    viewModel.broadcastMyStatus()
+                }
+        }
+    }
+    
+    private var calculatorBody: some View {
         VStack(spacing: 0) {
             // MARK: - Top Header Bar
             ZStack(alignment: .trailing) {
@@ -205,7 +218,7 @@ struct EndView: View {
                         // Dropped Block (MANUAL STEPPER)
                         stepperRow(
                             label: "Dropped Block (-1 pt / kg)",
-                            value: $droppedBlockKg,
+                            value: $viewModel.droppedBlockKg,
                             range: 0...30,
                             isNegative: true
                         )
@@ -240,7 +253,10 @@ struct EndView: View {
                     
                     // MARK: - Finish Action Button
                     Button("FINISHED PLAYING") {
-                        onFinishGame()
+                        viewModel.broadcastMyStatus()
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            showFinalScore = true
+                        }
                     }
                     .buttonStyle(PrimaryButtonStyle())
                     .padding(.top, 8)

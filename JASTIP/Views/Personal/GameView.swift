@@ -123,10 +123,10 @@ struct GameView: View {
                     .buttonStyle(
                         PrimaryButtonStyle(
                             backgroundColor: viewModel.isMyTurn ? Color("EndTurn") : Color.gray,
-                            borderColor: .white,
+                            borderColor: Color("EndTurn"),
                             shadowColor: Color("EndTurn").opacity(0.65),
                             foregroundColor: .white,
-                            cornerRadius: 12,
+                            cornerRadius: 8,
                             borderWidth: 1.5,
                             yShadowOffset: 4,
                             xShadowOffset: 2,
