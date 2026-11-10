@@ -115,11 +115,13 @@ struct GameView: View {
                             viewModel.endCurrentTurn()
                         }
                     } label: {
-                        Text(viewModel.isMyTurn ? "End Turn" : "Waiting...")
+                        Text(!viewModel.isMyTurn ? "Waiting..." : (viewModel.isDraftingObjective ? "Drafting..." : "End Turn"))
                             .font(.shantellSans(14, .bold))
                     }
                     .disabled(!viewModel.isMyTurn)
                     .opacity(viewModel.isMyTurn ? 1.0 : 0.6)
+                    .disabled(!viewModel.canEndTurn)
+                    .opacity(viewModel.canEndTurn ? 1.0 : 0.6)
                     .buttonStyle(
                         PrimaryButtonStyle(
                             backgroundColor: viewModel.isMyTurn ? Color("EndTurn") : Color.gray,

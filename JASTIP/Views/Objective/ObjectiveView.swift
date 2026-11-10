@@ -27,7 +27,10 @@ struct ObjectiveView: View {
     @State private var draftHistory: [DraftRoundHistory] = []
     
     // State Sesi Drafting yang Sedang Berjalan
-    @State private var isDrafting: Bool = false
+    private var isDrafting: Bool {
+        get { viewModel.isDraftingObjective }
+        nonmutating set { viewModel.isDraftingObjective = newValue }
+    }
     @State private var candidateOrders: [JastipOrderModel] = []
     @State private var visibleCandidateOrders: [JastipOrderModel] = []
     @State private var selectedOrderIds: Set<String> = []
@@ -359,6 +362,8 @@ struct ObjectiveView: View {
             visibleCandidateOrders.removeAll()
             selectedOrderIds.removeAll()
         }
+        
+        viewModel.personalJastipOrders.append(contentsOf: personalOrders)
     }
     
     private func scrollToBottom(proxy: ScrollViewProxy, animated: Bool = true) {

@@ -456,8 +456,8 @@ enum JastipOrderCatalog {
                 
             // --- 4. Henry (2 slot) ---
             case "henry":
-                let slot1 = items.contains { $0.color == .purple && $0.isAnomaly }
-                let slot2 = items.contains { $0.color != .purple && ($0.shape == .single || $0.shape == .domino) }
+                let slot1 = items.contains { $0.color != .purple && ($0.shape == .single || $0.shape == .domino) }
+                let slot2 = items.contains { $0.color == .purple && $0.isAnomaly }
                 return [slot1, slot2]
                 
             // --- 5. Molly (2 slot) ---
@@ -473,14 +473,14 @@ enum JastipOrderCatalog {
                 
             // --- 7. Joe (2 slot) ---
             case "joe":
-                let slot1 = items.contains { [.purple, .red, .green, .blue].contains($0.color) && $0.shape == .tetrominoI }
-                let slot2 = items.contains { $0.color == .orange && $0.shape == .single }
+                let slot1 = items.contains { $0.color == .orange && $0.shape == .single }
+                let slot2 = items.contains { [.purple, .green, .red, .blue].contains($0.color) && $0.shape == .tetrominoI }
                 return [slot1, slot2]
                 
             // --- 8. Billie (2 slot) ---
             case "billie":
-                let slot1 = items.contains { $0.color == .orange && ($0.shape == .square || $0.shape == .tetrominoT) }
-                let slot2 = items.contains { $0.color == .orange && ($0.shape == .smallL || $0.shape == .tetrominoL) }
+                let slot1 = items.contains { ($0.color == .red || $0.color == .orange) && ($0.shape == .square || $0.shape == .tetrominoT) }
+                let slot2 = items.contains { ($0.color == .red || $0.color == .orange) && ($0.shape == .smallL || $0.shape == .tetrominoL) }
                 return [slot1, slot2]
                 
             // --- 9. Jude (2 slot) ---
@@ -516,14 +516,14 @@ enum JastipOrderCatalog {
             // --- 13. Diana (2 slot) ---
             case "diana":
                 let pool = items.filter { $0.color == .orange || $0.color == .purple }
-                let slot1 = pool.contains { $0.shape == .square || $0.shape == .tetrominoT }
-                let slot2 = pool.contains { $0.shape == .domino || $0.shape == .triominoI || $0.shape == .tetrominoI }
+                let slot1 = pool.contains { $0.shape == .domino || $0.shape == .triominoI || $0.shape == .tetrominoI }
+                let slot2 = pool.contains { $0.shape == .square || $0.shape == .tetrominoT }
                 return [slot1, slot2]
                 
             // --- 14. Caroline (2 slot) ---
             case "caroline":
-                let slot1 = items.contains { $0.color == .blue && $0.isAnomaly }
-                let slot2 = items.contains { $0.color != .blue && ($0.shape == .single || $0.shape == .domino) }
+                let slot1 = items.contains { $0.color != .blue && ($0.shape == .single || $0.shape == .domino) }
+                let slot2 = items.contains { $0.color == .blue && $0.isAnomaly }
                 return [slot1, slot2]
                 
             // --- 15. Kayden (2 slot) ---
@@ -535,8 +535,8 @@ enum JastipOrderCatalog {
             // --- 16. Fernando (2 slot) ---
             case "fernando":
                 let pool = items.filter { $0.color == .purple || $0.color == .red }
-                let slot1 = pool.contains { $0.shape == .tetrominoL || $0.shape == .smallL || $0.shape == .tetrominoT }
-                let slot2 = pool.contains { $0.shape == .triominoI || $0.shape == .tetrominoI }
+                let slot1 = pool.contains { $0.shape == .triominoI || $0.shape == .tetrominoI }
+                let slot2 = pool.contains { $0.shape == .tetrominoL || $0.shape == .smallL || $0.shape == .tetrominoT }
                 return [slot1, slot2]
                 
             // --- 17. Alvin (3 slot) ---
@@ -597,7 +597,7 @@ enum JastipOrderCatalog {
                 
             // --- 25. Lloyd (2 slot: 2x Tetromino L Orange/Red) ---
             case "lloyd":
-                let count = items.filter { ($0.color == .orange || $0.color == .red) && $0.shape == .tetrominoL }.count
+                let count = items.filter { ($0.color == .red || $0.color == .orange) && ($0.shape == .smallL || $0.shape == .tetrominoL)  }.count
                 return [count >= 1, count >= 2]
                 
             // --- 26. Hannah (2 slot: 2x Square Orange/Blue) ---
@@ -608,8 +608,8 @@ enum JastipOrderCatalog {
             // --- 27. Elliott (2 slot) ---
             case "elliott":
                 let pool = items.filter { $0.color == .blue || $0.color == .red }
-                let slot1 = pool.contains { $0.shape == .tetrominoT }
-                let slot2 = pool.contains { $0.shape == .tetrominoL || $0.shape == .smallL }
+                let slot1 = pool.contains { $0.shape == .tetrominoL || $0.shape == .smallL }
+                let slot2 = pool.contains { $0.shape == .tetrominoT }
                 return [slot1, slot2]
                 
             // --- 28. Jake (2 slot) ---
