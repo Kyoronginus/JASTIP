@@ -21,6 +21,9 @@ extension GameSessionViewModel {
 
     func applyCloudGameState(_ state: CloudGameState) {
         guard isGameStarted else { return }
+        let previousHour = self.currentHour
+        let previousDays = self.daysToGo
+        
         airlineCard = state.card
         pieceWeights = state.pieceWeights
         sharedJastipOrders = state.sharedJastipOrders
@@ -36,6 +39,11 @@ extension GameSessionViewModel {
         self.turnOrder = state.turnOrder
         self.currentTurnIndex = state.currentTurnIndex
         self.daysToGo = state.daysToGo
+        
+        // Jika round baru dimulai (jam maju dan belum game over), jalankan animasi End of Round + Restock
+        if state.currentHour > previousHour && !state.isGameOver {
+            triggerRoundTransitionAnimation(from: previousDays, to: state.daysToGo)
+        }
         
         if state.isGameOver {
             broadcastMyStatus()
@@ -63,28 +71,33 @@ extension GameSessionViewModel {
 
     /// Logika perpindahan giliran saat pemain klik "End Turn"
     func endCurrentTurn() {
-        guard !turnOrder.isEmpty else { return }
-        
         // Kasus 1: Masih ada pemain berikutnya di round ini
-        if currentTurnIndex + 1 < turnOrder.count {
+        if !turnOrder.isEmpty && currentTurnIndex + 1 < turnOrder.count {
             currentTurnIndex += 1
         } else {
             // Kasus 2: Semua pemain di round ini sudah main!
             // Kurangi kalender hari (Days to go)
             if daysToGo > 0 {
+                let previousDays = daysToGo
                 // Masih ada hari tersisa (termasuk masuk ke Last Day saat 1 -> 0)
                 daysToGo -= 1
                 
                 // Rotasi giliran: pemain pertama geser ke paling belakang
-                var newOrder = turnOrder
-                let previousFirst = newOrder.removeFirst()
-                newOrder.append(previousFirst)
-                self.turnOrder = newOrder
+                if !turnOrder.isEmpty {
+                    var newOrder = turnOrder
+                    let previousFirst = newOrder.removeFirst()
+                    newOrder.append(previousFirst)
+                    self.turnOrder = newOrder
+                }
                 // Pemain kedua (yang sekarang jadi index 0) mulai duluan di round baru
                 self.currentTurnIndex = 0
                 
                 // Majukan jam game & roll event
                 nextHour()
+                
+                if !isGameOver {
+                    triggerRoundTransitionAnimation(from: previousDays, to: daysToGo)
+                }
             } else {
                 // Round "LAST DAY" sudah selesai dimainkan semua orang -> GAME OVER!
                 isGameOver = true

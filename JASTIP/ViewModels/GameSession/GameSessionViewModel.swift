@@ -17,6 +17,12 @@ struct StagedItem: Identifiable, Equatable {
     let isAlreadyCountedInWeight: Bool
 }
 
+enum RoundAnimationPhase: Equatable {
+    case none
+    case calendarTear(oldDay: Int, newDay: Int)
+    case restock
+}
+
 @Observable
 class GameSessionViewModel {
     // MARK: - Game Flow & Clock
@@ -32,6 +38,21 @@ class GameSessionViewModel {
     var turnOrder: [TurnPlayer] = []
     var currentTurnIndex: Int = 0
     var daysToGo: Int = 7
+    var roundAnimationPhase: RoundAnimationPhase = .none
+    
+    func triggerRoundTransitionAnimation(from oldDay: Int, to newDay: Int) {
+        let clampedOld = max(1, min(10, oldDay))
+        let clampedNew = max(0, min(10, newDay))
+        roundAnimationPhase = .calendarTear(oldDay: clampedOld, newDay: clampedNew)
+    }
+    
+    func advanceToRestockAnimation() {
+        roundAnimationPhase = .restock
+    }
+    
+    func dismissRoundAnimation() {
+        roundAnimationPhase = .none
+    }
     
     /// Pemain yang saat ini sedang aktif mengambil giliran
     var currentTurnPlayer: TurnPlayer? {
@@ -217,6 +238,7 @@ class GameSessionViewModel {
         self.turnOrder.removeAll()
         self.currentTurnIndex = 0
         self.daysToGo = 7
+        self.roundAnimationPhase = .none
     }
     
     func weight(for pieceId: String) -> Int {
