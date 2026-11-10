@@ -37,6 +37,7 @@ struct GameView: View {
     }
     
     @State private var openedLuggage: LuggageType? = nil
+    @State private var turnBanner: TurnBannerPresentation?
     
     init(
         viewModel: GameSessionViewModel? = nil,
@@ -71,8 +72,22 @@ struct GameView: View {
                 
                 // MARK: - Bottom Section: Slot UI HP Jastip Order (Dihandle oleh Dev Lain)
             }
-            
 
+            if let turnBanner {
+                TurnChangeBanner(playerName: turnBanner.playerName)
+                    .id(turnBanner.id)
+                    .frame(height: 240)
+                    .frame(maxWidth: .infinity)
+                    .frame(maxHeight: .infinity, alignment: .center)
+                    .transition(
+                        .asymmetric(
+                            insertion: .move(edge: .trailing).combined(with: .opacity),
+                            removal: .move(edge: .leading).combined(with: .opacity)
+                        )
+                    )
+                    .zIndex(90)
+                    .allowsHitTesting(false)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(
@@ -90,8 +105,64 @@ struct GameView: View {
         .fullScreenCover(item: $openedLuggage) { luggage in
             PersonalChildView(session: viewModel, initialLuggage: luggage)
         }
+        .onChange(of: turnBannerTrigger) { _, _ in
+            guard viewModel.isGameStarted,
+                  !viewModel.isGameOver,
+                  let player = viewModel.currentTurnPlayer else { return }
+
+            withAnimation(.spring(response: 0.55, dampingFraction: 0.78)) {
+                turnBanner = TurnBannerPresentation(playerName: player.name)
+            }
+        }
+        .task(id: turnBanner?.id) {
+            guard turnBanner != nil else { return }
+            do {
+                try await Task.sleep(nanoseconds: 1_800_000_000)
+            } catch {
+                return
+            }
+            guard !Task.isCancelled else { return }
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
+                turnBanner = nil
+            }
+        }
+    }
+
+    private var turnBannerTrigger: String {
+        "\(viewModel.currentTurnPlayer?.id ?? "none")|\(viewModel.currentTurnIndex)|\(viewModel.currentHour)|\(viewModel.daysToGo)"
     }
     
+    private struct TurnBannerPresentation: Identifiable {
+        let id = UUID()
+        let playerName: String
+    }
+
+    private struct TurnChangeBanner: View {
+        let playerName: String
+
+        var body: some View {
+            GeometryReader { geometry in
+                let bannerWidth = geometry.size.width + 80
+                let bannerHeight = bannerWidth * 0.297
+
+                ZStack {
+                    Image("turnback")
+                        .resizable()
+                        .frame(width: bannerWidth, height: bannerHeight)
+
+                    Text("\(playerName)'s Turn!")
+                        .font(.shantellSans(36, .bold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.65)
+                        .padding(.horizontal, 24)
+                }
+                .frame(width: geometry.size.width, height: geometry.size.height)
+                .rotationEffect(.degrees(-11))
+            }
+        }
+    }
+
     // MARK: - Subview: Top Header (Turn Info, End Turn Button, & Calendar)
     private var topHeaderSection: some View {
         HStack(alignment: .top) {
