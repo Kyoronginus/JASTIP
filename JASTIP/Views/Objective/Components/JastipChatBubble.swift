@@ -93,11 +93,18 @@ struct JastipChatBubble: View {
             
             // MARK: - Bubble Chat Putih (Hug Content Ukuran Asli)
             VStack(alignment: .leading, spacing: 8) {
-                // 1. Header: Nama Customer & Nominal Dollar (Warna Utama Tema)
-                HStack {
-                    Text(order.customerName)
-                        .font(.plusJakarta(15, .bold))
-                        .foregroundStyle(profileTheme.main)
+                // 1. Header: Nama Customer (dengan subtitle Personal/Shared) & Nominal Dollar
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(order.customerName)
+                            .font(.plusJakarta(15, .bold))
+                            .foregroundStyle(profileTheme.main)
+                        
+                        // Subtitle Indikator Tipe Order
+                        Text(order.isPersonal ? "Personal" : "Shared")
+                            .font(.plusJakarta(11, .medium))
+                            .foregroundStyle(Color.gray.opacity(0.8))
+                    }
                     
                     Spacer(minLength: 16)
                     
@@ -105,7 +112,6 @@ struct JastipChatBubble: View {
                         .font(.plusJakarta(15, .bold))
                         .foregroundStyle(profileTheme.main)
                 }
-                
                 // 2. Chat Message
                 Text(order.chatMessage)
                     .font(.plusJakarta(14, .regular))
@@ -128,7 +134,7 @@ struct JastipChatBubble: View {
                                             lineWidth: 2
                                         )
                                 )
-
+                            
                             // Badge Centang "checkdone" di pojok kanan atas nembus garis
                             if item.isFulfilled {
                                 Image("checkdone")
@@ -148,6 +154,16 @@ struct JastipChatBubble: View {
             .background(Color.white)
             .clipShape(RoundedRectangle(cornerRadius: 20))
             .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 3)
+            .contentShape(Rectangle()) // Supaya area kosong di dalam bubble tetap kena tap
+            .onTapGesture {
+                if isSelectable {
+                    onToggleSelect()
+                }
+            }
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(isSelected && isSelectable ? Color("PassportBlue") : Color.clear, lineWidth: 2)
+            )
             
             // Spacer di luar agar bubble selalu menempel rapi di kiri
             Spacer(minLength: 0)

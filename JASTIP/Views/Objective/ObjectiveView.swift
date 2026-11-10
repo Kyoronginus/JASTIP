@@ -69,8 +69,8 @@ struct ObjectiveView: View {
                         
                         // A. 3 SHARED JASTIP ORDERS AWAL
                         ForEach(sharedOrders) { order in
-                           JastipChatBubble(order: validatedOrder(order))
-                       }
+                            JastipChatBubble(order: validatedOrder(order))
+                        }
                         
                         // B. HISTORI SESI-SESI DRAFT YANG SUDAH SELESAI SEBELUMNYA
                         ForEach(draftHistory) { round in
@@ -79,8 +79,8 @@ struct ObjectiveView: View {
                             
                             // Kartu-kartu yang di-accept di sesi itu
                             ForEach(round.acceptedOrders) { order in
-                               JastipChatBubble(order: validatedOrder(order))
-                           }
+                                JastipChatBubble(order: validatedOrder(order))
+                            }
                             
                             // Chat balasan konfirmasi
                             playerChatBubble(text: round.confirmationMessage)
@@ -276,8 +276,14 @@ struct ObjectiveView: View {
             }
         }
         
-        // Ambil 3 kartu baru yang belum pernah muncul sama sekali
-        candidateOrders = JastipOrderCatalog.getDraftOrders(count: 3, excludingIds: existingIds)
+        // 👇 GANTI BAGIAN INI:
+        let rawCandidates = JastipOrderCatalog.getDraftOrders(count: 3, excludingIds: existingIds)
+        candidateOrders = rawCandidates.map {
+            var order = $0
+            order.isPersonal = true
+            return order
+        }
+        // 👆 SAMPAI SINI
         
         // 1. Tentukan jeda tunggu setelah chat player terkirim (misal 1.0 detik)
         let initialPause: Double = 1.0
