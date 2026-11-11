@@ -32,4 +32,6 @@ struct ToastOptions: Codable, Equatable {
     let message: String
     let type: ToastModel
     var duration: TimeInterval = 2.5
+    var playsNotificationSound: Bool? = nil
+    var senderID: String? = nil
 }

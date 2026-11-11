@@ -417,212 +417,13 @@ enum JastipOrderCatalog {
     ]
     
     
-    // MARK: - Logic Validator Berbasis PieceModel (32 Kasus)
-    static func checkOrderCompletion(orderKey: String, items: [PieceModel]) -> Bool {
-        switch orderKey {
-            // --- 1. Thomas ---
-        case "thomas":
-            return items.contains { ($0.color == .green || $0.color == .blue) && $0.isAnomaly }
-            
-            // --- 2. Toyib ---
-        case "toyib":
-            return items.contains { ($0.color == .red || $0.color == .orange) && $0.isAnomaly }
-            
-            // --- 3. Quincy ---
-        case "quincy":
-            return items.contains { ($0.color == .green || $0.color == .purple) && $0.isAnomaly }
-            
-            // --- 4. Henry ---
-        case "henry":
-            let hasPurpleAnomaly = items.contains { ($0.color == .purple) && $0.isAnomaly }
-            let hasNonPurpleSingleOrDomino = items.contains {
-                $0.color != .purple && ($0.shape == .single || $0.shape == .domino)
-            }
-            return hasNonPurpleSingleOrDomino && hasPurpleAnomaly
-            
-            // --- 5. Molly ---
-        case "molly":
-            let shape1 = items.contains { $0.color == .orange && ($0.shape == .square ) }
-            let shape2 = items.contains { $0.color == .orange && ($0.shape == .tetrominoT ) }
-            return shape1 && shape2
-            
-            // --- 6. Mackenzie ---
-        case "mackenzie":
-            return items.filter { $0.shape == .domino && ($0.color == .green || $0.color == .blue) }.count >= 2
-            
-            // --- 7. Joe ---
-        case "joe":
-            let hasTetrominoI = items.contains { [.purple, .red, .green, .blue].contains($0.color) && $0.shape == .tetrominoI }
-            let hasSingleOrange = items.contains { $0.color == .orange && $0.shape == .single }
-            return hasSingleOrange && hasTetrominoI
-            
-            // --- 8. Billie ---
-        case "billie":
-            let shape1 = items.contains { $0.color == .orange && ($0.shape == .square || $0.shape == .tetrominoT) }
-            let shape2 = items.contains { $0.color == .orange && ($0.shape == .smallL || $0.shape == .tetrominoL ) }
-            return shape1 && shape2
-            
-            // --- 9. Jude ---
-        case "jude":
-            let shape1 = items.contains { $0.color == .blue && ($0.shape == .smallL || $0.shape == .tetrominoL) }
-            let shape2 = items.contains { $0.color == .orange && ($0.shape == .smallL || $0.shape == .tetrominoL ) }
-            return shape1 && shape2
-            
-            // --- 10. Brie ---
-        case "brie":
-            let blueItems = items.filter { $0.color == .blue }
-            guard blueItems.count >= 3 else { return false }
-            let lineShapes: [PieceShape] = [.domino, .triominoI, .tetrominoI]
-            let tOrSquare: [PieceShape] = [.tetrominoT, .square]
-            let hasLine = blueItems.contains { lineShapes.contains($0.shape) }
-            let hasTOrSq = blueItems.contains { tOrSquare.contains($0.shape) }
-            return hasLine && hasTOrSq
-            
-            // --- 11. Bella ---
-        case "bella":
-            let purpleItems = items.filter { $0.color == .purple }
-            guard purpleItems.count >= 3 else { return false }
-            let lineShapes: [PieceShape] = [.domino, .triominoI, .tetrominoI]
-            return purpleItems.filter { lineShapes.contains($0.shape) }.count >= 2
-            
-            // --- 12. Roxanne ---
-        case "roxanne":
-            let shape1 = items.contains { ($0.color == .blue || $0.color == .green) && ($0.shape == .square || $0.shape == .tetrominoT) }
-            let shape2 = items.contains { ($0.color == .blue || $0.color == .green) && ($0.shape == .triominoI || $0.shape == .smallL) }
-            return shape1 && shape2
-            
-            // --- 13. Diana ---
-        case "diana":
-            let pool = items.filter { $0.color == .orange || $0.color == .purple }
-            guard pool.count >= 2 else { return false }
-            let hasSqT = pool.contains { $0.shape == .square || $0.shape == .tetrominoT }
-            let hasLine = pool.contains { $0.shape == .domino || $0.shape == .triominoI || $0.shape == .tetrominoI }
-            return hasLine && hasSqT
-            
-            // --- 14. Caroline ---
-        case "caroline":
-            let hasBlueAnomaly = items.contains { ($0.color == .blue) && $0.isAnomaly }
-            let hasBlueSingleOrDomino = items.contains {
-                $0.color != .blue && ($0.shape == .single || $0.shape == .domino)
-            }
-            return hasBlueSingleOrDomino && hasBlueAnomaly
-            
-            // --- 15. Kayden ---
-        case "kayden":
-            let hasSingle = items.contains { $0.shape == .single }
-            let hasUnique = items.contains { $0.isAnomaly }
-            return hasUnique && hasSingle
-            
-            // --- 16. Fernando ---
-        case "fernando":
-            let pool = items.filter { $0.color == .purple || $0.color == .red }
-            guard pool.count >= 2 else { return false }
-            let hasLT = pool.contains { $0.shape == .tetrominoL || $0.shape == .smallL || $0.shape == .tetrominoT }
-            let hasLine = pool.contains { $0.shape == .triominoI || $0.shape == .tetrominoI }
-            return hasLine && hasLT
-            
-            // --- 17. Alvin ---
-        case "alvin":
-            let shape1 = items.contains { $0.color == .blue && ($0.shape == .single || $0.shape == .domino) }
-            let shape2 = items.contains { ($0.color == .red || $0.color == .orange) && ($0.shape == .single || $0.shape == .domino) }
-            let shape3 = items.contains { ($0.color == .purple || $0.color == .green) && ($0.shape == .triominoI || $0.shape == .tetrominoI) }
-            return shape1 && shape2 && shape3
-            
-            // --- 18. Enzo ---
-        case "enzo":
-            let shape1 = items.contains { ($0.color == .blue || $0.color == .green) && $0.shape == .square }
-            let shape2 = items.contains { ($0.color == .blue || $0.color == .green) && ($0.shape == .smallL || $0.shape == .tetrominoL || $0.shape == .tetrominoT) }
-            return shape1 && shape2
-            
-            // --- 19. Taylor ---
-        case "taylor":
-            let shape1 = items.contains { $0.color == .blue && $0.shape == .domino }
-            let shape2 = items.contains { ($0.color == .red || $0.color == .orange) && ($0.shape == .smallL || $0.shape == .tetrominoL || $0.shape == .tetrominoT) }
-            let shape3 = items.contains { ($0.color == .purple || $0.color == .green) && ($0.shape == .square || $0.shape == .tetrominoI) }
-            return shape1 && shape2 && shape3
-            
-            // --- 20. Silvia ---
-        case "silvia":
-            let shape1 = items.contains { $0.color == .blue && ($0.shape == .triominoI || $0.shape == .smallL) }
-            let shape2 = items.contains { ($0.color == .red || $0.color == .orange) && ($0.shape == .triominoI || $0.shape == .smallL) }
-            let shape3 = items.contains { ($0.color == .purple || $0.color == .green) && ($0.shape == .triominoI || $0.shape == .smallL) }
-            return shape1 && shape2 && shape3
-            
-            // --- 21. David ---
-        case "david":
-            let greenItems = items.filter { $0.color == .green }
-            guard greenItems.count >= 3 else { return false }
-            let hasSqOrT = greenItems.contains { $0.shape == .square }
-            return hasSqOrT
-            
-            // --- 22. Jimmy ---
-        case "jimmy":
-            let redItems = items.filter { $0.color == .red }
-            guard redItems.count >= 3 else { return false }
-            let shape1 = redItems.contains { $0.shape == .triominoI || $0.shape == .tetrominoI }
-            let shape2 = redItems.contains { $0.shape == .square || $0.shape == .tetrominoT }
-            
-            return shape1 && shape2
-            
-            // --- 23. Wayne ---
-        case "wayne":
-            let orangeItems = items.filter { $0.color == .orange }
-            guard orangeItems.count >= 3 else { return false }
-            let shape1 = orangeItems.contains { $0.shape == .square || $0.shape == .tetrominoT }
-            let shape2 = orangeItems.contains { $0.shape == .triominoI || $0.shape == .smallL }
-            
-            return shape1 && shape2
-            
-            // --- 24. Kevin (Straight) ---
-        case "kevin_straight":
-            let validShapes: [PieceShape] = [.domino, .triominoI, .tetrominoI]
-            return items.filter { ($0.color == .green || $0.color == .purple) && validShapes.contains($0.shape) }.count >= 2
-            
-            // --- 25. Lloyd ---
-        case "lloyd":
-            return items.filter { ($0.color == .orange || $0.color == .red) && $0.shape == .tetrominoL }.count >= 2
-            
-            // --- 26. hannah ---
-        case "hannah":
-            return items.filter { ($0.color == .orange || $0.color == .blue) && $0.shape == .square }.count >= 2
-            
-            // --- 27. Elliot ---
-        case "elliott":
-            let pool = items.filter { $0.color == .blue || $0.color == .red }
-            let hasT = pool.contains { $0.shape == .tetrominoT }
-            let hasL = pool.contains { $0.shape == .tetrominoL || $0.shape == .smallL }
-            return hasL && hasT
-            
-            // --- 28. Jake ---
-        case "jake":
-            let shape1 = items.contains { $0.color == .red && $0.shape == .square }
-            let shape2 = items.contains { $0.color == .green && $0.shape == .tetrominoT }
-            return shape1 && shape2
-            
-            // --- 29. Leon ---
-        case "leon":
-            return items.filter { $0.color == .orange && ($0.shape == .triominoI || $0.shape == .tetrominoI) }.count >= 2
-            
-            // --- 30. Matheo (Tetris T) ---
-        case "matheo_tetris_t":
-            return items.filter { $0.shape == .tetrominoT }.count >= 2
-            
-            // --- 31. Pixie ---
-        case "pixie":
-            let shape1 = items.contains { ($0.color == .red || $0.color == .orange) && ($0.shape == .single || $0.shape == .domino) }
-            let shape2 = items.contains { ($0.color == .purple || $0.color == .green) && ($0.shape == .single || $0.shape == .domino) }
-            let shape3 = items.contains { $0.color == .blue && ($0.shape == .single || $0.shape == .domino) }
-            
-            return shape1 && shape2 && shape3
-            
-            // --- 32. Minnie ---
-        case "minnie":
-            return items.filter { ($0.color == .red || $0.color == .orange) && $0.shape == .single }.count >= 2
-            
-        default:
-            return false
+    // MARK: - Logic Validator Berbasis PieceModel
+        /// Order selesai JIKA dan HANYA JIKA semua item slot-nya bernilai true
+        static func checkOrderCompletion(orderKey: String, items: [PieceModel]) -> Bool {
+            let fulfilledStatuses = checkItemFulfillment(orderKey: orderKey, items: items)
+            guard !fulfilledStatuses.isEmpty else { return false }
+            return fulfilledStatuses.allSatisfy { $0 == true }
         }
-    }
     
     // MARK: - Helper Methods
     
@@ -636,4 +437,211 @@ enum JastipOrderCatalog {
         let available = allOrders.filter { !excludingIds.contains($0.id) }
         return Array(available.shuffled().prefix(count))
     }
+    
+    // MARK: - Logic Validator Status Centang Per Slot Item (32 Kasus)
+        /// Mengembalikan array boolean [Bool] penanda centang untuk masing-masing slot item di order
+        static func checkItemFulfillment(orderKey: String, items: [PieceModel]) -> [Bool] {
+            switch orderKey {
+            // --- 1. Thomas (1 slot) ---
+            case "thomas":
+                return [items.contains { ($0.color == .green || $0.color == .blue) && $0.isAnomaly }]
+                
+            // --- 2. Toyib (1 slot) ---
+            case "toyib":
+                return [items.contains { ($0.color == .red || $0.color == .orange) && $0.isAnomaly }]
+                
+            // --- 3. Quincy (1 slot) ---
+            case "quincy":
+                return [items.contains { ($0.color == .green || $0.color == .purple) && $0.isAnomaly }]
+                
+            // --- 4. Henry (2 slot) ---
+            case "henry":
+                let slot1 = items.contains { $0.color != .purple && ($0.shape == .single || $0.shape == .domino) }
+                let slot2 = items.contains { $0.color == .purple && $0.isAnomaly }
+                return [slot1, slot2]
+                
+            // --- 5. Molly (2 slot) ---
+            case "molly":
+                let slot1 = items.contains { $0.color == .orange && $0.shape == .square }
+                let slot2 = items.contains { $0.color == .orange && $0.shape == .tetrominoT }
+                return [slot1, slot2]
+                
+            // --- 6. Mackenzie (2 slot: 2x Domino Green/Blue) ---
+            case "mackenzie":
+                let count = items.filter { $0.shape == .domino && ($0.color == .green || $0.color == .blue) }.count
+                return [count >= 1, count >= 2]
+                
+            // --- 7. Joe (2 slot) ---
+            case "joe":
+                let slot1 = items.contains { $0.color == .orange && $0.shape == .single }
+                let slot2 = items.contains { [.purple, .green, .red, .blue].contains($0.color) && $0.shape == .tetrominoI }
+                return [slot1, slot2]
+                
+            // --- 8. Billie (2 slot) ---
+            case "billie":
+                let slot1 = items.contains { ($0.color == .red || $0.color == .orange) && ($0.shape == .square || $0.shape == .tetrominoT) }
+                let slot2 = items.contains { ($0.color == .red || $0.color == .orange) && ($0.shape == .smallL || $0.shape == .tetrominoL) }
+                return [slot1, slot2]
+                
+            // --- 9. Jude (2 slot) ---
+            case "jude":
+                let slot1 = items.contains { $0.color == .blue && ($0.shape == .smallL || $0.shape == .tetrominoL) }
+                let slot2 = items.contains { $0.color == .orange && ($0.shape == .smallL || $0.shape == .tetrominoL) }
+                return [slot1, slot2]
+                
+            // --- 10. Brie (3 slot: Blue Total >= 3, ada Line, ada T/Square) ---
+            case "brie":
+                let blueItems = items.filter { $0.color == .blue }
+                let lineShapes: [PieceShape] = [.domino, .triominoI, .tetrominoI]
+                let tOrSquare: [PieceShape] = [.tetrominoT, .square]
+                let hasLine = blueItems.contains { lineShapes.contains($0.shape) }
+                let hasTOrSq = blueItems.contains { tOrSquare.contains($0.shape) }
+                let hasMin3 = blueItems.count >= 3
+                return [hasLine, hasTOrSq, hasMin3]
+                
+            // --- 11. Bella (3 slot: Purple Total >= 3, Line x2) ---
+            case "bella":
+                let purpleItems = items.filter { $0.color == .purple }
+                let lineShapes: [PieceShape] = [.domino, .triominoI, .tetrominoI]
+                let lineCount = purpleItems.filter { lineShapes.contains($0.shape) }.count
+                let hasMin3 = purpleItems.count >= 3
+                return [lineCount >= 1, lineCount >= 2, hasMin3]
+                
+            // --- 12. Roxanne (2 slot) ---
+            case "roxanne":
+                let slot1 = items.contains { ($0.color == .blue || $0.color == .green) && ($0.shape == .square || $0.shape == .tetrominoT) }
+                let slot2 = items.contains { ($0.color == .blue || $0.color == .green) && ($0.shape == .triominoI || $0.shape == .smallL) }
+                return [slot1, slot2]
+                
+            // --- 13. Diana (2 slot) ---
+            case "diana":
+                let pool = items.filter { $0.color == .orange || $0.color == .purple }
+                let slot1 = pool.contains { $0.shape == .domino || $0.shape == .triominoI || $0.shape == .tetrominoI }
+                let slot2 = pool.contains { $0.shape == .square || $0.shape == .tetrominoT }
+                return [slot1, slot2]
+                
+            // --- 14. Caroline (2 slot) ---
+            case "caroline":
+                let slot1 = items.contains { $0.color != .blue && ($0.shape == .single || $0.shape == .domino) }
+                let slot2 = items.contains { $0.color == .blue && $0.isAnomaly }
+                return [slot1, slot2]
+                
+            // --- 15. Kayden (2 slot) ---
+            case "kayden":
+                let slot1 = items.contains { $0.isAnomaly }
+                let slot2 = items.contains { $0.shape == .single }
+                return [slot1, slot2]
+                
+            // --- 16. Fernando (2 slot) ---
+            case "fernando":
+                let pool = items.filter { $0.color == .purple || $0.color == .red }
+                let slot1 = pool.contains { $0.shape == .triominoI || $0.shape == .tetrominoI }
+                let slot2 = pool.contains { $0.shape == .tetrominoL || $0.shape == .smallL || $0.shape == .tetrominoT }
+                return [slot1, slot2]
+                
+            // --- 17. Alvin (3 slot) ---
+            case "alvin":
+                let slot1 = items.contains { $0.color == .blue && ($0.shape == .single || $0.shape == .domino) }
+                let slot2 = items.contains { ($0.color == .red || $0.color == .orange) && ($0.shape == .single || $0.shape == .domino) }
+                let slot3 = items.contains { ($0.color == .purple || $0.color == .green) && ($0.shape == .triominoI || $0.shape == .tetrominoI) }
+                return [slot1, slot2, slot3]
+                
+            // --- 18. Enzo (2 slot) ---
+            case "enzo":
+                let slot1 = items.contains { ($0.color == .blue || $0.color == .green) && $0.shape == .square }
+                let slot2 = items.contains { ($0.color == .blue || $0.color == .green) && ($0.shape == .smallL || $0.shape == .tetrominoL || $0.shape == .tetrominoT) }
+                return [slot1, slot2]
+                
+            // --- 19. Taylor (3 slot) ---
+            case "taylor":
+                let slot1 = items.contains { $0.color == .blue && $0.shape == .domino }
+                let slot2 = items.contains { ($0.color == .red || $0.color == .orange) && ($0.shape == .smallL || $0.shape == .tetrominoL || $0.shape == .tetrominoT) }
+                let slot3 = items.contains { ($0.color == .purple || $0.color == .green) && ($0.shape == .square || $0.shape == .tetrominoI) }
+                return [slot1, slot2, slot3]
+                
+            // --- 20. Silvia (3 slot) ---
+            case "silvia":
+                let slot1 = items.contains { $0.color == .blue && ($0.shape == .triominoI || $0.shape == .smallL) }
+                let slot2 = items.contains { ($0.color == .red || $0.color == .orange) && ($0.shape == .triominoI || $0.shape == .smallL) }
+                let slot3 = items.contains { ($0.color == .purple || $0.color == .green) && ($0.shape == .triominoI || $0.shape == .smallL) }
+                return [slot1, slot2, slot3]
+                
+            // --- 21. David (3 slot: Green Total >= 3, Square Green) ---
+            case "david":
+                let greenItems = items.filter { $0.color == .green }
+                let hasSq = greenItems.contains { $0.shape == .square }
+                let hasMin3 = greenItems.count >= 3
+                return [hasSq, greenItems.count >= 2, hasMin3]
+                
+            // --- 22. Jimmy (3 slot: Red Total >= 3, Red Line, Red Sq/T) ---
+            case "jimmy":
+                let redItems = items.filter { $0.color == .red }
+                let slot1 = redItems.contains { $0.shape == .triominoI || $0.shape == .tetrominoI }
+                let slot2 = redItems.contains { $0.shape == .square || $0.shape == .tetrominoT }
+                let slot3 = redItems.count >= 3
+                return [slot1, slot2, slot3]
+                
+            // --- 23. Wayne (3 slot: Orange Total >= 3, Orange Sq/T, Orange Line/L) ---
+            case "wayne":
+                let orangeItems = items.filter { $0.color == .orange }
+                let slot1 = orangeItems.contains { $0.shape == .square || $0.shape == .tetrominoT }
+                let slot2 = orangeItems.contains { $0.shape == .triominoI || $0.shape == .smallL }
+                let slot3 = orangeItems.count >= 3
+                return [slot1, slot2, slot3]
+                
+            // --- 24. Kevin Straight (2 slot) ---
+            case "kevin_straight":
+                let validShapes: [PieceShape] = [.domino, .triominoI, .tetrominoI]
+                let count = items.filter { ($0.color == .green || $0.color == .purple) && validShapes.contains($0.shape) }.count
+                return [count >= 1, count >= 2]
+                
+            // --- 25. Lloyd (2 slot: 2x Tetromino L Orange/Red) ---
+            case "lloyd":
+                let count = items.filter { ($0.color == .red || $0.color == .orange) && ($0.shape == .smallL || $0.shape == .tetrominoL)  }.count
+                return [count >= 1, count >= 2]
+                
+            // --- 26. Hannah (2 slot: 2x Square Orange/Blue) ---
+            case "hannah":
+                let count = items.filter { ($0.color == .orange || $0.color == .blue) && $0.shape == .square }.count
+                return [count >= 1, count >= 2]
+                
+            // --- 27. Elliott (2 slot) ---
+            case "elliott":
+                let pool = items.filter { $0.color == .blue || $0.color == .red }
+                let slot1 = pool.contains { $0.shape == .tetrominoL || $0.shape == .smallL }
+                let slot2 = pool.contains { $0.shape == .tetrominoT }
+                return [slot1, slot2]
+                
+            // --- 28. Jake (2 slot) ---
+            case "jake":
+                let slot1 = items.contains { $0.color == .red && $0.shape == .square }
+                let slot2 = items.contains { $0.color == .green && $0.shape == .tetrominoT }
+                return [slot1, slot2]
+                
+            // --- 29. Leon (2 slot: 2x Orange Triomino/Tetromino I) ---
+            case "leon":
+                let count = items.filter { $0.color == .orange && ($0.shape == .triominoI || $0.shape == .tetrominoI) }.count
+                return [count >= 1, count >= 2]
+                
+            // --- 30. Matheo (2 slot: 2x Tetromino T) ---
+            case "matheo_tetris_t":
+                let count = items.filter { $0.shape == .tetrominoT }.count
+                return [count >= 1, count >= 2]
+                
+            // --- 31. Pixie (3 slot) ---
+            case "pixie":
+                let slot1 = items.contains { ($0.color == .red || $0.color == .orange) && ($0.shape == .single || $0.shape == .domino) }
+                let slot2 = items.contains { ($0.color == .purple || $0.color == .green) && ($0.shape == .single || $0.shape == .domino) }
+                let slot3 = items.contains { $0.color == .blue && ($0.shape == .single || $0.shape == .domino) }
+                return [slot1, slot2, slot3]
+                
+            // --- 32. Minnie (2 slot: 2x Red/Orange Single) ---
+            case "minnie":
+                let count = items.filter { ($0.color == .red || $0.color == .orange) && $0.shape == .single }.count
+                return [count >= 1, count >= 2]
+                
+            default:
+                return []
+            }
+        }
 }

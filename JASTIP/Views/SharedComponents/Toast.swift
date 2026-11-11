@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import AudioToolbox
 
 struct ToastModifier: ViewModifier {
     @Binding var toast: ToastOptions?
@@ -19,44 +20,44 @@ struct ToastModifier: ViewModifier {
                     toastView(for: toast)
                         // Muncul turun dari atas dengan transisi halus
                         .transition(.move(edge: .top).combined(with: .opacity))
-                        .padding(.top, 12) // Jarak manis dari Safe Area / Top Bar
+                        .padding(.top, 150) // Jarak manis dari Safe Area / Top Bar
                         .zIndex(999)
                 }
             }
             .animation(.spring(response: 0.38, dampingFraction: 0.72), value: toast != nil)
-            .onChange(of: toast != nil) { _, isShowing in
-                if isShowing {
+            .onChange(of: toast?.id) { _, toastID in
+                if toastID != nil {
                     scheduleDismissal()
+                    if toast?.playsNotificationSound == true {
+                        AudioServicesPlaySystemSound(1003)
+                    }
                 }
             }
     }
 
     @ViewBuilder
     private func toastView(for options: ToastOptions) -> some View {
-        HStack(spacing: 10) {
-            // Icon Status
-            Image(systemName: options.type.icon)
-                .foregroundStyle(options.type.color)
-                .font(.system(size: 16, weight: .bold))
-            
-            // Pesan Teks
-            Text(options.message)
-                .font(.plusJakarta(13, .semibold))
-                .foregroundColor(Color("NavyBlack"))
-                .lineLimit(2)
+        ZStack{
+            Image("toastback")
+                .resizable()
+                .scaledToFit()
+            HStack(spacing: 10) {
+                // Icon Status
+                Image("telp")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 28)
+
+                // Pesan Teks
+                Text(options.message)
+                    .font(.shantellSans(16, .regular))
+                    .foregroundColor(.black)
+                    .lineLimit(2)
+            }
         }
         .padding(.vertical, 10)
         .padding(.horizontal, 16)
-        .frame(maxWidth: 340) // Batas lebar agar tetap proporsional di layar besar/kecil
-        .background(Color.white)
-        .clipShape(Capsule())
-        // Border khas style game JASTIP
-        .overlay(
-            Capsule()
-                .stroke(Color("NavyBlack").opacity(0.15), lineWidth: 1.5)
-        )
-        // Shadow halus agar pop-up melayang di atas konten
-        .shadow(color: Color.black.opacity(0.08), radius: 12, x: 0, y: 6)
+        .frame(maxWidth: 420) // Batas lebar agar tetap proporsional di layar besar/kecil
     }
 
     private func scheduleDismissal() {
@@ -85,7 +86,7 @@ extension View {
         
         var body: some View {
             ZStack {
-                Color(uiColor: .systemGroupedBackground)
+                Color(uiColor: .gray)
                     .ignoresSafeArea()
                 
                 VStack(spacing: 16) {
@@ -95,7 +96,7 @@ extension View {
                     
                     Button("Trigger Success Toast") {
                         sampleToast = ToastOptions(
-                            message: "Barang berhasil masuk koper! 🎉",
+                            message: "Donny just took a new personal order!",
                             type: .success
                         )
                     }

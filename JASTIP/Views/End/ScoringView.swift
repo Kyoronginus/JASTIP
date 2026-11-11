@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct EndView: View {
+struct ScoringView: View {
     @Bindable var viewModel: GameSessionViewModel
     var onFinishGame: () -> Void = {}
     

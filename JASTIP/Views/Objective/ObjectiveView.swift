@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import AudioToolbox
 
 // Model pencatat riwayat per sesi draft yang berhasil
 struct DraftRoundHistory: Identifiable {
@@ -15,6 +16,11 @@ struct DraftRoundHistory: Identifiable {
 }
 
 struct ObjectiveView: View {
+    private enum MessageSound {
+        static let received: SystemSoundID = 1003
+        static let sent: SystemSoundID = 1004
+    }
+
     // Terima viewModel dari MainTabView
     var viewModel: GameSessionViewModel
     
@@ -27,10 +33,21 @@ struct ObjectiveView: View {
     @State private var draftHistory: [DraftRoundHistory] = []
     
     // State Sesi Drafting yang Sedang Berjalan
-    @State private var isDrafting: Bool = false
+    private var isDrafting: Bool {
+        get { viewModel.isDraftingObjective }
+        nonmutating set { viewModel.isDraftingObjective = newValue }
+    }
     @State private var candidateOrders: [JastipOrderModel] = []
     @State private var visibleCandidateOrders: [JastipOrderModel] = []
     @State private var selectedOrderIds: Set<String> = []
+    
+    @State private var isConfirmingAddOrder: Bool = false
+    private let selectionFeedback = UISelectionFeedbackGenerator()
+    private let successFeedback = UINotificationFeedbackGenerator()
+
+    private var actionBarPrompt: String {
+        viewModel.isMyTurn ? "anyone else need anything?" : "Wait for your turn"
+    }
     
     // MARK: - Helper Formatting Teks Input Bar
     private var confirmationTemplateText: String {
@@ -99,6 +116,7 @@ struct ObjectiveView: View {
                                     isSelectable: true,
                                     isSelected: selectedOrderIds.contains(order.id),
                                     onToggleSelect: {
+                                        selectionFeedback.selectionChanged()
                                         withAnimation(.easeInOut(duration: 0.2)) {
                                             if selectedOrderIds.contains(order.id) {
                                                 selectedOrderIds.remove(order.id)
@@ -189,7 +207,7 @@ struct ObjectiveView: View {
                     HStack{
                         Spacer()
                             .frame(width: 10)
-                        Text("anyone else need anything?")
+                        Text(actionBarPrompt)
                             .font(.system(size: 16, weight: .regular))
                             .foregroundColor(Color("TextActive"))
                         Spacer()
@@ -198,7 +216,23 @@ struct ObjectiveView: View {
                 
                 .padding(.vertical, 10)
                 Button {
-                    startDraftingFlow()
+                    if !isConfirmingAddOrder {
+                        // Tap 1: Masuk mode konfirmasi
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            isConfirmingAddOrder = true
+                        }
+                        
+                        // Auto-cancel setelah 4 detik jika tidak dikonfirmasi
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                self.isConfirmingAddOrder = false
+                            }
+                        }
+                    } else {
+                        // Tap 2: Pemain yakin -> eksekusi!
+                        isConfirmingAddOrder = false
+                        startDraftingFlow()
+                    }
                 } label: {
                     ZStack{
                         if !viewModel.isMyTurn {
@@ -206,13 +240,19 @@ struct ObjectiveView: View {
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: 100)
-                        } else {
+                            
+                        } else if isConfirmingAddOrder {
+                            Image("addordergreen")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 100)
+                        } else  {
                             Image("addorderback")
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: 100)
                         }
-                        Text("Add Order")
+                        Text(isConfirmingAddOrder ? "Confirm" : "Add Order")
                             .font(.system(size: 16, weight: .regular))
                             .foregroundColor(.white)
                     }
@@ -270,11 +310,20 @@ struct ObjectiveView: View {
     
     /// Memulai alur request chat & memunculkan 3 kandidat dengan jeda 0.5s
     private func startDraftingFlow() {
+        AudioServicesPlaySystemSound(MessageSound.sent)
         withAnimation {
             isDrafting = true
             selectedOrderIds.removeAll()
             visibleCandidateOrders.removeAll()
         }
+
+        let playerName = viewModel.playerName.trimmingCharacters(in: .whitespacesAndNewlines)
+        viewModel.showToast(
+            "\(playerName.isEmpty ? "A player" : playerName) just took a new personal order!",
+            type: .info,
+            displayLocally: false,
+            playNotificationSound: true
+        )
         
         // Kumpulkan semua ID yang sudah pernah ada di shared atau di accepted history
         var existingIds = Set(sharedOrders.map { $0.id })
@@ -304,6 +353,7 @@ struct ObjectiveView: View {
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
                     if self.isDrafting {
                         self.visibleCandidateOrders.append(self.candidateOrders[index])
+                        AudioServicesPlaySystemSound(MessageSound.received)
                     }
                 }
             }
@@ -313,6 +363,8 @@ struct ObjectiveView: View {
     /// Mengonfirmasi order yacloudng dipilih, simpan ke histori, dan reset input bar
     private func confirmSelectedDraftOrders() {
         let templateMessage = confirmationTemplateText
+        AudioServicesPlaySystemSound(MessageSound.sent)
+        successFeedback.notificationOccurred(.success)
         
         // Ambil order yang dicentang & tandai sebagai Personal
         let selected = candidateOrders.filter { selectedOrderIds.contains($0.id) }
@@ -335,6 +387,8 @@ struct ObjectiveView: View {
             visibleCandidateOrders.removeAll()
             selectedOrderIds.removeAll()
         }
+        
+        viewModel.personalJastipOrders.append(contentsOf: personalOrders)
     }
     
     private func scrollToBottom(proxy: ScrollViewProxy, animated: Bool = true) {
@@ -348,17 +402,27 @@ struct ObjectiveView: View {
     }
     
     /// Update status isFulfilled pada item order sesuai kondisi koper saat ini
-    private func validatedOrder(_ order: JastipOrderModel) -> JastipOrderModel {
-        var updated = order
-        let completed = viewModel.isOrderFulfilled(order)
-        
-        // Tandai slot item-nya sebagai fulfilled jika order sudah terpenuhi
-        for index in updated.requirementItems.indices {
-            updated.requirementItems[index].isFulfilled = completed
-        }
-        return updated
-    }
-}
+        private func validatedOrder(_ order: JastipOrderModel) -> JastipOrderModel {
+            var updated = order
+            
+            // 1. Ambil status centang per slot item dari kepingan yang ada di koper
+            let itemStatuses = JastipOrderCatalog.checkItemFulfillment(
+                orderKey: order.orderKey,
+                items: viewModel.allLuggagePieces
+            )
+            
+            // 2. Set isFulfilled untuk masing-masing slot kartu secara independen
+            for index in updated.requirementItems.indices {
+                if index < itemStatuses.count {
+                    updated.requirementItems[index].isFulfilled = itemStatuses[index]
+                }
+            }
+            
+            // 3. Status order selesai jika semua slot item sudah tercentang
+            updated.isCompleted = viewModel.isOrderFulfilled(order)
+            
+            return updated
+        }}
 
 #Preview {
     ObjectiveView(viewModel: GameSessionViewModel())

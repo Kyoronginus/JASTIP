@@ -24,24 +24,29 @@ struct HomeView: View {
             Spacer()
 
             VStack(spacing: 14) {
-                Button("Join Game") {
+                Button("Create Room") {
+                    onCreateGame()
+                }
+                .buttonStyle(PrimaryButtonStyle(
+                    isFullWidth: true,
+                ))
+                
+                Button("Join Room") {
                     onJoinGame()
                 }
                 .buttonStyle(PrimaryButtonStyle(
-                    backgroundColor: .white,
-                    borderColor: Color("TaxiYellow"),
-                    shadowColor: Color("TaxiYellow"),
+                    backgroundColor: Color("TaxiYellow150"),
                     foregroundColor: Color("NavyBlack"),
                     isFullWidth: true
                 ))
-
-                Button("Create Game") {
-                    onCreateGame()
-                }
-                .buttonStyle(PrimaryButtonStyle(isFullWidth: true))
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 32)
         }
     }
+}
+
+#Preview("Light") {
+    StartView(viewModel: GameSessionViewModel())
+        .preferredColorScheme(.light)
 }

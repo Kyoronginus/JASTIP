@@ -154,12 +154,14 @@ struct PersonalChildView: View {
                 } label: {
                     Text("Scan Item")
                 }
+                .disabled(!session.isMyTurn)
+                .opacity(session.isMyTurn ? 1.0 : 0.6)
                 .buttonStyle(
                     PrimaryButtonStyle(
-                        backgroundColor: canScanItem ? Color("ScanItem") : Color.gray.opacity(0.45),
-                        borderColor: canScanItem ? Color("ScanItem") : Color.gray.opacity(0.6),
-                        shadowColor: canScanItem ? Color("SuitcaseGrid") : Color.black.opacity(0.25),
-                        foregroundColor: canScanItem ? Color("SuitcaseFrame") : Color.white.opacity(0.6),
+                        backgroundColor: session.isMyTurn ? Color("ScanItem") : Color.gray,
+                        borderColor: Color("ScanItem"),
+                        shadowColor: Color("SuitcaseGrid"),
+                        foregroundColor: Color("SuitcaseFrame"),
                         font: .shantellSans(16, .bold),
                         cornerRadius: 14,
                         borderWidth: 1.5,
