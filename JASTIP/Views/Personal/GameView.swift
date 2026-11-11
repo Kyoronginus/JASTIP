@@ -33,7 +33,10 @@ struct GameView: View {
     }
     
     private var displayedDaysToGo: Int {
-        daysToGo ?? viewModel.daysToGo
+        if case let .calendarTear(oldDay, _) = viewModel.roundAnimationPhase {
+            return oldDay
+        }
+        return daysToGo ?? viewModel.daysToGo
     }
     
     @State private var openedLuggage: LuggageType? = nil
@@ -314,6 +317,166 @@ struct LuggageWeightLabel: View {
     }
 }
 
+// MARK: - Overlay: End of Round Calendar Tear & Restock Animation
+struct RoundTransitionOverlayView: View {
+    let phase: RoundAnimationPhase
+    let onCalendarTearFinished: () -> Void
+    let onContinueTapped: () -> Void
+    
+    var body: some View {
+        ZStack {
+            // Dimmed background di atas koper/kasur
+            Color.black.opacity(0.42)
+                .ignoresSafeArea()
+            
+            switch phase {
+            case .none:
+                EmptyView()
+            case let .calendarTear(oldDay, newDay):
+                CalendarTearAnimationView(
+                    oldDay: oldDay,
+                    newDay: newDay,
+                    onFinished: onCalendarTearFinished
+                )
+            case .restock:
+                RestockStoreAnimationView(onContinue: onContinueTapped)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+// MARK: - 1. Animasi Geser Sobek Kalender (Pure Slide ke Kanan)
+private struct CalendarTearAnimationView: View {
+    let oldDay: Int
+    let newDay: Int
+    let onFinished: () -> Void
+    private let tearHaptic = UIImpactFeedbackGenerator(style: .medium)
+//    private let finishHaptic = UIImpactFeedbackGenerator(style: .light)
+    
+    @State private var isSlidAway: Bool = false
+    
+    private var clampedOldDay: Int {
+        max(0, min(10, oldDay))
+    }
+    
+    private var clampedNewDay: Int {
+        max(0, min(10, newDay))
+    }
+    
+    var body: some View {
+        ZStack {
+            // Layer Belakang: Kalender utuh hari baru
+            Image("Calendar-\(clampedNewDay)")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 236, height: 318)
+            
+            // Layer Depan: Lembaran angka hari lama yang meluncur ke kanan
+            Image("CalendarNumber-\(clampedOldDay)")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 220, height: 226)
+                .offset(x: isSlidAway ? 380 : -4, y: 40)
+                .opacity(isSlidAway ? 0.3 : 1.0)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .clipped()
+        .offset(y: -20)
+        .task(id: "\(oldDay)->\(newDay)") {
+            isSlidAway = false
+            tearHaptic.prepare()
+            
+            // 1. Tahan sebentar sebelum kertas sobek
+            try? await Task.sleep(nanoseconds: 120_000_000)
+            guard !Task.isCancelled else { return }
+            
+            // 2. Picu suara dan haptic hentakan awal tepat saat animasi geser dimulai
+            tearHaptic.impactOccurred()
+            AudioManager.shared.play("paper-tear") // Mainkan SFX (jika aset sudah dimasukkan)
+            
+            withAnimation(.easeInOut(duration: 0.42)) {
+                isSlidAway = true
+            }
+            
+            // 3. Tunggu durasi animasi geser selesai (420ms)
+            try? await Task.sleep(nanoseconds: 420_000_000)
+            guard !Task.isCancelled else { return }
+            
+//            // 4. Haptic ringan saat lembaran lama lepas penuh dan angka hari baru terlihat
+//            finishHaptic.impactOccurred()
+//            
+            // 5. Beri jeda sisa (230ms) agar pemain sempat melihat hari baru sebelum pindah ke Restock
+            try? await Task.sleep(nanoseconds: 930_000_000)
+            guard !Task.isCancelled else { return }
+            onFinished()
+        }
+    }
+}
+
+// MARK: - 2. Stop-Motion Animasi Restock ("Time to shift the store items", 100ms per frame)
+private struct RestockStoreAnimationView: View {
+    let onContinue: () -> Void
+    
+    @State private var currentFrame: Int = 1
+    private let totalFrames: Int = 20
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            Text("Time to shift the store items")
+                .font(.shantellSans(18, .semibold))
+                .foregroundStyle(.white)
+                .shadow(color: .black.opacity(0.6), radius: 3, y: 1)
+                .padding(.bottom, -36)
+                .zIndex(2)
+            
+            Image("CardV4-\(currentFrame)")
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: 360)
+                .allowsHitTesting(false)
+                .offset(y: -55)
+            
+            Button {
+                onContinue()
+            } label: {
+                Text("Continue")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(
+                PrimaryButtonStyle(
+                    backgroundColor: Color("ScanItem"),
+                    borderColor: Color("ScanItem"),
+                    shadowColor: Color("SuitcaseFrame").opacity(0.65),
+                    foregroundColor: .black,
+                    font: .shantellSans(20, .bold),
+                    cornerRadius: 16,
+                    borderWidth: 1.5,
+                    yShadowOffset: 4,
+                    xShadowOffset: 2,
+                    paddingVertical: 14,
+                    paddingHorizontal: 24
+                )
+            )
+            .padding(.horizontal, 28)
+            .padding(.top, -18)
+        }
+        .offset(y: -10)
+        .task {
+            currentFrame = 1
+            while !Task.isCancelled {
+                for frame in 1...totalFrames {
+                    currentFrame = frame
+                    try? await Task.sleep(nanoseconds: 100_000_000)
+                    if Task.isCancelled { return }
+                }
+                // Jeda singkat di akhir siklus sebelum mengulang
+                try? await Task.sleep(nanoseconds: 200_000_000)
+            }
+        }
+    }
+}
+
 #Preview("PersonalView (OpenSuitcaseView)") {
     let mockViewModel = GameSessionViewModel(airlineCard: AirlineCardCatalog.dummy)
     mockViewModel.isBoarded = false
@@ -321,5 +484,27 @@ struct LuggageWeightLabel: View {
         viewModel: mockViewModel,
         currentTurnPlayerName: "maxwell",
         daysToGo: 7
+    )
+}
+
+#Preview("1. End of Round - Calendar Tear -> Restock") {
+    let mockViewModel = GameSessionViewModel(airlineCard: AirlineCardCatalog.dummy)
+    mockViewModel.isBoarded = false
+    mockViewModel.daysToGo = 6
+    mockViewModel.triggerRoundTransitionAnimation(from: 7, to: 6)
+    return GameView(
+        viewModel: mockViewModel,
+        currentTurnPlayerName: "maxwell"
+    )
+}
+
+#Preview("2. Restock Animation Only") {
+    let mockViewModel = GameSessionViewModel(airlineCard: AirlineCardCatalog.dummy)
+    mockViewModel.isBoarded = false
+    mockViewModel.daysToGo = 7
+    mockViewModel.roundAnimationPhase = .restock
+    return GameView(
+        viewModel: mockViewModel,
+        currentTurnPlayerName: "maxwell"
     )
 }

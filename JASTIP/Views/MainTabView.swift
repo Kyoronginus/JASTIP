@@ -112,8 +112,25 @@ struct MainTabView: View {
                     }
             )
             
-            // 4. EVENT ALERT POPUP & NOTIFIKASI BAWAAN
-            if let event = viewModel.currentEvent, !viewModel.isGameOver {
+            // 4. END OF ROUND & RESTOCK TRANSITION OVERLAY
+            if viewModel.roundAnimationPhase != .none {
+                RoundTransitionOverlayView(
+                    phase: viewModel.roundAnimationPhase,
+                    onCalendarTearFinished: {
+                        viewModel.advanceToRestockAnimation()
+                    },
+                    onContinueTapped: {
+                        withAnimation {
+                            viewModel.dismissRoundAnimation()
+                        }
+                    }
+                )
+                .transition(.opacity)
+                .zIndex(90)
+            }
+            
+            // 5. EVENT ALERT POPUP & NOTIFIKASI BAWAAN (Muncul setelah animasi End of Round / Restock selesai)
+            if let event = viewModel.currentEvent, !viewModel.isGameOver, viewModel.roundAnimationPhase == .none {
                 EventAlertView(event: event) {
                     withAnimation {
                         viewModel.dismissEvent()
@@ -121,6 +138,13 @@ struct MainTabView: View {
                 }
                 .transition(.opacity)
                 .zIndex(100)
+            }
+        }
+        .onChange(of: viewModel.roundAnimationPhase) { _, newPhase in
+            if newPhase != .none && isObjectiveExpanded {
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                    isObjectiveExpanded = false
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
