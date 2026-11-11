@@ -144,6 +144,7 @@ class GameSessionViewModel {
     var isScoreSubmitted: Bool = false
     var droppedBlockKg: Int = 0
     var remotePlayers: [String: PlayerSyncPayload] = [:]
+    var finalStandingsSnapshot: [PlayerStandingModel]? = nil
     
     // MARK: - Random Events State
     var currentEvent: RandomEventModel? = nil
@@ -178,6 +179,7 @@ class GameSessionViewModel {
         lobbyService.onPlayerStatusesChanged = { [weak self] statuses in
             guard let self else { return }
             self.remotePlayers = statuses.filter { $0.key != self.lobbyService.currentPlayerID }
+            self.captureFinalStandingsIfReady()
             self.checkAllPlayersBoarded()
         }
         lobbyService.onToastReceived = { [weak self] toast in
@@ -235,6 +237,7 @@ class GameSessionViewModel {
     func startNewGame() {
         revealedPieces.removeAll()
         remotePlayers.removeAll()
+        finalStandingsSnapshot = nil
         currentHour = 8
         delayHours = 0
         currentEvent = nil
@@ -658,32 +661,29 @@ class GameSessionViewModel {
     }
     
     /// Daftar klasemen akhir seluruh pemain (diurutkan dari Total tertinggi)
-    var finalStandings: [PlayerStandingModel] {
+    private var liveFinalStandings: [PlayerStandingModel] {
         let localID = lobbyService.currentPlayerID ?? "local_player"
         var map: [String: PlayerStandingModel] = [:]
-        
-        // 1. Data pemain lokal
+
         map[localID] = PlayerStandingModel(
             id: localID,
             name: currentPlayerStatus.name,
             income: calculatedIncome,
             penalty: calculatedPenalty
         )
-        
-        // 2. Masukkan semua pemain yang terdaftar di room/lobby
+
         if let lobbyPlayers = lobbyService.lobby?.players {
-            for lp in lobbyPlayers where lp.id != localID {
-                let synced = remotePlayers[lp.id]
-                map[lp.id] = PlayerStandingModel(
-                    id: lp.id,
-                    name: synced?.name ?? lp.name,
+            for player in lobbyPlayers where player.id != localID {
+                let synced = remotePlayers[player.id]
+                map[player.id] = PlayerStandingModel(
+                    id: player.id,
+                    name: synced?.name ?? player.name,
                     income: synced?.income ?? 0,
                     penalty: synced?.penalty ?? 0
                 )
             }
         }
-        
-        // 3. Masukkan juga jika ada di remotePlayers yang belum ada di map
+
         for synced in remotePlayers.values where synced.peerId != localID {
             if map[synced.peerId] == nil {
                 map[synced.peerId] = PlayerStandingModel(
@@ -693,7 +693,6 @@ class GameSessionViewModel {
                     penalty: synced.penalty
                 )
             } else if synced.income != 0 || synced.penalty != 0 {
-                // Update dengan skor terbaru jika pemain baru submit
                 map[synced.peerId] = PlayerStandingModel(
                     id: synced.peerId,
                     name: synced.name,
@@ -702,7 +701,7 @@ class GameSessionViewModel {
                 )
             }
         }
-        
+
         return Array(map.values).sorted {
             if $0.total != $1.total {
                 return $0.total > $1.total
@@ -712,6 +711,15 @@ class GameSessionViewModel {
             }
             return $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
         }
+    }
+
+    var finalStandings: [PlayerStandingModel] {
+        finalStandingsSnapshot ?? liveFinalStandings
+    }
+
+    func captureFinalStandingsIfReady() {
+        guard finalStandingsSnapshot == nil, areAllPlayersSubmitted else { return }
+        finalStandingsSnapshot = liveFinalStandings
     }
     
     /// Apakah semua pemain di room sudah menekan "Finished Playing"

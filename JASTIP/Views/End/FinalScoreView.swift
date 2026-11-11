@@ -47,57 +47,6 @@ struct FinalScoreView: View {
             
             // 2. Konten Utama (Skip Button, Struk Receipt, & Back to Home Button)
             VStack(spacing: 0) {
-                // Bar Atas: Tombol Skip Animasi (>>)
-                HStack {
-                    Spacer()
-                    
-                    if !isBackToHomeVisible {
-                        Button {
-                            skipAnimation()
-                        } label: {
-                            Image(systemName: "chevron.forward.2")
-                                .font(.system(size: 16, weight: .bold))
-                        }
-                        .buttonStyle(
-                            PrimaryButtonStyle(
-                                backgroundColor: .white,
-                                borderColor: Color("NavyBlack"),
-                                foregroundColor: Color("NavyBlack"),
-                                cornerRadius: 10,
-                                borderWidth: 1.5,
-                                yShadowOffset: 3,
-                                xShadowOffset: 2,
-                                paddingVertical: 10,
-                                paddingHorizontal: 12
-                            )
-                        )
-                        .transition(.opacity)
-                    } else {
-                        // Placeholder agar posisi vertikal struk tidak bergeser saat tombol skip hilang/tetap
-                        Button {
-                            skipAnimation()
-                        } label: {
-                            Image(systemName: "chevron.forward.2")
-                                .font(.system(size: 16, weight: .bold))
-                        }
-                        .buttonStyle(
-                            PrimaryButtonStyle(
-                                backgroundColor: .white,
-                                borderColor: Color("NavyBlack"),
-                                foregroundColor: Color("NavyBlack"),
-                                cornerRadius: 10,
-                                borderWidth: 1.5,
-                                yShadowOffset: 3,
-                                xShadowOffset: 2,
-                                paddingVertical: 10,
-                                paddingHorizontal: 12
-                            )
-                        )
-                    }
-                }
-                .padding(.horizontal, 24)
-                .padding(.top, 16)
-                
                 Spacer(minLength: 12)
                 
                 // 3. Struk Receipt (ZStack di atas gambar Receipt)

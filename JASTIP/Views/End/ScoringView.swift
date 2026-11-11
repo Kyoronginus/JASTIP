@@ -10,6 +10,7 @@ import SwiftUI
 struct ScoringView: View {
     @Bindable var viewModel: GameSessionViewModel
     var onFinishGame: () -> Void = {}
+    @State private var hasPresentedFinalScore = false
     
     // MARK: - Automated Data dari ViewModel
     private var currentPlayer: PlayerStatusModel {
@@ -52,25 +53,39 @@ struct ScoringView: View {
     }
     
     private var showFinalScore: Bool {
-        viewModel.areAllPlayersSubmitted
+        hasPresentedFinalScore || viewModel.areAllPlayersSubmitted
     }
     
     var body: some View {
-        if showFinalScore {
-            FinalScoreView(
-                viewModel: viewModel,
-                onBackToHome: onFinishGame
-            )
-            .transition(.opacity)
-        } else {
-            calculatorBody
-                .onAppear {
-                    viewModel.broadcastMyStatus()
-                }
-                .onChange(of: viewModel.droppedBlockKg) { _, _ in
-                    viewModel.broadcastMyStatus()
-                }
+        Group {
+            if showFinalScore {
+                FinalScoreView(
+                    viewModel: viewModel,
+                    onBackToHome: onFinishGame
+                )
+                .transition(.opacity)
+            } else {
+                calculatorBody
+                    .onAppear {
+                        viewModel.broadcastMyStatus()
+                    }
+                    .onChange(of: viewModel.droppedBlockKg) { _, _ in
+                        viewModel.broadcastMyStatus()
+                    }
+            }
         }
+        .onAppear {
+            updateFinalScorePresentation()
+        }
+        .onChange(of: viewModel.areAllPlayersSubmitted) { _, _ in
+            updateFinalScorePresentation()
+        }
+    }
+
+    private func updateFinalScorePresentation() {
+        guard viewModel.areAllPlayersSubmitted else { return }
+        viewModel.captureFinalStandingsIfReady()
+        hasPresentedFinalScore = true
     }
     
     private var calculatorBody: some View {
@@ -276,6 +291,7 @@ struct ScoringView: View {
                     } else {
                         Button("FINISHED PLAYING") {
                             viewModel.isScoreSubmitted = true
+                            viewModel.captureFinalStandingsIfReady()
                             viewModel.broadcastMyStatus()
                         }
                         .buttonStyle(PrimaryButtonStyle())
