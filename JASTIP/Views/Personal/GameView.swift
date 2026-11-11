@@ -60,7 +60,7 @@ struct GameView: View {
                 // MARK: - Top Header (Turn & Calendar)
                 topHeaderSection
                     .padding(.horizontal, 24)
-                    .padding(.top, 12)
+                    .padding(.top, 28)
                 
                 Spacer(minLength: 16)
                 

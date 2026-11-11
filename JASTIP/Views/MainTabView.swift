@@ -18,9 +18,10 @@ struct MainTabView: View {
     // ==========================================
     // ⚙️ PENGATURAN UKURAN & POSISI HP (RESIZE & REPOSITION)
     // ==========================================
-    private let phoneWidth: CGFloat = UIScreen.main.bounds.width - 10
-    private let phoneHeight: CGFloat = UIScreen.main.bounds.height * 0.90
+    private let phoneWidth: CGFloat = UIScreen.main.bounds.width - 50
+    private let phoneHeight: CGFloat = UIScreen.main.bounds.height * 0.95
     private let peekHeight: CGFloat = 120 // Tinggi bagian atas HP yang ngintip dari bawah
+    private let phoneScale: CGFloat = 0.85
     
     var body: some View {
         // ZStack alignment .bottom otomatis membuat SEMUA elemen 100% CENTER secara horizontal
@@ -44,20 +45,6 @@ struct MainTabView: View {
             
             // 3. DRAWER HP KARTUN (Swipe-Up / Tap-to-Expand)
             VStack(spacing: 8) {
-                // Teks "Tap to expand" di atas HP saat ngintip
-                if !isObjectiveExpanded {
-                    Text("Tap to expand")
-                        .font(.plusJakarta(13, .semibold))
-                        .foregroundStyle(.white.opacity(0.9))
-                        .shadow(color: .black.opacity(0.5), radius: 2, y: 1)
-                        .onTapGesture {
-                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                isObjectiveExpanded = true
-                            }
-                        }
-                }
-                
-                // Wadah Badan HP
                 ObjectivePhoneContainer(
                     viewModel: viewModel,
                     isExpanded: $isObjectiveExpanded,
@@ -68,9 +55,30 @@ struct MainTabView: View {
                     }
                 )
                 .frame(width: phoneWidth, height: phoneHeight)
+                .overlay(alignment: .top) {
+                    if !isObjectiveExpanded {
+                        Text("Tap to expand")
+                            .font(.plusJakarta(13, .semibold))
+                            .foregroundStyle(.white.opacity(0.9))
+                            .shadow(color: .black.opacity(0.5), radius: 2, y: 1)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                    isObjectiveExpanded = true
+                                }
+                            }
+                            .offset(y: -32)
+                    }
+                }
+//                .border(.red) // buat liat containernya doang
+                .scaleEffect(phoneScale, anchor: .bottom)
             }
             // Rumus posisi: saat collapsed turun sebanyak (phoneHeight - peekHeight)
-            .offset(y: (isObjectiveExpanded ? 15 : (phoneHeight - peekHeight)) + dragOffset)
+            .offset(
+                y: (isObjectiveExpanded
+                    ? 15
+                    : (phoneHeight * phoneScale - peekHeight)) + dragOffset
+            )
             // Gesture Drag / Swipe yang responsif
             .gesture(
                 DragGesture()
@@ -146,7 +154,7 @@ struct ObjectivePhoneContainer: View {
             VStack(spacing: 0) {
                 // Jarak atas agar konten tidak nabrak Dynamic Island frame
                 Color.clear
-                    .frame(height: 57)
+                    .frame(height: 50)
                 
                 ObjectiveView(viewModel: viewModel)
                     .clipShape(RoundedRectangle(cornerRadius: 35))

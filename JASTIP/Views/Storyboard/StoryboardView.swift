@@ -96,7 +96,7 @@ struct StoryboardView: View {
                     }
                     .buttonStyle(PrimaryButtonStyle(
                         cornerRadius: 12,
-                        borderWidth: 1.5,
+//                        borderWidth: 1.5,
                         yShadowOffset: 4,
                         paddingVertical: 8,
                         paddingHorizontal: 14
@@ -322,18 +322,17 @@ struct StoryboardSheet3View: View {
     // Parameter layout kartu agar mudah disesuaikan
     var cardsTopOffset: CGFloat = 190
     var cardsHorizontalPadding: CGFloat = 20
-    var bubbleScale: CGFloat = 0.38
-    var cardsSpacing: CGFloat = -18
+    var bubbleScale: CGFloat = 0.7
+    var cardsSpacing: CGFloat = 60
     
     var body: some View {
         ZStack {
             // Gambar Frame 3: HP Besar Layar Bersih
             Image("panel_6")
                 .resizable()
-//                .scaledToFit()
-//                .frame(width: 580)
-                .offset(x: -30, y: 0)
+                .offset(x: -20, y: 0)
                 .scaledToFill()
+                .scaleEffect(1.5)
                 .ignoresSafeArea()
             
             // Stiker PING! di atas HP
@@ -346,8 +345,9 @@ struct StoryboardSheet3View: View {
                     ForEach(0..<targetOrders.count, id: \.self) { index in
                         if index < visibleBubbleCount {
                             JastipChatBubble(order: targetOrders[index])
-                                .scaleEffect(bubbleScale, anchor: .topLeading)
-                                .frame(width: 10, height: 110) // Batasi slot tinggi vertikal setelah diskalakan
+                                .scaleEffect(x: bubbleScale, y: bubbleScale * 0.9, anchor: .topLeading)
+                                .frame(height: 110, alignment: .topLeading)
+                                .frame(maxWidth: .infinity, alignment: .leading)
                                 .transition(.asymmetric(
                                     insertion: .move(edge: .bottom).combined(with: .opacity).combined(with: .scale(scale: 0.8)),
                                     removal: .opacity
@@ -358,12 +358,12 @@ struct StoryboardSheet3View: View {
                     Spacer()
                 }
                 .padding(.horizontal, cardsHorizontalPadding)
-                .offset(x: 100, y: 100)
+                .offset(x: 65, y: -140)
             }
         }
         .task {
             // Tunggu 0.2 detik setelah transisi sheet 3 selesai
-            try? await Task.sleep(nanoseconds: 200_000_000)
+            try? await Task.sleep(nanoseconds: 750_000_000)
             
             let total = min(3, orders.count)
             for i in 1...total {
@@ -375,7 +375,7 @@ struct StoryboardSheet3View: View {
                 pingHaptic.notificationOccurred(.success)
                 
                 // Jeda 0.25 detik sebelum bubble berikutnya muncul
-                try? await Task.sleep(nanoseconds: 250_000_000)
+                try? await Task.sleep(nanoseconds: 400_000_000)
             }
         }
     }
@@ -462,4 +462,3 @@ struct StoryboardOrderCardItemView: View {
         cardsSpacing: 10
     )
 }
-
