@@ -25,7 +25,7 @@ struct PersonalChildView: View {
     @State private var gridFrame: CGRect = .zero
     @State private var lastHapticCoord: GridCoordinate? = nil
     
-    private let snapFeedback = UIImpactFeedbackGenerator(style: .light)
+    private let snapFeedback = UIImpactFeedbackGenerator(style: .heavy)
     
     init(session: GameSessionViewModel, initialLuggage: LuggageType = .suitcase) {
         self.session = session
@@ -104,7 +104,9 @@ struct PersonalChildView: View {
                         gridFrame = newFrame
                     },
                     onRotatePiece: { placed in
-                        _ = session.rotatePlacedPiece(placed)
+                        if session.rotatePlacedPiece(placed) {
+                            UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+                        }
                     },
                     onDragPieceChanged: { placed, value in
                         draggingPlacedPiece = placed
@@ -130,6 +132,7 @@ struct PersonalChildView: View {
                         withAnimation(.spring(response: 0.25, dampingFraction: 0.65)) {
                             session.rotateStagedItem(id: item.id)
                         }
+                        UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
                     },
                     onDragItemChanged: { item, value in
                         draggingStagingItem = item
