@@ -15,6 +15,10 @@ settings:
     GENERATE_INFOPLIST_FILE: YES
     INFOPLIST_KEY_CFBundleDisplayName: JASTIP
 
+    # Versioning
+    MARKETING_VERSION: "6.2"       # FBundleShortVersionString (Version)
+    CURRENT_PROJECT_VERSION: "3"     # CFBundleVersion (Build)
+
     # iphone portrait
     INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait"
     INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
