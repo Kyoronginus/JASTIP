@@ -28,4 +28,18 @@ struct PlayerSyncPayload: Codable {
     let suitcaseWeight: Int
     let carryOnWeight: Int
     let isBoarded: Bool
+    var income: Int = 0
+    var penalty: Int = 0
+    var isScoreSubmitted: Bool = false
+}
+
+struct PlayerStandingModel: Identifiable, Equatable {
+    let id: String
+    let name: String
+    let income: Int
+    let penalty: Int
+    
+    var total: Int {
+        income - penalty
+    }
 }

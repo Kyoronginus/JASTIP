@@ -15,6 +15,10 @@ settings:
     GENERATE_INFOPLIST_FILE: YES
     INFOPLIST_KEY_CFBundleDisplayName: JASTIP
 
+    # Versioning
+    MARKETING_VERSION: "6.2"       # FBundleShortVersionString (Version)
+    CURRENT_PROJECT_VERSION: "3"     # CFBundleVersion (Build)
+
     # iphone portrait
     INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait"
     INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
@@ -42,7 +46,6 @@ targets:
       path: JASTIP/JASTIP.entitlements
       properties: 
         com.apple.developer.nfc.readersession.formats:
-          - NDEF
           - TAG
 
     info: 
@@ -60,7 +63,18 @@ targets:
           - SpaceGrotesk-Medium.ttf
           - SpaceGrotesk-SemiBold.ttf
           - SpaceGrotesk-Bold.ttf
-
+          - ShantellSans-Bold.ttf
+          - ShantellSans-BoldItalic.ttf
+          - ShantellSans-ExtraBold.ttf
+          - ShantellSans-ExtraBoldItalic.ttf
+          - ShantellSans-Italic.ttf
+          - ShantellSans-Light.ttf
+          - ShantellSans-LightItalic.ttf
+          - ShantellSans-Medium.ttf
+          - ShantellSans-MediumItalic.ttf
+          - ShantellSans-Regular.ttf
+          - ShantellSans-SemiBold.ttf
+          - ShantellSans-SemiBoldItalic.ttf
 packages:
   Firebase:
     url: https://github.com/firebase/firebase-ios-sdk

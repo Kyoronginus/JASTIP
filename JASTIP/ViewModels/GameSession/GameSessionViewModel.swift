@@ -8,6 +8,21 @@
 import SwiftUI
 import Observation
 
+struct StagedItem: Identifiable, Equatable {
+    let id: UUID
+    let piece: PieceModel
+    let weight: Int
+    var rotation: LuggageRotation = .deg0
+    let lockedLuggage: LuggageType?
+    let isAlreadyCountedInWeight: Bool
+}
+
+enum RoundAnimationPhase: Equatable {
+    case none
+    case calendarTear(oldDay: Int, newDay: Int)
+    case restock
+}
+
 @Observable
 class GameSessionViewModel {
     // MARK: - Game Flow & Clock
@@ -15,8 +30,52 @@ class GameSessionViewModel {
     var delayHours: Int = 0
     var isGameOver: Bool = false
     var isGameStarted: Bool = false
-    var hasProceededToGame: Bool = false // <-- TAMBAHKAN INI
+    var hasProceededToGame: Bool = false
+    var hasSeenStoryboard: Bool = false
+    var sharedJastipOrders: [JastipOrderModel] = JastipOrderCatalog.getRandomSharedOrders(count: 3)
+    var personalJastipOrders: [JastipOrderModel] = []   // hasil drafting, lokal per device
     
+    // MARK: - Turn & Round System
+    var turnOrder: [TurnPlayer] = []
+    var currentTurnIndex: Int = 0
+    var daysToGo: Int = 7
+    var roundAnimationPhase: RoundAnimationPhase = .none
+    
+    func triggerRoundTransitionAnimation(from oldDay: Int, to newDay: Int) {
+        let clampedOld = max(1, min(10, oldDay))
+        let clampedNew = max(0, min(10, newDay))
+        roundAnimationPhase = .calendarTear(oldDay: clampedOld, newDay: clampedNew)
+    }
+    
+    func advanceToRestockAnimation() {
+        roundAnimationPhase = .restock
+    }
+    
+    func dismissRoundAnimation() {
+        roundAnimationPhase = .none
+    }
+    
+    /// Pemain yang saat ini sedang aktif mengambil giliran
+    var currentTurnPlayer: TurnPlayer? {
+        guard !turnOrder.isEmpty, currentTurnIndex >= 0, currentTurnIndex < turnOrder.count else {
+            return nil
+        }
+        return turnOrder[currentTurnIndex]
+    }
+    
+    /// Nama pemain aktif untuk ditampilkan di header ("maxwell's turn")
+    var currentTurnPlayerName: String {
+        currentTurnPlayer?.name ?? playerName
+    }
+    
+    /// Mengecek apakah giliran sekarang adalah giliran HP ini
+    var isMyTurn: Bool {
+        guard let currentTurnPlayer else { return true }
+        guard let myID = lobbyService.currentPlayerID else { return true }
+        return currentTurnPlayer.id == myID
+    }
+    
+    // MARK: - Timer Boarding Hour
     var currentTimeString: String {
         String(format: "%02d:00", currentHour)
     }
@@ -47,10 +106,45 @@ class GameSessionViewModel {
     var pieceWeights: [String: Int] = [:]
     var revealedPieces: [RevealedPiece] = []
     
+    // MARK: - Luggage Grids (3x5 Suitcase & 2x2 Carry-On)
+    var suitcaseGrid: LuggageGridModel = .suitcase
+    var carryOnGrid: LuggageGridModel = .carryOn
+    var stagedItems: [StagedItem] = []
+    var stagingWeight: Int? = nil
+    
+    // Snapshot untuk memulihkan posisi & berat koper jika user membatalkan penataan
+    private var snapshotSuitcaseGrid: LuggageGridModel? = nil
+    private var snapshotCarryOnGrid: LuggageGridModel? = nil
+    private var snapshotSuitWeight: Int? = nil
+    private var snapshotCarryWeight: Int? = nil
+    
+    var stagingPiece: PieceModel? {
+        get { stagedItems.first?.piece }
+        set {
+            if let newPiece = newValue {
+                stagedItems = [
+                    StagedItem(
+                        id: UUID(),
+                        piece: newPiece,
+                        weight: stagingWeight ?? weight(for: newPiece.id),
+                        rotation: .deg0,
+                        lockedLuggage: nil,
+                        isAlreadyCountedInWeight: false
+                    )
+                ]
+            } else {
+                stagedItems.removeAll()
+            }
+        }
+    }
+    
     // MARK: - Player & Leaderboard
     var playerName: String = UIDevice.current.name
     var isBoarded: Bool = false
+    var isScoreSubmitted: Bool = false
+    var droppedBlockKg: Int = 0
     var remotePlayers: [String: PlayerSyncPayload] = [:]
+    var finalStandingsSnapshot: [PlayerStandingModel]? = nil
     
     // MARK: - Random Events State
     var currentEvent: RandomEventModel? = nil
@@ -60,6 +154,12 @@ class GameSessionViewModel {
     
     // MARK: - Firebase Lobby
     var lobbyService = FirebaseLobbyService()
+    
+    var isDraftingObjective: Bool = false
+
+    var canEndTurn: Bool {
+        isMyTurn && !isDraftingObjective
+    }
     
     // MARK: - Initialization
     init(airlineCard: AirlineCardModel = AirlineCardCatalog.getRandomCard()) {
@@ -79,7 +179,17 @@ class GameSessionViewModel {
         lobbyService.onPlayerStatusesChanged = { [weak self] statuses in
             guard let self else { return }
             self.remotePlayers = statuses.filter { $0.key != self.lobbyService.currentPlayerID }
+            self.captureFinalStandingsIfReady()
             self.checkAllPlayersBoarded()
+        }
+        lobbyService.onToastReceived = { [weak self] toast in
+            guard let self = self else { return }
+            // Cegah re-trigger animasi jika ID toast-nya sama
+            if self.activeToast?.id != toast.id {
+                withAnimation {
+                    self.activeToast = toast
+                }
+            }
         }
         lobbyService.onScannedPiecesChanged = { [weak self] scans in
             guard let self else { return }
@@ -90,23 +200,73 @@ class GameSessionViewModel {
         }
     }
     
+    // MARK: - Global Toast System
+    var activeToast: ToastOptions? = nil
+    
+    func showToast(
+        _ message: String,
+        type: ToastModel = .info,
+        duration: TimeInterval = 2.5,
+        broadcast: Bool = true,
+        displayLocally: Bool = true,
+        playNotificationSound: Bool = false
+    ) {
+        let toast = ToastOptions(
+            id: UUID().uuidString,
+            message: message,
+            type: type,
+            duration: duration,
+            playsNotificationSound: playNotificationSound ? true : nil,
+            senderID: broadcast ? lobbyService.currentPlayerID : nil
+        )
+        if displayLocally {
+            withAnimation {
+                self.activeToast = toast
+            }
+        }
+        
+        // Kirim ke semua device lain via Firebase
+        if broadcast {
+            Task {
+                await lobbyService.publishToast(toast)
+            }
+        }
+    }
+    
     // MARK: - Game Lifecycle
     func startNewGame() {
         revealedPieces.removeAll()
         remotePlayers.removeAll()
+        finalStandingsSnapshot = nil
         currentHour = 8
         delayHours = 0
         currentEvent = nil
         activeHourEvent = nil
         isGameOver = false
         isBoarded = false
-        hasProceededToGame = false // <-- TAMBAHKAN INI
+        isScoreSubmitted = false
+        hasProceededToGame = false
+        hasSeenStoryboard = false
         triggeredUniqueEvents.removeAll()
         lastRoundEventType = nil
         suitWeight = 0
         carryWeight = 0
+        droppedBlockKg = 0
+        suitcaseGrid = .suitcase
+        carryOnGrid = .carryOn
+        stagedItems.removeAll()
+        stagingWeight = nil
+        snapshotSuitcaseGrid = nil
+        snapshotCarryOnGrid = nil
         generateRandomizedWeights()
         self.airlineCard = AirlineCardCatalog.getRandomCard()
+        self.sharedJastipOrders = JastipOrderCatalog.getRandomSharedOrders(count: 3)
+        self.personalJastipOrders.removeAll()
+        self.isDraftingObjective = false
+        self.turnOrder.removeAll()
+        self.currentTurnIndex = 0
+        self.daysToGo = 7
+        self.roundAnimationPhase = .none
     }
     
     func weight(for pieceId: String) -> Int {
@@ -143,7 +303,7 @@ class GameSessionViewModel {
         var weights: [String: Int] = [:]
         let deltas = [1, 1, 2, 2, 3]
         
-        let allColors: [PieceColor] = [.red, .yellow, .green, .blue, .pink]
+        let allColors: [PieceColor] = PieceColor.allCases
         
         for color in allColors {
             let piecesOfColor = PieceCatalog.allPieces.filter { $0.color == color }
@@ -185,7 +345,7 @@ class GameSessionViewModel {
             }
         }
     }
-
+    
     // Fungsi untuk mencatat item sekaligus memilih tempat (Suitcase / Carry-On)
     func recordItemPlacement(piece: PieceModel, weight: Int, isSuitcase: Bool) {
         guard !isBoarded && !isGameOver else { return }
@@ -214,4 +374,373 @@ class GameSessionViewModel {
         
         broadcastMyStatus()
     }
+    
+    // MARK: - Grid Placement & Rearrangement Methods
+    
+    /// Simpan snapshot kondisi koper sebelum user mulai menata ulang
+    func captureGridSnapshotIfNeeded() {
+        if snapshotSuitcaseGrid == nil {
+            snapshotSuitcaseGrid = suitcaseGrid
+        }
+        if snapshotCarryOnGrid == nil {
+            snapshotCarryOnGrid = carryOnGrid
+        }
+        if snapshotSuitWeight == nil {
+            snapshotSuitWeight = suitWeight
+        }
+        if snapshotCarryWeight == nil {
+            snapshotCarryWeight = carryWeight
+        }
+    }
+    
+    /// Menambahkan barang baru hasil scan ke area staging
+    func stageScannedPiece(_ piece: PieceModel, weight: Int, targetLuggage: LuggageType) {
+        captureGridSnapshotIfNeeded()
+        stagingWeight = weight
+        // Hapus barang scan lama yang belum ditaruh jika ada, pertahankan barang yang sedang ditata ulang
+        stagedItems.removeAll { !$0.isAlreadyCountedInWeight }
+        stagedItems.append(
+            StagedItem(
+                id: UUID(),
+                piece: piece,
+                weight: weight,
+                rotation: .deg0,
+                lockedLuggage: targetLuggage,
+                isAlreadyCountedInWeight: false
+            )
+        )
+    }
+    
+    /// Mengeluarkan kepingan yang sudah ada di dalam koper kembali ke area staging untuk ditata ulang
+    func removePlacedPieceToStaging(_ placedPiece: PlacedPiece) {
+        captureGridSnapshotIfNeeded()
+        if placedPiece.assignedLuggage == .suitcase {
+            suitcaseGrid.placedPieces.removeAll { $0.id == placedPiece.id }
+        } else {
+            carryOnGrid.placedPieces.removeAll { $0.id == placedPiece.id }
+        }
+        
+        let item = StagedItem(
+            id: placedPiece.id,
+            piece: placedPiece.piece,
+            weight: weight(for: placedPiece.piece.id),
+            rotation: placedPiece.rotation,
+            lockedLuggage: placedPiece.assignedLuggage,
+            isAlreadyCountedInWeight: true
+        )
+        if !stagedItems.contains(where: { $0.id == item.id }) {
+            stagedItems.append(item)
+        }
+    }
+    
+    /// Memutar kepingan yang sedang berada di area staging
+    func rotateStagedItem(id: UUID) {
+        guard let index = stagedItems.firstIndex(where: { $0.id == id }) else { return }
+        stagedItems[index].rotation = stagedItems[index].rotation.next
+    }
+    
+    /// Menaruh kepingan dari staging (baik hasil scan baru maupun tata ulang) ke koper
+    @discardableResult
+    func placeStagedItem(
+        id: UUID,
+        at origin: GridCoordinate,
+        into luggage: LuggageType
+    ) -> Bool {
+        guard let index = stagedItems.firstIndex(where: { $0.id == id }) else { return false }
+        let item = stagedItems[index]
+        
+        // Container lock: jika terikat ke koper tertentu, tidak boleh pindah ke koper lain
+        if let locked = item.lockedLuggage, locked != luggage {
+            return false
+        }
+        
+        let targetGrid = (luggage == .suitcase) ? suitcaseGrid : carryOnGrid
+        guard LuggagePlacementEngine.canPlace(
+            piece: item.piece,
+            at: origin,
+            rotation: item.rotation,
+            in: targetGrid
+        ) else {
+            return false
+        }
+        
+        let placed = PlacedPiece(
+            id: item.id,
+            piece: item.piece,
+            origin: origin,
+            rotation: item.rotation,
+            assignedLuggage: luggage
+        )
+        
+        if luggage == .suitcase {
+            suitcaseGrid.placedPieces.append(placed)
+        } else {
+            carryOnGrid.placedPieces.append(placed)
+        }
+        
+        // Hanya tambahkan bobot jika barang ini baru di-scan (belum dihitung sebelumnya)
+        if !item.isAlreadyCountedInWeight {
+            recordItemPlacement(piece: item.piece, weight: item.weight, isSuitcase: luggage == .suitcase)
+        }
+        
+        stagedItems.remove(at: index)
+        if stagedItems.isEmpty {
+            stagingWeight = nil
+            snapshotSuitcaseGrid = nil
+            snapshotCarryOnGrid = nil
+            snapshotSuitWeight = nil
+            snapshotCarryWeight = nil
+        }
+        return true
+    }
+    
+    /// Membatalkan barang yang belum dipasang & memulihkan barang koper yang sedang dikeluarkan ke staging
+    func cancelUnplacedStagingAndRestoreGrid() {
+        if let savedSuitcase = snapshotSuitcaseGrid {
+            suitcaseGrid = savedSuitcase
+        }
+        if let savedCarryOn = snapshotCarryOnGrid {
+            carryOnGrid = savedCarryOn
+        }
+        if let savedSuitWeight = snapshotSuitWeight {
+            suitWeight = savedSuitWeight
+        }
+        if let savedCarryWeight = snapshotCarryWeight {
+            carryWeight = savedCarryWeight
+        }
+        stagedItems.removeAll()
+        stagingWeight = nil
+        snapshotSuitcaseGrid = nil
+        snapshotCarryOnGrid = nil
+        snapshotSuitWeight = nil
+        snapshotCarryWeight = nil
+        broadcastMyStatus()
+    }
+    
+    /// Commit kondisi koper saat semua staging sudah masuk
+    func commitGridSession() {
+        snapshotSuitcaseGrid = nil
+        snapshotCarryOnGrid = nil
+        snapshotSuitWeight = nil
+        snapshotCarryWeight = nil
+    }
+    
+    /// Menaruh kepingan pertama dari staging ke koper tujuan (kompatibilitas)
+    @discardableResult
+    func placeStagingPiece(
+        at origin: GridCoordinate,
+        rotation: LuggageRotation,
+        into luggage: LuggageType
+    ) -> Bool {
+        guard let first = stagedItems.first else { return false }
+        stagedItems[0].rotation = rotation
+        return placeStagedItem(id: first.id, at: origin, into: luggage)
+    }
+    
+    /// Menggeser/menata ulang kepingan yang sudah ada di dalam koper yang sama
+    @discardableResult
+    func movePlacedPiece(
+        _ placedPiece: PlacedPiece,
+        to newOrigin: GridCoordinate,
+        rotation: LuggageRotation? = nil
+    ) -> Bool {
+        let targetRotation = rotation ?? placedPiece.rotation
+        let targetGrid = (placedPiece.assignedLuggage == .suitcase) ? suitcaseGrid : carryOnGrid
+        
+        guard LuggagePlacementEngine.canPlace(
+            piece: placedPiece.piece,
+            at: newOrigin,
+            rotation: targetRotation,
+            in: targetGrid,
+            ignoringPieceId: placedPiece.id
+        ) else {
+            return false
+        }
+        
+        if placedPiece.assignedLuggage == .suitcase {
+            if let index = suitcaseGrid.placedPieces.firstIndex(where: { $0.id == placedPiece.id }) {
+                suitcaseGrid.placedPieces[index].origin = newOrigin
+                suitcaseGrid.placedPieces[index].rotation = targetRotation
+            }
+        } else {
+            if let index = carryOnGrid.placedPieces.firstIndex(where: { $0.id == placedPiece.id }) {
+                carryOnGrid.placedPieces[index].origin = newOrigin
+                carryOnGrid.placedPieces[index].rotation = targetRotation
+            }
+        }
+        
+        if stagedItems.isEmpty {
+            snapshotSuitcaseGrid = suitcaseGrid
+            snapshotCarryOnGrid = carryOnGrid
+        }
+        
+        return true
+    }
+    
+    /// Memutar kepingan di dalam koper (melompati sudut yang mentok & wall-kick)
+    @discardableResult
+    func rotatePlacedPiece(_ placedPiece: PlacedPiece) -> Bool {
+        let targetGrid = (placedPiece.assignedLuggage == .suitcase) ? suitcaseGrid : carryOnGrid
+        guard let result = LuggagePlacementEngine.findNextValidRotation(for: placedPiece, in: targetGrid) else {
+            return false
+        }
+        return movePlacedPiece(placedPiece, to: result.origin, rotation: result.rotation)
+    }
+    
+    // MARK: - Jastip Validation
+    /// Semua piece yang saat ini sudah masuk ke koper (Suitcase + Carry-on)
+    var allLuggagePieces: [PieceModel] {
+        (suitcaseGrid.placedPieces + carryOnGrid.placedPieces).map { $0.piece }
+    }
+    
+    /// Cek apakah suatu order sudah terpenuhi oleh barang di koper
+    func isOrderFulfilled(_ order: JastipOrderModel) -> Bool {
+        order.isFulfilled(by: allLuggagePieces)
+    }
+    
+    // MARK: - Automated Scoring Helpers
+    
+    
+    
+    /// Jumlah sel terisi di Koper Besar (Suitcase, max 15)
+    var suitcaseFilledCells: Int {
+        LuggagePlacementEngine.occupiedCoordinates(in: suitcaseGrid).count
+    }
+    
+    /// Jumlah sel terisi di Koper Jinjing (Carry-On, max 4)
+    var carryOnFilledCells: Int {
+        LuggagePlacementEngine.occupiedCoordinates(in: carryOnGrid).count
+    }
+    
+    /// Total poin dari grid koper yang terisi (1 sel = 1 pt)
+    var totalGridPoints: Int {
+        suitcaseFilledCells + carryOnFilledCells
+    }
+    
+    /// Perfect Shape: Suitcase terisi penuh 15/15 sel
+    var isSuitcasePerfectShape: Bool {
+        suitcaseFilledCells == 15
+    }
+    
+    /// Perfect Shape: Carry-On terisi penuh 4/4 sel
+    var isCarryOnPerfectShape: Bool {
+        carryOnFilledCells == 4
+    }
+    
+    /// Daftar order jastip yang berhasil diselesaikan di koper
+    var completedJastipOrders: [JastipOrderModel] {
+        (sharedJastipOrders + personalJastipOrders).filter { order in
+            order.isFulfilled(by: allLuggagePieces)
+        }
+    }
+    
+    /// Total poin dari order jastip yang selesai
+    var totalCompletedJastipPoints: Int {
+        completedJastipOrders.reduce(0) { $0 + $1.points }
+    }
+    
+    /// Total overweight penalty (-1 pt / kg)
+    var totalOverweightPenalty: Int {
+        let suitcaseOver = max(0, suitWeight - displayedAirlineCard.maxCapacityKg)
+        let carryOnOver = max(0, carryWeight - displayedAirlineCard.maxCarryOnKg)
+        return suitcaseOver + carryOnOver
+    }
+    
+    /// Total pemasukan poin (Grid + Jastip + Bonus Weight & Shape)
+    var calculatedIncome: Int {
+        let isSuitcasePerfectWeight = displayedAirlineCard.maxCapacityKg > 0 && suitWeight == displayedAirlineCard.maxCapacityKg
+        let isCarryOnPerfectWeight = displayedAirlineCard.maxCarryOnKg > 0 && carryWeight == displayedAirlineCard.maxCarryOnKg
+        let weightBonus = (isSuitcasePerfectWeight ? 3 : 0) + (isCarryOnPerfectWeight ? 2 : 0)
+        let shapeBonus = (isSuitcasePerfectShape ? 2 : 0) + (isCarryOnPerfectShape ? 1 : 0)
+        return totalGridPoints + totalCompletedJastipPoints + weightBonus + shapeBonus
+    }
+    
+    /// Total penalti (Dropped block + Overweight)
+    var calculatedPenalty: Int {
+        droppedBlockKg + totalOverweightPenalty
+    }
+    
+    /// Daftar klasemen akhir seluruh pemain (diurutkan dari Total tertinggi)
+    private var liveFinalStandings: [PlayerStandingModel] {
+        let localID = lobbyService.currentPlayerID ?? "local_player"
+        var map: [String: PlayerStandingModel] = [:]
+
+        map[localID] = PlayerStandingModel(
+            id: localID,
+            name: currentPlayerStatus.name,
+            income: calculatedIncome,
+            penalty: calculatedPenalty
+        )
+
+        if let lobbyPlayers = lobbyService.lobby?.players {
+            for player in lobbyPlayers where player.id != localID {
+                let synced = remotePlayers[player.id]
+                map[player.id] = PlayerStandingModel(
+                    id: player.id,
+                    name: synced?.name ?? player.name,
+                    income: synced?.income ?? 0,
+                    penalty: synced?.penalty ?? 0
+                )
+            }
+        }
+
+        for synced in remotePlayers.values where synced.peerId != localID {
+            if map[synced.peerId] == nil {
+                map[synced.peerId] = PlayerStandingModel(
+                    id: synced.peerId,
+                    name: synced.name,
+                    income: synced.income,
+                    penalty: synced.penalty
+                )
+            } else if synced.income != 0 || synced.penalty != 0 {
+                map[synced.peerId] = PlayerStandingModel(
+                    id: synced.peerId,
+                    name: synced.name,
+                    income: synced.income,
+                    penalty: synced.penalty
+                )
+            }
+        }
+
+        return Array(map.values).sorted {
+            if $0.total != $1.total {
+                return $0.total > $1.total
+            }
+            if $0.income != $1.income {
+                return $0.income > $1.income
+            }
+            return $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+        }
+    }
+
+    var finalStandings: [PlayerStandingModel] {
+        finalStandingsSnapshot ?? liveFinalStandings
+    }
+
+    func captureFinalStandingsIfReady() {
+        guard finalStandingsSnapshot == nil, areAllPlayersSubmitted else { return }
+        finalStandingsSnapshot = liveFinalStandings
+    }
+    
+    /// Apakah semua pemain di room sudah menekan "Finished Playing"
+    var areAllPlayersSubmitted: Bool {
+        guard isScoreSubmitted else { return false }
+        guard let players = lobbyService.lobby?.players, !players.isEmpty else { return true }
+        let otherPlayers = players.filter { $0.id != lobbyService.currentPlayerID }
+        return otherPlayers.allSatisfy { remotePlayers[$0.id]?.isScoreSubmitted == true }
+    }
+    
+    /// Jumlah pemain yang sudah submit skor
+    var submittedPlayerCount: Int {
+        let localCount = isScoreSubmitted ? 1 : 0
+        guard let players = lobbyService.lobby?.players else { return localCount }
+        let otherCount = players.filter { $0.id != lobbyService.currentPlayerID && remotePlayers[$0.id]?.isScoreSubmitted == true }.count
+        return localCount + otherCount
+    }
+    
+    /// Total pemain yang ada di room
+    var totalLobbyPlayerCount: Int {
+        max(1, lobbyService.lobby?.players.count ?? 1)
+    }
+    
 }

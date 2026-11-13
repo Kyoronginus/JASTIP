@@ -16,32 +16,34 @@ extension GameSessionViewModel {
     
     // MARK: - Business Logic Methods
     func nextHour() {
-        guard lobbyService.lobby?.isHost == true else { return }
-
         if currentHour > boardingHour {
             isGameOver = true
             broadcastMyStatus()
-            Task { await publishCloudGameState() }
             return
         }
         
         currentHour += 1
         
         let event = rollForRandomEvent()
-            lastRoundEventType = event?.type
+        lastRoundEventType = event?.type
         currentEvent = event
         activeHourEvent = event
         
         if event?.type == .flightDelay {
             delayHours += 1
+            daysToGo += 1
         }
         
-        let gameOverStatus = currentHour >= boardingHour
+        if event?.type == .relativeCanceled, !sharedJastipOrders.isEmpty {
+            let canceledIndex = Int.random(in: 0..<sharedJastipOrders.count)
+            sharedJastipOrders.remove(at: canceledIndex)
+        }
+        
+        let gameOverStatus = currentHour > boardingHour
         self.isGameOver = gameOverStatus
         if gameOverStatus {
             broadcastMyStatus()
         }
-        Task { await publishCloudGameState() }
     }
     
     func dismissEvent() {
@@ -56,7 +58,11 @@ extension GameSessionViewModel {
         let nonConsecutiveEvents: Set<RandomEventType> = [
             .zeroWeight,
             .mindYourManners,
-            .reverseMadness
+            .reverseMadness,
+            .silentAirport,
+            .evacuation,
+            .energyBoost,
+            .customsIssue
         ]
 
         let availableTypes = RandomEventType.allCases.filter { type in
@@ -64,6 +70,10 @@ extension GameSessionViewModel {
                 guard !triggeredUniqueEvents.contains(type) else {
                     return false
                 }
+            }
+            
+            if type == .relativeCanceled, sharedJastipOrders.isEmpty {
+                return false
             }
 
             if nonConsecutiveEvents.contains(type), lastRoundEventType == type {
@@ -83,6 +93,4 @@ extension GameSessionViewModel {
 
         return event
     }
-    
-    
 }

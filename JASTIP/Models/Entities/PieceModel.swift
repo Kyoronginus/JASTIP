@@ -8,7 +8,7 @@
 import Foundation
 import SwiftUI
 
-enum PieceShape: String, Codable {
+enum PieceShape: String, Codable, Equatable {
     case single = "Single"
     case domino = "Domino"
     case smallL = "Small L"
@@ -20,35 +20,35 @@ enum PieceShape: String, Codable {
     case unique = "Unique"
 }
 
-enum PieceColor: String, CaseIterable, Codable {
-    case red = "Red"
-    case yellow = "Yellow"
-    case green = "Green"
+enum PieceColor: String, CaseIterable, Codable, Equatable {
+    case purple = "Purple"
+    case orange = "Orange"
     case blue = "Blue"
-    case pink = "Pink"
+    case green = "Green"
+    case red = "Red"
     
     var displayColor: Color {
         switch self {
-        case .red: return .red
-        case .yellow: return .yellow
-        case .green: return .green
+        case .purple: return .purple
+        case .orange: return .orange
         case .blue: return .blue
-        case .pink: return .pink
+        case .green: return .green
+        case .red: return .red
         }
     }
     
     var categoryName: String {
         switch self {
-            case .red: return "Books"
-            case .yellow: return "Delicacy"
-            case .green: return "Boutique"
-            case .blue: return "Antique"
-            case .pink: return "Kids"
+        case .purple: return "Wellness"
+        case .orange: return "Delicacy"
+        case .blue: return "Boutique"
+        case .green: return "Antique"
+        case .red: return "Toys"
         }
     }
 }
 
-struct PieceModel: Codable, Identifiable {
+struct PieceModel: Codable, Identifiable, Equatable {
     let id: String
     let shape: PieceShape
     let color: PieceColor
@@ -61,7 +61,7 @@ struct PieceModel: Codable, Identifiable {
     }
 }
 
-struct RevealedPiece: Codable, Identifiable {
+struct RevealedPiece: Codable, Identifiable, Equatable {
     let piece: PieceModel
     let weight: Int
     var scannedBy: String = ""
@@ -72,3 +72,5 @@ struct RevealedPiece: Codable, Identifiable {
         "\(piece.color.rawValue)-\(piece.shape.rawValue) = \(weight) kg"
     }
 }
+
+

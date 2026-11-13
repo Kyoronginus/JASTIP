@@ -8,6 +8,11 @@ struct LobbyPlayer: Identifiable {
     let name: String
 }
 
+struct TurnPlayer: Codable, Equatable, Identifiable {
+    let id: String
+    let name: String
+}
+
 struct GameLobby {
     let code: String
     let hostUID: String
@@ -22,6 +27,7 @@ struct GameLobby {
 struct CloudGameState: Codable, Equatable {
     let card: AirlineCardModel
     let pieceWeights: [String: Int]
+    var sharedJastipOrders: [JastipOrderModel]
     var currentHour: Int
     var delayHours: Int
     var isGameOver: Bool
@@ -29,6 +35,10 @@ struct CloudGameState: Codable, Equatable {
     var activeHourEvent: RandomEventModel?
     var triggeredUniqueEvents: Set<RandomEventType>
     var lastRoundEventType: RandomEventType?
+    // Sistem giliran dan days
+    var turnOrder: [TurnPlayer]
+    var currentTurnIndex: Int
+    var daysToGo: Int
 }
 
 @Observable
@@ -43,6 +53,7 @@ final class FirebaseLobbyService {
     var onGameStateChanged: ((CloudGameState) -> Void)?
     var onPlayerStatusesChanged: (([String: PlayerSyncPayload]) -> Void)?
     var onScannedPiecesChanged: (([RevealedPiece]) -> Void)?
+    var onToastReceived: ((ToastOptions) -> Void)?
 
     var currentPlayerID: String? {
         Auth.auth().currentUser?.uid
@@ -53,6 +64,8 @@ final class FirebaseLobbyService {
     @ObservationIgnored private var playerListener: ListenerRegistration?
     @ObservationIgnored private var scanListener: ListenerRegistration?
     @ObservationIgnored private var lastObservedGameState: CloudGameState?
+    @ObservationIgnored private var lastObservedToastID: String?
+    @ObservationIgnored private var hasReceivedInitialLobbySnapshot = false
 
     func createLobby(playerName: String) async {
         await performLobbyAction {
@@ -93,8 +106,27 @@ final class FirebaseLobbyService {
             let players = data["players"] as? [String: [String: String]] ?? [:]
             if players[uid] == nil {
                 guard players.count < 5 else { throw LobbyError.lobbyFull }
+
+                let existingPlayerIDs = Set(players.keys)
+                let storedPlayerOrder = data["playerOrder"] as? [String]
+                let playerOrder: Any
+                if let storedPlayerOrder,
+                   storedPlayerOrder.count == existingPlayerIDs.count,
+                   Set(storedPlayerOrder) == existingPlayerIDs {
+                    playerOrder = FieldValue.arrayUnion([uid])
+                } else {
+                    let existingPlayers = players.values.compactMap { player -> (String, String)? in
+                        guard let uid = player["uid"], let name = player["name"] else { return nil }
+                        return (uid, name)
+                    }.sorted {
+                        $0.1.localizedCaseInsensitiveCompare($1.1) == .orderedAscending
+                    }
+                    playerOrder = existingPlayers.map(\.0) + [uid]
+                }
+
                 try await reference.updateData([
                     "players.\(uid)": ["uid": uid, "name": Self.validatedName(playerName)],
+                    "playerOrder": playerOrder,
                     "updatedAt": FieldValue.serverTimestamp()
                 ])
             }
@@ -114,8 +146,43 @@ final class FirebaseLobbyService {
         }
     }
 
+    func reorderPlayers(_ playerIDs: [String]) async {
+        guard let lobby, lobby.isHost, lobby.status == "waiting" else { return }
+
+        let currentPlayerIDs = lobby.players.map(\.id)
+        guard playerIDs.count == currentPlayerIDs.count,
+              Set(playerIDs) == Set(currentPlayerIDs) else {
+            errorMessage = LobbyError.invalidPlayerOrder.localizedDescription
+            return
+        }
+        guard !isLoading else { return }
+
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
+
+        do {
+            try await database.collection("lobbies").document(lobby.code).updateData([
+                "playerOrder": playerIDs,
+                "updatedAt": FieldValue.serverTimestamp()
+            ])
+            let playersByID = Dictionary(
+                lobby.players.map { ($0.id, $0) },
+                uniquingKeysWith: { first, _ in first }
+            )
+            self.lobby = GameLobby(
+                code: lobby.code,
+                hostUID: lobby.hostUID,
+                status: lobby.status,
+                players: playerIDs.compactMap { playersByID[$0] }
+            )
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
     func publishGameState(_ state: CloudGameState) async {
-        guard let lobby, lobby.isHost, lobby.status == "playing" else { return }
+        guard let lobby, lobby.status == "playing" else { return }
         do {
             try await database.collection("lobbies").document(lobby.code).updateData([
                 "game": try Self.encode(state),
@@ -137,6 +204,9 @@ final class FirebaseLobbyService {
                     "suitcaseWeight": status.suitcaseWeight,
                     "carryOnWeight": status.carryOnWeight,
                     "isBoarded": status.isBoarded,
+                    "income": status.income,
+                    "penalty": status.penalty,
+                    "isScoreSubmitted": status.isScoreSubmitted,
                     "updatedAt": FieldValue.serverTimestamp()
                 ])
         } catch {
@@ -154,6 +224,18 @@ final class FirebaseLobbyService {
             errorMessage = error.localizedDescription
         }
     }
+    
+    func publishToast(_ toast: ToastOptions) async {
+            guard let lobby, lobby.status == "playing" || lobby.status == "waiting" else { return }
+            do {
+                try await database.collection("lobbies").document(lobby.code).updateData([
+                    "latestToast": try Self.encode(toast),
+                    "updatedAt": FieldValue.serverTimestamp()
+                ])
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
 
     func leaveLobby() async {
         guard let lobby, let uid = currentPlayerID else { return }
@@ -176,6 +258,7 @@ final class FirebaseLobbyService {
                 try await reference.collection("playerStates").document(uid).delete()
                 try await reference.updateData([
                     "players.\(uid)": FieldValue.delete(),
+                    "playerOrder": lobby.players.filter { $0.id != uid }.map(\.id),
                     "updatedAt": FieldValue.serverTimestamp()
                 ])
             }
@@ -235,6 +318,7 @@ final class FirebaseLobbyService {
                         "hostUID": uid,
                         "status": "waiting",
                         "players": [uid: ["uid": uid, "name": playerName]],
+                        "playerOrder": [uid],
                         "createdAt": FieldValue.serverTimestamp(),
                         "updatedAt": FieldValue.serverTimestamp()
                     ], forDocument: reference)
@@ -258,6 +342,8 @@ final class FirebaseLobbyService {
     private func listen(to reference: DocumentReference) {
         stopListening()
         lastObservedGameState = nil
+        lastObservedToastID = nil
+        hasReceivedInitialLobbySnapshot = false
 
         lobbyListener = reference.addSnapshotListener { [weak self] snapshot, error in
             Task { @MainActor [weak self] in
@@ -279,16 +365,37 @@ final class FirebaseLobbyService {
                     self.errorMessage = LobbyError.invalidLobbyData.localizedDescription
                     return
                 }
+                let isInitialSnapshot = !self.hasReceivedInitialLobbySnapshot
+                self.hasReceivedInitialLobbySnapshot = true
+                if let toastData = data["latestToast"] as? [String: Any],
+                   let toast = try? Self.decode(ToastOptions.self, from: toastData) {
+                    if self.lastObservedToastID != toast.id {
+                        self.lastObservedToastID = toast.id
+                        if !isInitialSnapshot, toast.senderID != self.currentPlayerID {
+                            self.onToastReceived?(toast)
+                        }
+                    }
+                }
+
+                let players = playersData.values.compactMap { player -> LobbyPlayer? in
+                    guard let uid = player["uid"], let name = player["name"] else { return nil }
+                    return LobbyPlayer(id: uid, name: name)
+                }
+                var playersByID = Dictionary(
+                    players.map { ($0.id, $0) },
+                    uniquingKeysWith: { first, _ in first }
+                )
+                let playerOrder = data["playerOrder"] as? [String] ?? []
+                let orderedPlayers = playerOrder.compactMap { playersByID.removeValue(forKey: $0) }
+                let remainingPlayers = playersByID.values.sorted {
+                    $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+                }
+                
                 self.lobby = GameLobby(
                     code: reference.documentID,
                     hostUID: hostUID,
                     status: status,
-                    players: playersData.values.compactMap { player in
-                        guard let uid = player["uid"], let name = player["name"] else { return nil }
-                        return LobbyPlayer(id: uid, name: name)
-                    }.sorted {
-                        $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-                    }
+                    players: orderedPlayers + remainingPlayers
                 )
 
                 if status == "playing" {
@@ -328,12 +435,18 @@ final class FirebaseLobbyService {
                         self.errorMessage = LobbyError.invalidPlayerData.localizedDescription
                         return
                     }
+                    let income = data["income"] as? Int ?? 0
+                    let penalty = data["penalty"] as? Int ?? 0
+                    let isScoreSubmitted = data["isScoreSubmitted"] as? Bool ?? false
                     statuses[document.documentID] = PlayerSyncPayload(
                         peerId: document.documentID,
                         name: name,
                         suitcaseWeight: suitcaseWeight,
                         carryOnWeight: carryOnWeight,
-                        isBoarded: isBoarded
+                        isBoarded: isBoarded,
+                        income: income,
+                        penalty: penalty,
+                        isScoreSubmitted: isScoreSubmitted
                     )
                 }
                 self.playerStatuses = statuses
@@ -386,7 +499,7 @@ final class FirebaseLobbyService {
 
     private static func validatedName(_ name: String) -> String {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        return String((trimmedName.isEmpty ? "Player" : trimmedName).prefix(30))
+        return String((trimmedName.isEmpty ? "Player" : trimmedName).prefix(10))
     }
 
     private static func makeCode() -> String {
@@ -408,6 +521,7 @@ private enum LobbyError: LocalizedError {
     case invalidLobbyData
     case invalidGameData
     case invalidPlayerData
+    case invalidPlayerOrder
 
     var errorDescription: String? {
         switch self {
@@ -422,6 +536,7 @@ private enum LobbyError: LocalizedError {
         case .invalidLobbyData: "The lobby document is missing required data."
         case .invalidGameData: "The lobby game state is missing or invalid."
         case .invalidPlayerData: "A player status document is missing required data."
+        case .invalidPlayerOrder: "The player order does not match the lobby players."
         }
     }
 }
