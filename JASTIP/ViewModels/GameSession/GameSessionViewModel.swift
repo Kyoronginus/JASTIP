@@ -151,6 +151,7 @@ class GameSessionViewModel {
     var activeHourEvent: RandomEventModel? = nil
     var triggeredUniqueEvents: Set<RandomEventType> = []
     var lastRoundEventType: RandomEventType?
+    var consecutiveEventMisses: Int = 0
     
     // MARK: - Firebase Lobby
     var lobbyService = FirebaseLobbyService()
@@ -249,6 +250,7 @@ class GameSessionViewModel {
         hasSeenStoryboard = false
         triggeredUniqueEvents.removeAll()
         lastRoundEventType = nil
+        consecutiveEventMisses = 0
         suitWeight = 0
         carryWeight = 0
         droppedBlockKg = 0

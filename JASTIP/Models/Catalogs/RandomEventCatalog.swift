@@ -38,38 +38,38 @@ enum RandomEventCatalog {
     static func createEvent(for type: RandomEventType) -> RandomEventModel {
         switch type {
         case .customsIssue:
-            return RandomEventModel(type: .customsIssue, imageName: "CustomsIssue")
+            return RandomEventModel(type: .customsIssue, imageName: "CustomsIssue") // action 2 jadi 1
             
         case .energyBoost:
-            return RandomEventModel(type: .energyBoost, imageName: "EnergyBoost")
+            return RandomEventModel(type: .energyBoost, imageName: "EnergyBoost") // action + 1
             
         case .mindYourManners:
-            return RandomEventModel(type: .mindYourManners, imageName: "Etiquette")
+            return RandomEventModel(type: .mindYourManners, imageName: "Etiquette") // no pointing
             
         case .evacuation:
-            return RandomEventModel(type: .evacuation, imageName: "Evacuation")
+            return RandomEventModel(type: .evacuation, imageName: "Evacuation") // must move meeple
             
         case .flightDelay:
-            return RandomEventModel(type: .flightDelay, imageName: "FlightDelayed")
+            return RandomEventModel(type: .flightDelay, imageName: "FlightDelayed") // delay 1 day
              
         case .zeroWeight:
-            return RandomEventModel(type: .zeroWeight, imageName: "FreeItems")
+            return RandomEventModel(type: .zeroWeight, imageName: "FreeItems") // zero weigt during scan
              
         case .relativeCanceled:
-            return RandomEventModel(type: .relativeCanceled, imageName: "OrderCancelled")
+            return RandomEventModel(type: .relativeCanceled, imageName: "OrderCancelled") // cancel 1 order
              
         case .reshuffleStore:
-            let selected = restockStoreVariants.randomElement() ?? ("Wellness", "RestockStore-Wellness")
+            let selected = restockStoreVariants.randomElement() ?? ("Wellness", "RestockStore-Wellness") // reshuffle store random, default Wellness
             return RandomEventModel(type: .reshuffleStore, imageName: selected.assetName)
             
         case .reverseMadness:
-            return RandomEventModel(type: .reverseMadness, imageName: "ReverseMadness")
+            return RandomEventModel(type: .reverseMadness, imageName: "ReverseMadness") // reverse dominant hand
             
         case .silentAirport:
-            return RandomEventModel(type: .silentAirport, imageName: "SilentAirport")
+            return RandomEventModel(type: .silentAirport, imageName: "SilentAirport") // silent no speaking
              
         case .storesClosed:
-            let selected = storesClosedVariants.randomElement() ?? ("Boutique & Antique", "StoresClosed-Boutique")
+            let selected = storesClosedVariants.randomElement() ?? ("Boutique & Antique", "StoresClosed-Boutique") // stores closed random, default Boutique & Antique
             return RandomEventModel(type: .storesClosed, imageName: selected.assetName)
         }
     }
@@ -99,7 +99,7 @@ enum RandomEventCatalog {
             case .zeroWeight:
                 return 8
             case .flightDelay:
-                return 8
+                return 24
             case .relativeCanceled:
                 return 8
             }

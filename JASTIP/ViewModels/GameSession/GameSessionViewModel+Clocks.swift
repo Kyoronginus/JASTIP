@@ -53,7 +53,11 @@ extension GameSessionViewModel {
     // MARK: - Random Event Generation
     func rollForRandomEvent() -> RandomEventModel? {
         let roll = Int.random(in: 1...100)
-        guard roll <= 40 else { return nil }
+        let eventChance = min(80, 45 + consecutiveEventMisses * 7)
+        guard roll <= eventChance else {
+            consecutiveEventMisses += 1
+            return nil
+        }
 
         let nonConsecutiveEvents: Set<RandomEventType> = [
             .zeroWeight,
@@ -71,6 +75,10 @@ extension GameSessionViewModel {
                     return false
                 }
             }
+
+            if type == .flightDelay, currentHour < boardingHour - 1 {
+                return false
+            }
             
             if type == .relativeCanceled, sharedJastipOrders.isEmpty {
                 return false
@@ -84,9 +92,11 @@ extension GameSessionViewModel {
         }
 
         guard let event = RandomEventCatalog.getRandomEvent(from: availableTypes) else {
+            consecutiveEventMisses += 1
             return nil
         }
 
+        consecutiveEventMisses = 0
         if event.type == .flightDelay || event.type == .relativeCanceled {
             triggeredUniqueEvents.insert(event.type)
         }

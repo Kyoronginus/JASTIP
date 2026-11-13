@@ -35,6 +35,7 @@ struct CloudGameState: Codable, Equatable {
     var activeHourEvent: RandomEventModel?
     var triggeredUniqueEvents: Set<RandomEventType>
     var lastRoundEventType: RandomEventType?
+    var consecutiveEventMisses: Int?
     // Sistem giliran dan days
     var turnOrder: [TurnPlayer]
     var currentTurnIndex: Int
