@@ -91,7 +91,7 @@ struct PieceCatalog {
         // xxxx
         // xx
         PieceModel(id: "JASTIP3-9", shape:.unique, color: .green, gridCount: 5, isAnomaly: true),
-        
+       //
         // xxxx
         //  x x
         PieceModel(id: "JASTIP1-9", shape:.unique, color: .red, gridCount: 3, isAnomaly: true),
@@ -114,7 +114,7 @@ struct PieceCatalog {
         case .triominoI:
             return [GridCoordinate(x: 0, y: 0), GridCoordinate(x: 1, y: 0), GridCoordinate(x: 2, y: 0)]
         case .tetrominoL:
-            return [GridCoordinate(x: 0, y: 0), GridCoordinate(x: 0, y: 1), GridCoordinate(x: 1, y: 1), GridCoordinate(x: 2, y: 1)]
+            return [GridCoordinate(x: 0, y: 0), GridCoordinate(x: 1, y: 0), GridCoordinate(x: 2, y: 0), GridCoordinate(x: 0, y: 1)]
         case .tetrominoT:
             return [GridCoordinate(x: 1, y: 0), GridCoordinate(x: 0, y: 1), GridCoordinate(x: 1, y: 1), GridCoordinate(x: 2, y: 1)]
         case .tetrominoI:
