@@ -91,7 +91,7 @@ struct PieceCatalog {
         // xxxx
         // xx
         PieceModel(id: "JASTIP3-9", shape:.unique, color: .green, gridCount: 5, isAnomaly: true),
-        
+       //
         // xxxx
         //  x x
         PieceModel(id: "JASTIP1-9", shape:.unique, color: .red, gridCount: 3, isAnomaly: true),
