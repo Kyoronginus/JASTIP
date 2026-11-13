@@ -58,6 +58,26 @@ service cloud.firestore {
         || (
           resource.data.hostUID == request.auth.uid
           && resource.data.status == 'waiting'
+          && request.resource.data.status == 'waiting'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['players', 'playerOrder', 'updatedAt'])
+          && request.resource.data.players.size() == resource.data.players.size() - 1
+          && resource.data.players.keys().hasAll(request.resource.data.players.keys())
+          && request.resource.data.players.keys().hasAny([resource.data.hostUID])
+          && request.resource.data.playerOrder is list
+          && request.resource.data.playerOrder.size() == request.resource.data.players.size()
+          && request.resource.data.playerOrder.hasAll(request.resource.data.players.keys())
+        )
+        || (
+          resource.data.hostUID == request.auth.uid
+          && resource.data.status == 'waiting'
+          && request.resource.data.status == 'waiting'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['hostUID', 'updatedAt'])
+          && request.resource.data.hostUID in resource.data.players.keys()
+          && request.resource.data.hostUID != resource.data.hostUID
+        )
+        || (
+          resource.data.hostUID == request.auth.uid
+          && resource.data.status == 'waiting'
           && request.resource.data.status == 'playing'
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'game', 'updatedAt'])
           && request.resource.data.game.keys().hasOnly([

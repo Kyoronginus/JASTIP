@@ -182,6 +182,37 @@ final class FirebaseLobbyService {
         }
     }
 
+    func kickPlayer(_ playerID: String) async {
+        guard let lobby, lobby.isHost, lobby.status == "waiting",
+              playerID != lobby.hostUID else { return }
+
+        let updatedOrder = lobby.players.filter { $0.id != playerID }.map(\.id)
+        do {
+            try await database.collection("lobbies").document(lobby.code).updateData([
+                "players.\(playerID)": FieldValue.delete(),
+                "playerOrder": updatedOrder,
+                "updatedAt": FieldValue.serverTimestamp()
+            ])
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func transferHost(to playerID: String) async {
+        guard let lobby, lobby.isHost, lobby.status == "waiting",
+              playerID != lobby.hostUID,
+              lobby.players.contains(where: { $0.id == playerID }) else { return }
+
+        do {
+            try await database.collection("lobbies").document(lobby.code).updateData([
+                "hostUID": playerID,
+                "updatedAt": FieldValue.serverTimestamp()
+            ])
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
     func publishGameState(_ state: CloudGameState) async {
         guard let lobby, lobby.status == "playing" else { return }
         do {
@@ -340,6 +371,8 @@ final class FirebaseLobbyService {
         }
     }
 
+
+
     private func listen(to reference: DocumentReference) {
         stopListening()
         lastObservedGameState = nil
@@ -368,6 +401,13 @@ final class FirebaseLobbyService {
                 }
                 let isInitialSnapshot = !self.hasReceivedInitialLobbySnapshot
                 self.hasReceivedInitialLobbySnapshot = true
+                if !isInitialSnapshot, status == "waiting",
+                   let uid = self.currentPlayerID, playersData[uid] == nil {
+                    self.stopListening()
+                    self.lobby = nil
+                    self.errorMessage = "You were removed from the lobby."
+                    return
+                }
                 if let toastData = data["latestToast"] as? [String: Any],
                    let toast = try? Self.decode(ToastOptions.self, from: toastData) {
                     if self.lastObservedToastID != toast.id {
@@ -390,6 +430,14 @@ final class FirebaseLobbyService {
                 let orderedPlayers = playerOrder.compactMap { playersByID.removeValue(forKey: $0) }
                 let remainingPlayers = playersByID.values.sorted {
                     $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+                }
+                
+                if !isInitialSnapshot, status == "waiting",
+                   let uid = self.currentPlayerID, playersData[uid] == nil {
+                    self.stopListening()
+                    self.lobby = nil
+                    self.errorMessage = "You were removed from the lobby."
+                    return
                 }
                 
                 self.lobby = GameLobby(
