@@ -187,6 +187,7 @@ struct MainTabView: View {
         .onChange(of: isObjectiveExpanded) { _, _ in
             drawerFeedback.impactOccurred()
         }
+        .defersSystemGestures(on: .bottom)
         .task(id: turnBanner?.id) {
             guard turnBanner != nil else { return }
             do {

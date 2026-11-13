@@ -40,8 +40,8 @@ struct PieceCatalog {
         PieceModel(id: "JASTIP4-4", shape: .triominoI, color: .blue, gridCount: 3, isAnomaly: false),
         PieceModel(id: "JASTIP5-4", shape: .triominoI, color: .purple, gridCount: 3, isAnomaly: false),
         
-        // x
         // xxx
+        // x
         PieceModel(id: "JASTIP1-5", shape: .tetrominoL, color: .red, gridCount: 4, isAnomaly: false),
         PieceModel(id: "JASTIP2-5", shape: .tetrominoL, color: .orange, gridCount: 4, isAnomaly: false),
         PieceModel(id: "JASTIP3-5", shape: .tetrominoL, color: .green, gridCount: 4, isAnomaly: false),
