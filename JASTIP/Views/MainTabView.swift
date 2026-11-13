@@ -158,6 +158,7 @@ struct MainTabView: View {
         .onChange(of: isObjectiveExpanded) { _, _ in
             drawerFeedback.impactOccurred()
         }
+        .defersSystemGestures(on: .bottom)
     }
 }
 
