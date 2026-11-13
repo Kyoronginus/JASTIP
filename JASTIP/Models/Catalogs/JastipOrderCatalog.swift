@@ -522,7 +522,7 @@ enum JastipOrderCatalog {
                 
             // --- 14. Caroline (2 slot) ---
             case "caroline":
-                let slot1 = items.contains { $0.color != .blue && ($0.shape == .single || $0.shape == .domino) }
+                let slot1 = items.contains { $0.color == .blue && ($0.shape == .single || $0.shape == .domino) }
                 let slot2 = items.contains { $0.color == .blue && $0.isAnomaly }
                 return [slot1, slot2]
                 
@@ -570,8 +570,9 @@ enum JastipOrderCatalog {
             case "david":
                 let greenItems = items.filter { $0.color == .green }
                 let hasSq = greenItems.contains { $0.shape == .square }
+                let hasMin2 = greenItems.count >= 2
                 let hasMin3 = greenItems.count >= 3
-                return [hasSq, greenItems.count >= 2, hasMin3]
+                return [hasSq, hasMin2, hasMin3]
                 
             // --- 22. Jimmy (3 slot: Red Total >= 3, Red Line, Red Sq/T) ---
             case "jimmy":
