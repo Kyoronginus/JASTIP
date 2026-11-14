@@ -116,7 +116,7 @@ struct PieceCatalog {
         case .tetrominoL:
             return [GridCoordinate(x: 0, y: 0), GridCoordinate(x: 1, y: 0), GridCoordinate(x: 2, y: 0), GridCoordinate(x: 0, y: 1)]
         case .tetrominoT:
-            return [GridCoordinate(x: 1, y: 0), GridCoordinate(x: 0, y: 1), GridCoordinate(x: 1, y: 1), GridCoordinate(x: 2, y: 1)]
+            return [GridCoordinate(x: 0, y: 0), GridCoordinate(x: 1, y: 0), GridCoordinate(x: 2, y: 0), GridCoordinate(x: 0, y: 1)]
         case .tetrominoI:
             return [GridCoordinate(x: 0, y: 0), GridCoordinate(x: 1, y: 0), GridCoordinate(x: 2, y: 0), GridCoordinate(x: 3, y: 0)]
         case .square:
