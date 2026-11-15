@@ -69,7 +69,7 @@ struct LuggageGridView: View {
             )
         } else {
             return CGSize(
-                width: luggageImageSize.width * 0.001,
+                width: luggageImageSize.width * -0.017,
                 height: luggageImageSize.height * 0.03
             )
         }

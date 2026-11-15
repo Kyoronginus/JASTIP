@@ -22,6 +22,8 @@ struct LobbyView: View {
     var onStartGame: () -> Void = {}
     var onLeaveLobby: () -> Void = {}
     var onReorderPlayers: ([String]) -> Void = { _ in }
+    var onKickPlayer: (String) -> Void = { _ in }
+    var onTransferHost: (String) -> Void = { _ in }
     
     @State private var showLeaveConfirmation = false
     @State private var draggingPlayerID: String?
@@ -135,9 +137,9 @@ struct LobbyView: View {
             name: player.name,
             index: index,
             isHost: player.id == lobby.hostUID,
-            showHostActions: lobby.isHost,
-            onKick: {},
-            onAddHost: {}
+            showHostActions: lobby.isHost && player.id != lobby.hostUID,
+            onKick: { onKickPlayer(player.id) },
+            onAddHost: { onTransferHost(player.id) }
         )
 
         if lobby.isHost && lobby.status == "waiting" && !isLoading {

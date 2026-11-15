@@ -42,6 +42,12 @@ struct StartView: View {
                     },
                     onReorderPlayers: { playerIDs in
                         Task { await viewModel.lobbyService.reorderPlayers(playerIDs) }
+                    },
+                    onKickPlayer: { playerID in
+                        Task { await viewModel.lobbyService.kickPlayer(playerID) }
+                    },
+                    onTransferHost: { playerID in
+                        Task { await viewModel.lobbyService.transferHost(to: playerID) }
                     }
                 )
             } else {

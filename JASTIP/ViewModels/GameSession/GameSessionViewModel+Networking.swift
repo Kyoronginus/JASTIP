@@ -13,6 +13,7 @@ extension GameSessionViewModel {
             activeHourEvent: activeHourEvent,
             triggeredUniqueEvents: triggeredUniqueEvents,
             lastRoundEventType: lastRoundEventType,
+            consecutiveEventMisses: consecutiveEventMisses,
             turnOrder: turnOrder,
             currentTurnIndex: currentTurnIndex,
             daysToGo: daysToGo
@@ -34,6 +35,7 @@ extension GameSessionViewModel {
         activeHourEvent = state.activeHourEvent
         triggeredUniqueEvents = state.triggeredUniqueEvents
         lastRoundEventType = state.lastRoundEventType
+        consecutiveEventMisses = state.consecutiveEventMisses ?? 0
         
         // Update Turn & Kalender dari Cloud
         self.turnOrder = state.turnOrder
@@ -64,6 +66,7 @@ extension GameSessionViewModel {
         }
         self.currentTurnIndex = 0
         self.daysToGo = max(1, boardingHour - 8)
+        self.consecutiveEventMisses = 0
         
         await lobbyService.startGame(state: cloudGameState)
     }
