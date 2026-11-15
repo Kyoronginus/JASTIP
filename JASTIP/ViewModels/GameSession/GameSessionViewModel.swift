@@ -15,6 +15,7 @@ struct StagedItem: Identifiable, Equatable {
     var rotation: LuggageRotation = .deg0
     let lockedLuggage: LuggageType?
     let isAlreadyCountedInWeight: Bool
+    var weightLuggage: LuggageType? = nil
 }
 
 enum RoundAnimationPhase: Equatable {
@@ -429,8 +430,9 @@ class GameSessionViewModel {
             piece: placedPiece.piece,
             weight: weight(for: placedPiece.piece.id),
             rotation: placedPiece.rotation,
-            lockedLuggage: placedPiece.assignedLuggage,
-            isAlreadyCountedInWeight: true
+            lockedLuggage: nil,
+            isAlreadyCountedInWeight: true,
+            weightLuggage: placedPiece.assignedLuggage
         )
         if !stagedItems.contains(where: { $0.id == item.id }) {
             stagedItems.append(item)
@@ -486,6 +488,17 @@ class GameSessionViewModel {
         if !item.isAlreadyCountedInWeight {
             recordItemPlacement(piece: item.piece, weight: item.weight, isSuitcase: luggage == .suitcase)
             placedPieceWeightContributions[placed.id] = isZeroWeightHour ? 0 : item.weight
+        } else if let sourceLuggage = item.weightLuggage, sourceLuggage != luggage {
+            let contribution = placedPieceWeightContributions[item.id] ?? weight(for: item.piece.id)
+            if sourceLuggage == .suitcase {
+                suitWeight = max(0, suitWeight - contribution)
+                carryWeight += contribution
+            } else {
+                carryWeight = max(0, carryWeight - contribution)
+                suitWeight += contribution
+            }
+            placedPieceWeightContributions[item.id] = contribution
+            broadcastMyStatus()
         }
         
         stagedItems.remove(at: index)
