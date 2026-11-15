@@ -438,19 +438,6 @@ enum JastipOrderCatalog {
         return Array(available.shuffled().prefix(count))
     }
     
-        /// Consumes one matching item from the pool per slot.
-        /// Note: Always place specific predicates before general/"Any" predicates.
-        private static func matchSlots(
-            items: [PieceModel],
-            predicates: [(PieceModel) -> Bool]
-        ) -> [Bool] {
-            var pool = items
-            return predicates.map { predicate in
-                guard let index = pool.firstIndex(where: predicate) else { return false }
-                pool.remove(at: index)
-                return true
-            }
-        }
 
         /// Mengembalikan array boolean [Bool] penanda centang untuk masing-masing slot item di order
         /// 
