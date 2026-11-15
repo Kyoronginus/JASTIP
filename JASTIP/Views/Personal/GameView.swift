@@ -124,7 +124,7 @@ struct GameView: View {
 
                     ZStack {
                         scanButton
-                            .frame(width: 158)
+                            .frame(width: 200)
 
                         HStack {
                             Spacer()
@@ -331,7 +331,7 @@ struct GameView: View {
             PrimaryButtonStyle(
                 backgroundColor: isEnabled ? Color("ScanItem") : Color.gray,
                 borderColor: Color("ScanItem"),                foregroundColor: Color("SuitcaseFrame"),
-                font: .shantellSans(13, .bold),
+                font: .shantellSans(16, .bold),
                 cornerRadius: 12,
                 borderWidth: 1.5,
                 yShadowOffset: canScanItem ? 4 : 2,

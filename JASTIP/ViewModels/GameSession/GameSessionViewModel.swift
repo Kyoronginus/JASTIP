@@ -8,6 +8,13 @@
 import SwiftUI
 import Observation
 
+// Model pencatat riwayat per sesi draft yang berhasil
+struct DraftRoundHistory: Identifiable {
+    let id = UUID().uuidString
+    let acceptedOrders: [JastipOrderModel]
+    let confirmationMessage: String
+}
+
 struct StagedItem: Identifiable, Equatable {
     let id: UUID
     let piece: PieceModel
@@ -35,6 +42,7 @@ class GameSessionViewModel {
     var hasSeenStoryboard: Bool = false
     var sharedJastipOrders: [JastipOrderModel] = JastipOrderCatalog.getRandomSharedOrders(count: 3)
     var personalJastipOrders: [JastipOrderModel] = []   // hasil drafting, lokal per device
+    var personalDraftHistory: [DraftRoundHistory] = []
     
     // MARK: - Turn & Round System
     var turnOrder: [TurnPlayer] = []
@@ -267,6 +275,7 @@ class GameSessionViewModel {
         self.airlineCard = AirlineCardCatalog.getRandomCard()
         self.sharedJastipOrders = JastipOrderCatalog.getRandomSharedOrders(count: 3)
         self.personalJastipOrders.removeAll()
+        self.personalDraftHistory.removeAll()
         self.isDraftingObjective = false
         self.turnOrder.removeAll()
         self.currentTurnIndex = 0

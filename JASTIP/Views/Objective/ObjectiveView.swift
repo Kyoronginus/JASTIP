@@ -8,13 +8,6 @@
 import SwiftUI
 import AudioToolbox
 
-// Model pencatat riwayat per sesi draft yang berhasil
-struct DraftRoundHistory: Identifiable {
-    let id = UUID().uuidString
-    let acceptedOrders: [JastipOrderModel]
-    let confirmationMessage: String
-}
-
 struct ObjectiveView: View {
     private enum MessageSound {
         static let received: SystemSoundID = 1003
@@ -28,9 +21,6 @@ struct ObjectiveView: View {
     private var sharedOrders: [JastipOrderModel] {
         viewModel.sharedJastipOrders
     }
-    
-    // Riwayat draft yang sudah pernah diselesaikan (bisa berkali-kali)
-    @State private var draftHistory: [DraftRoundHistory] = []
     
     // State Sesi Drafting yang Sedang Berjalan
     private var isDrafting: Bool {
@@ -90,7 +80,7 @@ struct ObjectiveView: View {
                         }
                         
                         // B. HISTORI SESI-SESI DRAFT YANG SUDAH SELESAI SEBELUMNYA
-                        ForEach(draftHistory) { round in
+                        ForEach(viewModel.personalDraftHistory) { round in
                             // Chat nanya
                             playerChatBubble(text: "Does anyone want to jastip other things too?")
                             
@@ -154,7 +144,7 @@ struct ObjectiveView: View {
                     scrollToBottom(proxy: proxy)
                 }
                 // 4. Scroll setiap kali SESI DRAFT DI-ACCEPT (pesan konfirmasi muncul)
-                .onChange(of: draftHistory.count) { _, _ in
+                .onChange(of: viewModel.personalDraftHistory.count) { _, _ in
                     scrollToBottom(proxy: proxy)
                 }            }
             
@@ -327,7 +317,7 @@ struct ObjectiveView: View {
         
         // Kumpulkan semua ID yang sudah pernah ada di shared atau di accepted history
         var existingIds = Set(sharedOrders.map { $0.id })
-        for round in draftHistory {
+        for round in viewModel.personalDraftHistory {
             for order in round.acceptedOrders {
                 existingIds.insert(order.id)
             }
@@ -376,7 +366,7 @@ struct ObjectiveView: View {
         
         withAnimation(.easeInOut(duration: 0.3)) {
             // 1. Simpan ke histori chat
-            draftHistory.append(DraftRoundHistory(
+            viewModel.personalDraftHistory.append(DraftRoundHistory(
                 acceptedOrders: personalOrders,
                 confirmationMessage: templateMessage
             ))
