@@ -267,6 +267,38 @@ struct ScoringView: View {
                                     .foregroundStyle(.secondary)
                             }
                         }
+
+                        Divider()
+
+                        if viewModel.incompletePersonalJastipOrders.isEmpty {
+                            HStack {
+                                HStack(spacing: 6) {
+                                    Text("Incomplete Personal Orders")
+                                        .font(.plusJakarta(15, .semibold))
+                                    autoBadge
+                                }
+                                Spacer()
+                                Text("0 pts")
+                                    .font(.spaceGrotesk(14, .medium))
+                                    .foregroundStyle(.secondary)
+                            }
+                        } else {
+                            ForEach(viewModel.incompletePersonalJastipOrders) { order in
+                                HStack {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .foregroundStyle(Color("FragileRed"))
+                                        Text(order.customerName)
+                                            .font(.plusJakarta(15, .semibold))
+                                        autoBadge
+                                    }
+                                    Spacer()
+                                    Text("-\(order.points) pts")
+                                        .font(.spaceGrotesk(15, .bold))
+                                        .foregroundStyle(Color("FragileRed"))
+                                }
+                            }
+                        }
                     }
                     
                     // MARK: - Finish Action Button
