@@ -722,11 +722,26 @@ class GameSessionViewModel {
         }
     }
     
+    var incompletePersonalJastipOrders: [JastipOrderModel] {
+        personalJastipOrders.filter { order in
+            !order.isFulfilled(by: allLuggagePieces)
+        }
+    }
+
+
     /// Total poin dari order jastip yang selesai
     var totalCompletedJastipPoints: Int {
         completedJastipOrders.reduce(0) { $0 + $1.points }
     }
     
+    var totalIncompletePersonalPenalty: Int { // atau tipe data dari points
+        var total = 0
+        for item in incompletePersonalJastipOrders {
+            total += item.points
+        }
+        return total
+    }
+
     /// Total overweight penalty (-1 pt / kg)
     var totalOverweightPenalty: Int {
         let suitcaseOver = max(0, suitWeight - displayedAirlineCard.maxCapacityKg)
@@ -745,7 +760,7 @@ class GameSessionViewModel {
     
     /// Total penalti (Dropped block + Overweight)
     var calculatedPenalty: Int {
-        droppedBlockKg + totalOverweightPenalty
+        droppedBlockKg + totalOverweightPenalty + totalIncompletePersonalPenalty
     }
     
     /// Daftar klasemen akhir seluruh pemain (diurutkan dari Total tertinggi)
