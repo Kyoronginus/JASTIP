@@ -11,11 +11,25 @@ struct QRScannerView: View {
     @Environment(\.dismiss) private var dismiss
 
     let isSuitcase: Bool
+    let allowsEitherLuggage: Bool
     @State private var viewModel: QRScannerViewModel
     
-    init(session: GameSessionViewModel, isSuitcase: Bool = true, onScanned: ((PieceModel?, String, Int?, Bool) -> Void)? = nil) {
+    init(
+        session: GameSessionViewModel,
+        isSuitcase: Bool = true,
+        allowsEitherLuggage: Bool = false,
+        onScanned: ((PieceModel?, String, Int?, Bool) -> Void)? = nil
+    ) {
         self.isSuitcase = isSuitcase
-        _viewModel = State(initialValue: QRScannerViewModel(session: session, isSuitcase: isSuitcase, onScanned: onScanned))
+        self.allowsEitherLuggage = allowsEitherLuggage
+        _viewModel = State(
+            initialValue: QRScannerViewModel(
+                session: session,
+                isSuitcase: isSuitcase,
+                allowsEitherLuggage: allowsEitherLuggage,
+                onScanned: onScanned
+            )
+        )
     }
     
     var body: some View {
@@ -199,6 +213,7 @@ struct QRScannerView: View {
         }
         .onAppear {
             viewModel.targetIsSuitcase = isSuitcase
+            viewModel.allowsEitherLuggage = allowsEitherLuggage
             viewModel.startScanning()
         }
         .onDisappear {

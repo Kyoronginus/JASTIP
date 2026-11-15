@@ -104,6 +104,7 @@ class GameSessionViewModel {
     var suitWeight: Int = 0
     var carryWeight: Int = 0
     var pieceWeights: [String: Int] = [:]
+    private var placedPieceWeightContributions: [UUID: Int] = [:]
     var revealedPieces: [RevealedPiece] = []
     
     // MARK: - Luggage Grids (3x5 Suitcase & 2x2 Carry-On)
@@ -253,6 +254,7 @@ class GameSessionViewModel {
         consecutiveEventMisses = 0
         suitWeight = 0
         carryWeight = 0
+        placedPieceWeightContributions.removeAll()
         droppedBlockKg = 0
         suitcaseGrid = .suitcase
         carryOnGrid = .carryOn
@@ -396,7 +398,7 @@ class GameSessionViewModel {
     }
     
     /// Menambahkan barang baru hasil scan ke area staging
-    func stageScannedPiece(_ piece: PieceModel, weight: Int, targetLuggage: LuggageType) {
+    func stageScannedPiece(_ piece: PieceModel, weight: Int, targetLuggage: LuggageType? = nil) {
         captureGridSnapshotIfNeeded()
         stagingWeight = weight
         // Hapus barang scan lama yang belum ditaruh jika ada, pertahankan barang yang sedang ditata ulang
@@ -483,6 +485,7 @@ class GameSessionViewModel {
         // Hanya tambahkan bobot jika barang ini baru di-scan (belum dihitung sebelumnya)
         if !item.isAlreadyCountedInWeight {
             recordItemPlacement(piece: item.piece, weight: item.weight, isSuitcase: luggage == .suitcase)
+            placedPieceWeightContributions[placed.id] = isZeroWeightHour ? 0 : item.weight
         }
         
         stagedItems.remove(at: index)
@@ -576,6 +579,76 @@ class GameSessionViewModel {
             snapshotCarryOnGrid = carryOnGrid
         }
         
+        return true
+    }
+
+    /// Memindahkan kepingan yang sudah terpasang ke koper lain dan memindahkan bobotnya.
+    @discardableResult
+    func transferPlacedPiece(
+        _ placedPiece: PlacedPiece,
+        to luggage: LuggageType,
+        at newOrigin: GridCoordinate,
+        rotation: LuggageRotation? = nil
+    ) -> Bool {
+        guard luggage != placedPiece.assignedLuggage else {
+            return movePlacedPiece(placedPiece, to: newOrigin, rotation: rotation)
+        }
+
+        let targetRotation = rotation ?? placedPiece.rotation
+        let targetGrid = luggage == .suitcase ? suitcaseGrid : carryOnGrid
+        guard LuggagePlacementEngine.canPlace(
+            piece: placedPiece.piece,
+            at: newOrigin,
+            rotation: targetRotation,
+            in: targetGrid
+        ) else {
+            return false
+        }
+
+        let contribution = placedPieceWeightContributions[placedPiece.id]
+            ?? weight(for: placedPiece.piece.id)
+
+        if placedPiece.assignedLuggage == .suitcase {
+            guard let index = suitcaseGrid.placedPieces.firstIndex(where: { $0.id == placedPiece.id }) else {
+                return false
+            }
+            suitcaseGrid.placedPieces.remove(at: index)
+            suitWeight = max(0, suitWeight - contribution)
+            carryOnGrid.placedPieces.append(
+                PlacedPiece(
+                    id: placedPiece.id,
+                    piece: placedPiece.piece,
+                    origin: newOrigin,
+                    rotation: targetRotation,
+                    assignedLuggage: luggage
+                )
+            )
+            carryWeight += contribution
+        } else {
+            guard let index = carryOnGrid.placedPieces.firstIndex(where: { $0.id == placedPiece.id }) else {
+                return false
+            }
+            carryOnGrid.placedPieces.remove(at: index)
+            carryWeight = max(0, carryWeight - contribution)
+            suitcaseGrid.placedPieces.append(
+                PlacedPiece(
+                    id: placedPiece.id,
+                    piece: placedPiece.piece,
+                    origin: newOrigin,
+                    rotation: targetRotation,
+                    assignedLuggage: luggage
+                )
+            )
+            suitWeight += contribution
+        }
+
+        if stagedItems.isEmpty {
+            snapshotSuitcaseGrid = suitcaseGrid
+            snapshotCarryOnGrid = carryOnGrid
+            snapshotSuitWeight = suitWeight
+            snapshotCarryWeight = carryWeight
+        }
+        broadcastMyStatus()
         return true
     }
     

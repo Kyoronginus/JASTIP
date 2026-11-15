@@ -341,12 +341,13 @@ struct PersonalChildView: View {
 }
 
 // MARK: - Subview: Area Staging Kepingan ("Drag items here to reorganize")
-private struct StagingSectionView: View {
+struct StagingSectionView: View {
     let items: [StagedItem]
     let draggingItemId: UUID?
     let onRotateItem: (StagedItem) -> Void
     let onDragItemChanged: (StagedItem, DragGesture.Value) -> Void
     let onDragItemEnded: (StagedItem, DragGesture.Value) -> Void
+    var height: CGFloat = 120
     
     var body: some View {
         ZStack {
@@ -404,7 +405,7 @@ private struct StagingSectionView: View {
                 }
             }
         }
-        .frame(height: 120)
+        .frame(height: height)
     }
 }
 

@@ -21,6 +21,7 @@ class QRScannerViewModel {
     
     var session: GameSessionViewModel
     var targetIsSuitcase: Bool
+    var allowsEitherLuggage: Bool
     var onScanned: ((PieceModel?, String, Int?, Bool) -> Void)? = nil
     var audioPlayer: AVAudioPlayer?
     private var hapticEngine: CHHapticEngine?
@@ -36,10 +37,12 @@ class QRScannerViewModel {
     init(
         session: GameSessionViewModel,
         isSuitcase: Bool = true,
+        allowsEitherLuggage: Bool = false,
         onScanned: ((PieceModel?, String, Int?, Bool) -> Void)? = nil
     ) {
         self.session = session
         self.targetIsSuitcase = isSuitcase
+        self.allowsEitherLuggage = allowsEitherLuggage
         self.onScanned = onScanned
         setupAudioPlayer()
         setupHaptics()
@@ -60,15 +63,23 @@ class QRScannerViewModel {
         guard scannedCode == nil else { return }
         guard let piece = PieceCatalog.findPiece(by: code) else { return }
         
-        // Cek apakah kepingan muat di koper target (Suitcase atau Carry-On)
+        // Cek apakah kepingan muat di koper target, atau salah satu koper.
         let targetGrid = targetIsSuitcase ? session.suitcaseGrid : session.carryOnGrid
-        let canFit = LuggagePlacementEngine.canFit(piece: piece, in: targetGrid)
+        let canFit = allowsEitherLuggage
+            ? LuggagePlacementEngine.canScan(
+                piece: piece,
+                suitcase: session.suitcaseGrid,
+                carryOn: session.carryOnGrid
+            )
+            : LuggagePlacementEngine.canFit(piece: piece, in: targetGrid)
         
         guard canFit else {
             UINotificationFeedbackGenerator().notificationOccurred(.error)
             self.scannedCode = code
             self.detectedPiece = piece
-            self.rejectionMessage = "Barang ini tidak muat pada susunan \(targetIsSuitcase ? "Suitcase" : "Carry-On") saat ini."
+            self.rejectionMessage = allowsEitherLuggage
+                ? "Barang ini tidak muat pada susunan Suitcase maupun Carry-On saat ini."
+                : "Barang ini tidak muat pada susunan \(targetIsSuitcase ? "Suitcase" : "Carry-On") saat ini."
             return
         }
         
