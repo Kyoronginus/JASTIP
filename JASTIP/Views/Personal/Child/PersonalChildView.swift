@@ -360,7 +360,7 @@ struct StagingSectionView: View {
                 )
             
             if items.isEmpty {
-                Text("Drag items here to reorganize")
+                Text("Drag items here to rearrange")
                     .font(.shantellSans(14, .regular))
                     .foregroundStyle(.white)
                     .multilineTextAlignment(.center)

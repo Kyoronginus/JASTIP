@@ -76,8 +76,8 @@ struct GameView: View {
     var body: some View {
         GeometryReader { geometry in
             let fittedCellSize = min(
-                46,
-                max(26, min((geometry.size.width - 80) / 7.15, (geometry.size.height - 450) / 6.25))
+                54, // ini keknya min-nya yg ke-return
+                max(26, min((geometry.size.width - 80) / 5, (geometry.size.height - 450) / 4))
             )
 
             ZStack {
@@ -89,7 +89,8 @@ struct GameView: View {
                     Spacer(minLength: 8)
 
                     luggagePairSection(cellSize: fittedCellSize)
-                        .padding(.horizontal, 20)
+//                        .padding(.horizontal, 20)
+                        .padding(.bottom, 5)
 
                     StagingSectionView(
                         items: viewModel.stagedItems,
@@ -117,7 +118,9 @@ struct GameView: View {
                         height: geometry.size.height < 700 ? 88 : 108
                     )
                     .padding(.horizontal, 24)
-                    .padding(.top, 10)
+//                    .padding(.vertical, 36)
+                    .padding(.top, 20)
+                    .padding(.bottom, 36)
 
                     ZStack {
                         scanButton
@@ -255,7 +258,7 @@ struct GameView: View {
     private func luggagePairSection(cellSize: CGFloat) -> some View {
         HStack(alignment: .bottom, spacing: 8) {
 
-            VStack(spacing: 4) {
+            VStack(spacing: 20) {
                 interactiveGrid(for: .suitcase, cellSize: cellSize)
                 LuggageWeightLabel(
                     currentWeight: viewModel.suitWeight,
@@ -263,7 +266,7 @@ struct GameView: View {
                 )
             }
 
-            VStack(spacing: 4) {
+            VStack(spacing: 20) {
                 interactiveGrid(for: .carryOn, cellSize: cellSize)
                 LuggageWeightLabel(
                     currentWeight: viewModel.carryWeight,
