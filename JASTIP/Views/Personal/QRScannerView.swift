@@ -53,9 +53,6 @@ struct QRScannerView: View {
                             .font(.system(size: 16, weight: .bold))
                     }
                     .buttonStyle(PrimaryButtonStyle(
-                        backgroundColor: .black,
-                        borderColor: Color("TaxiYellow"),
-                        foregroundColor: Color("TaxiYellow"),
                         cornerRadius: 14,
                         paddingVertical: 14,
                         paddingHorizontal: 15
@@ -87,7 +84,7 @@ struct QRScannerView: View {
                             }) {
                                 Image(systemName: "camera.rotate.fill")
                                     .font(.title2)
-                                    .foregroundColor(.white)
+                                    .foregroundColor(Color("TaxiYellow"))
                                     .padding(8)
                                     .background(Color.black.opacity(0.6))
                                     .clipShape(Circle())

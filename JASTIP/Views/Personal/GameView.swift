@@ -22,6 +22,7 @@ extension LuggageType: Identifiable {
 struct GameView: View {
     @Bindable private var viewModel: GameSessionViewModel
     var onOpenCamera: () -> Void
+    var onOpenObjective: () -> Void
     
     // Properti UI Turn & Kalender (Siap disambungkan oleh dev yang mengerjakan logic turn/kalender)
     var currentTurnPlayerName: String? = nil
@@ -61,13 +62,15 @@ struct GameView: View {
         currentTurnPlayerName: String? = nil,
         daysToGo: Int? = nil,
         onEndTurn: (() -> Void)? = nil,
-        onOpenCamera: @escaping () -> Void = {}
+        onOpenCamera: @escaping () -> Void = {},
+        onOpenObjective: @escaping () -> Void = {}
     ) {
         self.viewModel = viewModel ?? GameSessionViewModel(airlineCard: airlineCard)
         self.currentTurnPlayerName = currentTurnPlayerName
         self.daysToGo = daysToGo
         self.onEndTurn = onEndTurn
         self.onOpenCamera = onOpenCamera
+        self.onOpenObjective = onOpenObjective
     }
     
     var body: some View {
@@ -116,11 +119,35 @@ struct GameView: View {
                     .padding(.horizontal, 24)
                     .padding(.top, 10)
 
-                    scanButton
-                        .padding(.horizontal, 24)
-                        .padding(.top, 8)
+                    ZStack {
+                        scanButton
+                            .frame(width: 158)
 
-                    Spacer(minLength: geometry.size.height < 700 ? 48 : 90)
+                        HStack {
+                            Spacer()
+
+                            Button(action: onOpenObjective) {
+                                Image(systemName: "bubble.left.fill")
+                                    .frame(width: 22, height: 22)
+                            }
+                            .buttonStyle(
+                                PrimaryButtonStyle(
+                                    backgroundColor: .white,
+//                                    shadowColor: Color("NavyBlack"),
+                                    foregroundColor: .black,
+                                    font: .system(size: 19, weight: .bold),
+                                    cornerRadius: 9,
+                                    paddingVertical: 9,
+                                    paddingHorizontal: 9
+                                )
+                            )
+                            .accessibilityLabel("Open chat orders")
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.top, 8)
+
+                    // Spacer(minLength: geometry.size.height < 700 ? 48 : 90)
                 }
                 
                 if let (draggedPiece, draggedRotation) = activeDraggedPieceAndRotation {
@@ -300,9 +327,7 @@ struct GameView: View {
         .buttonStyle(
             PrimaryButtonStyle(
                 backgroundColor: isEnabled ? Color("ScanItem") : Color.gray,
-                borderColor: Color("ScanItem"),
-                shadowColor: Color("SuitcaseGrid"),
-                foregroundColor: Color("SuitcaseFrame"),
+                borderColor: Color("ScanItem"),                foregroundColor: Color("SuitcaseFrame"),
                 font: .shantellSans(13, .bold),
                 cornerRadius: 12,
                 borderWidth: 1.5,
