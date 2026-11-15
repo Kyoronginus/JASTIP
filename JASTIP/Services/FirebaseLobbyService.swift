@@ -432,14 +432,6 @@ final class FirebaseLobbyService {
                     $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
                 }
                 
-                if !isInitialSnapshot, status == "waiting",
-                   let uid = self.currentPlayerID, playersData[uid] == nil {
-                    self.stopListening()
-                    self.lobby = nil
-                    self.errorMessage = "You were removed from the lobby."
-                    return
-                }
-                
                 self.lobby = GameLobby(
                     code: reference.documentID,
                     hostUID: hostUID,

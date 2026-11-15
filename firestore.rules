@@ -82,7 +82,7 @@ service cloud.firestore {
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'game', 'updatedAt'])
           && request.resource.data.game.keys().hasOnly([
             'card', 'pieceWeights', 'sharedJastipOrders', 'currentHour', 'delayHours', 'isGameOver',
-            'currentEvent', 'activeHourEvent', 'triggeredUniqueEvents', 'lastRoundEventType',
+            'currentEvent', 'activeHourEvent', 'triggeredUniqueEvents', 'lastRoundEventType', 'consecutiveEventMisses',
             'turnOrder', 'currentTurnIndex', 'daysToGo'
           ])
         )
@@ -93,7 +93,7 @@ service cloud.firestore {
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['game', 'latestToast', 'updatedAt'])
           && (!('game' in request.resource.data) || request.resource.data.game.keys().hasOnly([
             'card', 'pieceWeights', 'sharedJastipOrders', 'currentHour', 'delayHours', 'isGameOver',
-            'currentEvent', 'activeHourEvent', 'triggeredUniqueEvents', 'lastRoundEventType',
+            'currentEvent', 'activeHourEvent', 'triggeredUniqueEvents', 'lastRoundEventType', 'consecutiveEventMisses',
             'turnOrder', 'currentTurnIndex', 'daysToGo'
           ]))
         )
