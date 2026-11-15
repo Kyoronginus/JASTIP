@@ -64,7 +64,7 @@ struct LuggageGridView: View {
     private var gridCenterOffset: CGSize {
         if grid.type == .suitcase {
             return CGSize(
-                width: luggageImageSize.width * -0.01,
+                width: luggageImageSize.width * -0.017,
                 height: luggageImageSize.height * -0.01
             )
         } else {
