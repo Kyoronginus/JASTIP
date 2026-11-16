@@ -460,21 +460,21 @@ enum JastipOrderCatalog {
             case "thomas":
                 // return [items.contains { ($0.color == .green || $0.color == .blue) && $0.isAnomaly }]
                 return matchSlots(items: items, predicates: [
-                    { $0.color == .green || $0.color == .blue && $0.isAnomaly }
+                    { ($0.color == .green || $0.color == .blue) && $0.isAnomaly }
                 ])
                 
             // --- 2. Toyib (1 slot) ---
             case "toyib":
                 // return [items.contains { ($0.color == .red || $0.color == .orange) && $0.isAnomaly }]
                 return matchSlots(items: items, predicates: [
-                    { $0.color == .red || $0.color == .orange && $0.isAnomaly }
+                    { ($0.color == .red || $0.color == .orange) && $0.isAnomaly }
                 ])
                 
             // --- 3. Quincy (1 slot) ---
             case "quincy":
                 // return [items.contains { ($0.color == .green || $0.color == .purple) && $0.isAnomaly }]
                 return matchSlots(items: items, predicates: [
-                    { $0.color == .green || $0.color == .purple && $0.isAnomaly }
+                    { ($0.color == .green || $0.color == .purple) && $0.isAnomaly }
                 ])
                 
             // --- 4. Henry (2 slot) ---
@@ -569,8 +569,8 @@ enum JastipOrderCatalog {
             // --- 16. Fernando (2 slot) ---
             case "fernando":
                 return matchSlots(items: items, predicates: [
-                    { ($0.color == .purple || $0.color == .red) && ($0.shape == .tetrominoL || $0.shape == .smallL || $0.shape == .tetrominoT) },
-                    { ($0.color == .purple || $0.color == .red) && ($0.shape == .triominoI || $0.shape == .tetrominoI) }
+                    { ($0.color == .purple || $0.color == .red) && ($0.shape == .triominoI || $0.shape == .tetrominoI) },
+                    { ($0.color == .purple || $0.color == .red) && ($0.shape == .tetrominoL || $0.shape == .smallL || $0.shape == .tetrominoT) }
                 ])
                 
             // --- 17. Alvin (3 slot) ---
@@ -639,8 +639,8 @@ enum JastipOrderCatalog {
             // --- 25. Lloyd (2 slot: 2x Tetromino L Orange/Red) ---
             case "lloyd":
                 return matchSlots(items: items, predicates: [
-                    { ($0.color == .red || $0.color == .orange) && $0.shape == .tetrominoL },
-                    { ($0.color == .red || $0.color == .orange) && $0.shape == .tetrominoL }
+                    { ($0.color == .red || $0.color == .orange) && ($0.shape == .tetrominoL || $0.shape == .smallL) },
+                    { ($0.color == .red || $0.color == .orange) && ($0.shape == .tetrominoL || $0.shape == .smallL) }
                 ])
                 
             // --- 26. Hannah (2 slot: 2x Square Orange/Blue) ---
@@ -688,7 +688,6 @@ enum JastipOrderCatalog {
                 
             // --- 32. Minnie (2 slot: 2x Red/Orange Single) ---
             case "minnie":
-                return matchSlots(items: items, predicates: [
                     { ($0.color == .red || $0.color == .orange) && $0.shape == .single },
                     { ($0.color == .red || $0.color == .orange) && $0.shape == .single }
                 ])
