@@ -688,6 +688,7 @@ enum JastipOrderCatalog {
                 
             // --- 32. Minnie (2 slot: 2x Red/Orange Single) ---
             case "minnie":
+                return matchSlots(items: items, predicates: [
                     { ($0.color == .red || $0.color == .orange) && $0.shape == .single },
                     { ($0.color == .red || $0.color == .orange) && $0.shape == .single }
                 ])
