@@ -7,6 +7,14 @@
 
 import Foundation
 
+struct PieceVisualSpec {
+    /// Natural unrotated grid dimensions of the PNG asset (`1-1`...`5-9`)
+    let pngCols: Int
+    let pngRows: Int
+    /// Clockwise angle (degrees) to align the PNG's natural orientation with `baseCoordinates` at `0°`
+    let baseAngleDegrees: Double
+}
+
 struct PieceCatalog {
     static let allPieces: [PieceModel] = [
         // id = JASTIP[color]-[shape]
@@ -102,6 +110,42 @@ struct PieceCatalog {
         }
         
         
+    static func visualSpec(for piece: PieceModel) -> PieceVisualSpec {
+        switch piece.shape {
+        case .single:
+            return PieceVisualSpec(pngCols: 1, pngRows: 1, baseAngleDegrees: 0)
+        case .domino:
+            return PieceVisualSpec(pngCols: 2, pngRows: 1, baseAngleDegrees: 0)
+        case .smallL:
+            return PieceVisualSpec(pngCols: 2, pngRows: 2, baseAngleDegrees: 0)
+        case .triominoI:
+            return PieceVisualSpec(pngCols: 3, pngRows: 1, baseAngleDegrees: 0)
+        case .tetrominoL:
+            return PieceVisualSpec(pngCols: 2, pngRows: 3, baseAngleDegrees: 90)
+        case .tetrominoT:
+            return PieceVisualSpec(pngCols: 3, pngRows: 2, baseAngleDegrees: 0)
+        case .tetrominoI:
+            return PieceVisualSpec(pngCols: 4, pngRows: 1, baseAngleDegrees: 0)
+        case .square:
+            return PieceVisualSpec(pngCols: 2, pngRows: 2, baseAngleDegrees: 0)
+        case .unique:
+            switch piece.id {
+            case "JASTIP1-9":
+                return PieceVisualSpec(pngCols: 2, pngRows: 4, baseAngleDegrees: 90)
+            case "JASTIP2-9":
+                return PieceVisualSpec(pngCols: 3, pngRows: 2, baseAngleDegrees: 0)
+            case "JASTIP3-9":
+                return PieceVisualSpec(pngCols: 3, pngRows: 4, baseAngleDegrees: 90)
+            case "JASTIP4-9":
+                return PieceVisualSpec(pngCols: 4, pngRows: 3, baseAngleDegrees: 0)
+            case "JASTIP5-9":
+                return PieceVisualSpec(pngCols: 3, pngRows: 3, baseAngleDegrees: 180)
+            default:
+                return PieceVisualSpec(pngCols: 1, pngRows: 1, baseAngleDegrees: 0)
+            }
+        }
+    }
+
     // MARK: - Shape Coordinates & Rotation
     static func baseCoordinates(for shape: PieceShape, pieceId: String? = nil) -> [GridCoordinate] {
         switch shape {
