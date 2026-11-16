@@ -43,6 +43,10 @@ class GameSessionViewModel {
     var sharedJastipOrders: [JastipOrderModel] = JastipOrderCatalog.getRandomSharedOrders(count: 3)
     var personalJastipOrders: [JastipOrderModel] = []   // hasil drafting, lokal per device
     var personalDraftHistory: [DraftRoundHistory] = []
+
+    var candidateOrders: [JastipOrderModel] = []
+    var visibleCandidateOrders: [JastipOrderModel] = []
+    var selectedOrderIds: Set<String> = []
     
     // MARK: - Turn & Round System
     var turnOrder: [TurnPlayer] = []
@@ -271,6 +275,9 @@ class GameSessionViewModel {
         stagingWeight = nil
         snapshotSuitcaseGrid = nil
         snapshotCarryOnGrid = nil
+        self.candidateOrders.removeAll()
+        self.visibleCandidateOrders.removeAll()
+        self.selectedOrderIds.removeAll()
         generateRandomizedWeights()
         self.airlineCard = AirlineCardCatalog.getRandomCard()
         self.sharedJastipOrders = JastipOrderCatalog.getRandomSharedOrders(count: 3)

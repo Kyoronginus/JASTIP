@@ -15,21 +15,12 @@ struct ObjectiveView: View {
     }
 
     // Terima viewModel dari MainTabView
-    var viewModel: GameSessionViewModel
+    @Bindable var viewModel: GameSessionViewModel
     
     // 3 Order awal (Shared) membaca data yang sudah tersinkronisasi dari Firebase/ViewModel
     private var sharedOrders: [JastipOrderModel] {
         viewModel.sharedJastipOrders
     }
-    
-    // State Sesi Drafting yang Sedang Berjalan
-    private var isDrafting: Bool {
-        get { viewModel.isDraftingObjective }
-        nonmutating set { viewModel.isDraftingObjective = newValue }
-    }
-    @State private var candidateOrders: [JastipOrderModel] = []
-    @State private var visibleCandidateOrders: [JastipOrderModel] = []
-    @State private var selectedOrderIds: Set<String> = []
     
     @State private var isConfirmingAddOrder: Bool = false
     private let selectionFeedback = UISelectionFeedbackGenerator()
@@ -41,8 +32,8 @@ struct ObjectiveView: View {
     
     // MARK: - Helper Formatting Teks Input Bar
     private var confirmationTemplateText: String {
-        let selectedNames = candidateOrders
-            .filter { selectedOrderIds.contains($0.id) }
+        let selectedNames = viewModel.candidateOrders
+            .filter { viewModel.selectedOrderIds.contains($0.id) }
             .map { $0.customerName }
         
         switch selectedNames.count {
@@ -95,23 +86,23 @@ struct ObjectiveView: View {
                         }
                         
                         // C. SESI DRAFTING YANG SEDANG AKTIF
-                        if isDrafting {
+                        if viewModel.isDraftingObjective {
                             playerChatBubble(text: "Does anyone want to jastip other things too?")
                                 .id("activePlayerRequest")
                             
                             // 3 Kandidat masuk berturut-turut
-                            ForEach(visibleCandidateOrders) { order in
+                            ForEach(viewModel.visibleCandidateOrders) { order in
                                 JastipChatBubble(
                                     order: order,
                                     isSelectable: true,
-                                    isSelected: selectedOrderIds.contains(order.id),
+                                    isSelected: viewModel.selectedOrderIds.contains(order.id),
                                     onToggleSelect: {
                                         selectionFeedback.selectionChanged()
                                         withAnimation(.easeInOut(duration: 0.2)) {
-                                            if selectedOrderIds.contains(order.id) {
-                                                selectedOrderIds.remove(order.id)
+                                            if viewModel.selectedOrderIds.contains(order.id) {
+                                                viewModel.selectedOrderIds.remove(order.id)
                                             } else {
-                                                selectedOrderIds.insert(order.id)
+                                                viewModel.selectedOrderIds.insert(order.id)
                                             }
                                         }
                                     }
@@ -134,13 +125,13 @@ struct ObjectiveView: View {
                     scrollToBottom(proxy: proxy, animated: false)
                 }
                 // 2. Scroll setiap kali draft dimulai (chat player muncul)
-                .onChange(of: isDrafting) { _, isStarting in
+                .onChange(of: viewModel.isDraftingObjective) { _, isStarting in
                     if isStarting {
                         scrollToBottom(proxy: proxy)
                     }
                 }
                 // 3. Scroll setiap kali KARTU BARU MUNCUL satu per satu
-                .onChange(of: visibleCandidateOrders.count) { _, _ in
+                .onChange(of: viewModel.visibleCandidateOrders.count) { _, _ in
                     scrollToBottom(proxy: proxy)
                 }
                 // 4. Scroll setiap kali SESI DRAFT DI-ACCEPT (pesan konfirmasi muncul)
@@ -187,7 +178,7 @@ struct ObjectiveView: View {
     // MARK: - Subview: Bottom Action Bar
     private var bottomActionBar: some View {
         HStack(spacing: 10) {
-            if !isDrafting {
+            if !viewModel.isDraftingObjective {
                 // TAMPILAN NORMAL (SELALU KEMBALI KE SINI SETELAH DRAFT SELESAI)
                 ZStack{
                     Image("tfback")
@@ -260,7 +251,7 @@ struct ObjectiveView: View {
                             .frame(width: 10)
                         Text(confirmationTemplateText)
                             .font(.system(size: 16, weight: .regular))
-                            .foregroundColor(selectedOrderIds.isEmpty ? Color("TextDisabled") : Color("TextActive"))
+                            .foregroundColor(viewModel.selectedOrderIds.isEmpty ? Color("TextDisabled") : Color("TextActive"))
                         Spacer()
                     }
                 }
@@ -271,7 +262,7 @@ struct ObjectiveView: View {
                     confirmSelectedDraftOrders()
                 } label: {
                     ZStack{
-                        if (selectedOrderIds.isEmpty){
+                        if (viewModel.selectedOrderIds.isEmpty){
                             Image("addorderbackdisabled")
                                 .resizable()
                                 .scaledToFit()
@@ -288,7 +279,7 @@ struct ObjectiveView: View {
                             .foregroundColor(.white)
                     }
                 }
-                .disabled(selectedOrderIds.isEmpty)
+                .disabled(viewModel.selectedOrderIds.isEmpty)
             }
         }
         .padding(.horizontal, 16)
@@ -302,9 +293,9 @@ struct ObjectiveView: View {
     private func startDraftingFlow() {
         AudioServicesPlaySystemSound(MessageSound.sent)
         withAnimation {
-            isDrafting = true
-            selectedOrderIds.removeAll()
-            visibleCandidateOrders.removeAll()
+            viewModel.isDraftingObjective = true
+            viewModel.selectedOrderIds.removeAll()
+            viewModel.visibleCandidateOrders.removeAll()
         }
 
         let playerName = viewModel.playerName.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -325,7 +316,7 @@ struct ObjectiveView: View {
         
         // 👇 GANTI BAGIAN INI:
         let rawCandidates = JastipOrderCatalog.getDraftOrders(count: 3, excludingIds: existingIds)
-        candidateOrders = rawCandidates.map {
+        viewModel.candidateOrders = rawCandidates.map {
             var order = $0
             order.isPersonal = true
             return order
@@ -336,13 +327,15 @@ struct ObjectiveView: View {
         let initialPause: Double = 1.0
         
         // 2. Tiap kartu muncul dengan jeda initialPause + 0.5 detik antar kartu
-        for index in 0..<candidateOrders.count {
+        for index in 0..<viewModel.candidateOrders.count {
             let delay = initialPause + (0.5 * Double(index))
             
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                    if self.isDrafting {
-                        self.visibleCandidateOrders.append(self.candidateOrders[index])
+                    if self.viewModel.isDraftingObjective {
+                        guard index < self.viewModel.candidateOrders.count else { return }
+
+                        self.viewModel.visibleCandidateOrders.append(self.viewModel.candidateOrders[index])
                         AudioServicesPlaySystemSound(MessageSound.received)
                     }
                 }
@@ -357,7 +350,7 @@ struct ObjectiveView: View {
         successFeedback.notificationOccurred(.success)
         
         // Ambil order yang dicentang & tandai sebagai Personal
-        let selected = candidateOrders.filter { selectedOrderIds.contains($0.id) }
+        let selected = viewModel.candidateOrders.filter { viewModel.selectedOrderIds.contains($0.id) }
         let personalOrders = selected.map {
             var order = $0
             order.isPersonal = true
@@ -372,10 +365,10 @@ struct ObjectiveView: View {
             ))
             
             // 2. Reset state drafting -> Input bar otomatis kembali ke tombol "Request more order"
-            isDrafting = false
-            candidateOrders.removeAll()
-            visibleCandidateOrders.removeAll()
-            selectedOrderIds.removeAll()
+            viewModel.isDraftingObjective = false
+            viewModel.candidateOrders.removeAll()
+            viewModel.visibleCandidateOrders.removeAll()
+            viewModel.selectedOrderIds.removeAll()
         }
         
         viewModel.personalJastipOrders.append(contentsOf: personalOrders)
