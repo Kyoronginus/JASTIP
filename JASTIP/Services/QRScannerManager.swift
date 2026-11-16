@@ -52,38 +52,37 @@ class QRScannerManager: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
     }
     
     func flipCamera() {
+        let newPosition: AVCaptureDevice.Position = (currentPosition == .front) ? .back : .front
+        setCameraPosition(newPosition)
+    }
+
+    func setCameraPosition(_ position: AVCaptureDevice.Position) {
+        guard position != currentPosition else { return }
+
         session.beginConfiguration()
         defer { session.commitConfiguration() }
         
-        // Lepas input lama
-        if let currentInput = currentInput {
-            session.removeInput(currentInput)
+        let previousInput = currentInput
+        if let previousInput {
+            session.removeInput(previousInput)
         }
         
-        // Tentukan posisi baru
-        let newPosition: AVCaptureDevice.Position = (currentPosition == .front) ? .back : .front
-        
-
-//        .automaticallyAdjustsVideoMirroring = true
-
-        
-        guard let newDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: newPosition),
+        guard let newDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: position),
               let newInput = try? AVCaptureDeviceInput(device: newDevice),
               session.canAddInput(newInput) else {
-            // Jika gagal, pasang kembali input lama
-            if let currentInput = currentInput {
-                session.addInput(currentInput)
+            if let previousInput {
+                session.addInput(previousInput)
             }
             return
         }
         
         session.addInput(newInput)
         self.currentInput = newInput
-        self.currentPosition = newPosition
+        self.currentPosition = position
         
         if let connection = videoOutput.connection(with: .video), connection.isVideoMirroringSupported {
             connection.automaticallyAdjustsVideoMirroring = false
-            connection.isVideoMirrored = (newPosition == .front)
+            connection.isVideoMirrored = (position == .front)
         }
     }
     

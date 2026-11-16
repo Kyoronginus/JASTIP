@@ -8,11 +8,15 @@
 import SwiftUI
 import AVFoundation
 import CoreHaptics
+import CoreMotion
 import UIKit
 
 @Observable
 class QRScannerViewModel {
     let scanner = QRScannerManager()
+    private let motionManager = CMMotionManager()
+    private var isDeviceFlat = true
+    private var hasReceivedInitialMotion = false
     
     var scannedCode: String? = nil
     var detectedPiece: PieceModel? = nil
@@ -49,6 +53,7 @@ class QRScannerViewModel {
     }
     
     func startScanning() {
+        startCameraPositionMonitoring()
         scanner.startScanning()
         scanner.onCodeDetected = { [weak self] code in
             self?.handleDetectedCode(code)
@@ -56,7 +61,33 @@ class QRScannerViewModel {
     }
     
     func stopScanning() {
+        motionManager.stopDeviceMotionUpdates()
         scanner.stopScanning()
+    }
+
+    private func startCameraPositionMonitoring() {
+        guard motionManager.isDeviceMotionAvailable else { return }
+
+        motionManager.deviceMotionUpdateInterval = 0.25
+        motionManager.startDeviceMotionUpdates(to: .main) { [weak self] motion, _ in
+            guard let self, let motion else { return }
+
+            let verticalGravity = abs(motion.gravity.z)
+            let shouldUseFrontCamera: Bool
+            if self.hasReceivedInitialMotion {
+                shouldUseFrontCamera = self.isDeviceFlat
+                    ? verticalGravity >= 0.82
+                    : verticalGravity >= 0.92
+            } else {
+                shouldUseFrontCamera = verticalGravity >= 0.92
+                self.hasReceivedInitialMotion = true
+            }
+
+            guard shouldUseFrontCamera != self.isDeviceFlat else { return }
+
+            self.isDeviceFlat = shouldUseFrontCamera
+            self.scanner.setCameraPosition(shouldUseFrontCamera ? .front : .back)
+        }
     }
     
     func handleDetectedCode(_ code: String) {
