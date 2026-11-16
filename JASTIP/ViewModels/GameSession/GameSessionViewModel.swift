@@ -419,7 +419,6 @@ class GameSessionViewModel {
         captureGridSnapshotIfNeeded()
         stagingWeight = weight
         // Hapus barang scan lama yang belum ditaruh jika ada, pertahankan barang yang sedang ditata ulang
-        stagedItems.removeAll { !$0.isAlreadyCountedInWeight }
         stagedItems.append(
             StagedItem(
                 id: UUID(),
@@ -441,6 +440,15 @@ class GameSessionViewModel {
             carryOnGrid.placedPieces.removeAll { $0.id == placedPiece.id }
         }
         
+        let contribution = placedPieceWeightContributions[placedPiece.id]
+            ?? weight(for: placedPiece.piece.id)
+
+        if placedPiece.assignedLuggage == .suitcase {
+            suitWeight = max(0, suitWeight - contribution)
+        } else {
+            carryWeight = max(0, carryWeight - contribution)
+        }
+
         let item = StagedItem(
             id: placedPiece.id,
             piece: placedPiece.piece,
@@ -452,6 +460,7 @@ class GameSessionViewModel {
         )
         if !stagedItems.contains(where: { $0.id == item.id }) {
             stagedItems.append(item)
+            broadcastMyStatus()
         }
     }
     
@@ -504,15 +513,16 @@ class GameSessionViewModel {
         if !item.isAlreadyCountedInWeight {
             recordItemPlacement(piece: item.piece, weight: item.weight, isSuitcase: luggage == .suitcase)
             placedPieceWeightContributions[placed.id] = isZeroWeightHour ? 0 : item.weight
-        } else if let sourceLuggage = item.weightLuggage, sourceLuggage != luggage {
-            let contribution = placedPieceWeightContributions[item.id] ?? weight(for: item.piece.id)
-            if sourceLuggage == .suitcase {
-                suitWeight = max(0, suitWeight - contribution)
-                carryWeight += contribution
-            } else {
-                carryWeight = max(0, carryWeight - contribution)
+        } else {
+            let contribution = placedPieceWeightContributions[item.id]
+                ?? weight(for: item.piece.id)
+
+            if luggage == .suitcase {
                 suitWeight += contribution
+            } else {
+                carryWeight += contribution
             }
+
             placedPieceWeightContributions[item.id] = contribution
             broadcastMyStatus()
         }

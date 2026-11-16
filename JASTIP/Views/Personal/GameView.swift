@@ -266,7 +266,7 @@ struct GameView: View {
                 )
             }
 
-            VStack(spacing: 20) {
+            VStack(spacing: 43) {
                 interactiveGrid(for: .carryOn, cellSize: cellSize)
                 LuggageWeightLabel(
                     currentWeight: viewModel.carryWeight,
@@ -317,8 +317,9 @@ struct GameView: View {
     }
 
     private var scanButton: some View {
-        let canScanItem = viewModel.stagedItems.isEmpty
-        let isEnabled = viewModel.isMyTurn && canScanItem && viewModel.currentEvent == nil && !viewModel.isBoarded
+        let isEnabled = viewModel.isMyTurn &&
+            viewModel.currentEvent == nil &&
+            !viewModel.isBoarded
 
         return Button {
             isShowingScanner = true
@@ -334,8 +335,8 @@ struct GameView: View {
                 font: .shantellSans(16, .bold),
                 cornerRadius: 12,
                 borderWidth: 1.5,
-                yShadowOffset: canScanItem ? 4 : 2,
-                xShadowOffset: canScanItem ? 2 : 1,
+                yShadowOffset: 4,
+                xShadowOffset: 2,
                 paddingVertical: 10,
                 paddingHorizontal: 10
             )

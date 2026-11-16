@@ -370,14 +370,20 @@ struct StagingSectionView: View {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 20) {
                             ForEach(items) { item in
-                                PieceShapeView(
-                                    piece: item.piece,
-                                    rotation: item.rotation,
-                                    blockSize: 28,
-                                    spacing: 2,
-                                    cornerRadius: 5
-                                )
-                                .padding(8)
+                                VStack(spacing: 2) {
+                                    PieceShapeView(
+                                        piece: item.piece,
+                                        rotation: item.rotation,
+                                        blockSize: 28,
+                                        spacing: 2,
+                                        cornerRadius: 5
+                                    )
+                                    .padding(8)
+
+                                    Text("\(item.weight) kg")
+                                        .font(.shantellSans(13, .bold))
+                                        .foregroundStyle(.black)
+                                }
                                 .opacity(draggingItemId == item.id ? 0.15 : 1.0)
                                 .gesture(
                                     DragGesture(minimumDistance: 4, coordinateSpace: .named("LUGGAGE_CANVAS"))
@@ -388,7 +394,7 @@ struct StagingSectionView: View {
                                             onDragItemEnded(item, value)
                                         }
                                 )
-                                .onTapGesture() {
+                                .onTapGesture {
                                     onRotateItem(item)
                                 }
                             }
