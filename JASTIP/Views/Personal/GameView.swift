@@ -317,9 +317,7 @@ struct GameView: View {
     }
 
     private var scanButton: some View {
-        let isEnabled = viewModel.isMyTurn &&
-            viewModel.currentEvent == nil &&
-            !viewModel.isBoarded
+        let isEnabled = viewModel.canUseTurnAction
 
         return Button {
             isShowingScanner = true
