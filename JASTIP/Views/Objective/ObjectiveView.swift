@@ -300,6 +300,8 @@ struct ObjectiveView: View {
             viewModel.selectedOrderIds.removeAll()
             viewModel.visibleCandidateOrders.removeAll()
         }
+        
+        viewModel.consumeTurnActionQuota()
 
         let playerName = viewModel.playerName.trimmingCharacters(in: .whitespacesAndNewlines)
         viewModel.showToast(
@@ -360,7 +362,6 @@ struct ObjectiveView: View {
             return order
         }
         
-        viewModel.consumeTurnActionQuota()
         
         withAnimation(.easeInOut(duration: 0.3)) {
             // 1. Simpan ke histori chat
