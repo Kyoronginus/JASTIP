@@ -107,6 +107,7 @@ extension GameSessionViewModel {
             }
         }
         
+        actionsUsedThisTurn = 0
         // Broadcast perubahan giliran ke semua device di Firebase!
         Task {
             await publishCloudGameState()

@@ -105,7 +105,7 @@ extension View {
                     
                     Button("Trigger Error Toast") {
                         sampleToast = ToastOptions(
-                            message: "Koper sudah melebihi kapasitas!",
+                            message: "Suitcase has exceeded capacity!",
                             type: .error
                         )
                     }
@@ -114,7 +114,7 @@ extension View {
                     
                     Button("Trigger Info Toast") {
                         sampleToast = ToastOptions(
-                            message: "Giliran pemain berikutnya telah dimulai.",
+                            message: "The next player's turn has started.",
                             type: .info
                         )
                     }

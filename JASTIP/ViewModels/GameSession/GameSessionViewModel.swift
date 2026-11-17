@@ -52,6 +52,7 @@ class GameSessionViewModel {
     var turnOrder: [TurnPlayer] = []
     var currentTurnIndex: Int = 0
     var daysToGo: Int = 7
+    var actionsUsedThisTurn: Int = 0
     var roundAnimationPhase: RoundAnimationPhase = .none
     
     func triggerRoundTransitionAnimation(from oldDay: Int, to newDay: Int) {
@@ -181,6 +182,33 @@ class GameSessionViewModel {
         isMyTurn && !isDraftingObjective
     }
     
+    // MARK: - Turn Action
+    
+    var maxTurnActionQuota: Int {
+        switch activeHourEvent?.type {
+        case .energyBoost:
+            return 3
+        case .customsIssue, .evacuation:
+            return 1
+        default:
+            return 2
+        }
+    }
+    
+    var remainingTurnActionQuota: Int {
+        maxTurnActionQuota - actionsUsedThisTurn
+    }
+    
+    var canUseTurnAction: Bool {
+        isMyTurn && remainingTurnActionQuota > 0 && currentEvent == nil && !isBoarded && !isGameOver
+    }
+    
+    
+    func consumeTurnActionQuota() {
+        actionsUsedThisTurn += 1
+    }
+
+    
     // MARK: - Initialization
     init(airlineCard: AirlineCardModel = AirlineCardCatalog.getRandomCard()) {
         self.airlineCard = airlineCard
@@ -273,6 +301,8 @@ class GameSessionViewModel {
         suitWeight = 0
         carryWeight = 0
         placedPieceWeightContributions.removeAll()
+        droppedBlockKg = 0
+        actionsUsedThisTurn = 0
         suitcaseGrid = .suitcase
         carryOnGrid = .carryOn
         stagedItems.removeAll()
@@ -423,6 +453,7 @@ class GameSessionViewModel {
         captureGridSnapshotIfNeeded()
         stagingWeight = weight
         // Hapus barang scan lama yang belum ditaruh jika ada, pertahankan barang yang sedang ditata ulang
+        consumeTurnActionQuota()
         stagedItems.append(
             StagedItem(
                 id: UUID(),

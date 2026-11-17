@@ -12,6 +12,10 @@ struct EventCard: View {
     var isFaceUp: Bool = true
     var width: CGFloat = 270
     var height: CGFloat = 393
+    var shadowColor: Color = .black.opacity(0.45)
+    var shadowRadius: CGFloat = 20
+    var shadowX: CGFloat = 0
+    var shadowY: CGFloat = 10
     
     var body: some View {
         Group {
@@ -22,7 +26,7 @@ struct EventCard: View {
             }
         }
         .frame(width: width, height: height)
-        .shadow(color: .black.opacity(0.45), radius: 20, x: 0, y: 10)
+        .shadow(color: shadowColor, radius: shadowRadius, x: shadowX, y: shadowY)
     }
     
     // MARK: - Front Side

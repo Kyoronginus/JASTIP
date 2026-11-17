@@ -107,7 +107,7 @@ struct StoryboardView: View {
                 Spacer()
                 
                 // Petunjuk Tap di Bawah
-                Text(currentStep >= 5 ? "Tap untuk mulai berbelanja" : "Tap layar untuk melanjutkan")
+                Text(currentStep >= 5 ? "Tap to start shopping" : "Tap anywhere to continue")
                     .font(.spaceGrotesk(12, .medium))
                     .foregroundStyle(Color.secondary.opacity(0.7))
                     .padding(.bottom, 16)

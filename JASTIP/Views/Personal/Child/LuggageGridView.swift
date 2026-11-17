@@ -18,7 +18,7 @@ struct LuggageGridView: View {
     var draggingPieceId: UUID? = nil
     var onGridFrameChange: ((CGRect) -> Void)? = nil
     var onRotatePiece: ((PlacedPiece) -> Void)? = nil
-    var onDragPieceChanged: ((PlacedPiece, DragGesture.Value) -> Void)? = nil
+    var onDragPieceChanged: ((PlacedPiece, GridCoordinate, DragGesture.Value) -> Void)? = nil
     var onDragPieceEnded: ((PlacedPiece, DragGesture.Value) -> Void)? = nil
     
     // Pemetaan sel mana yang diisi oleh kepingan apa
@@ -124,7 +124,11 @@ struct LuggageGridView: View {
                                 },
                                 onDragChanged: { value in
                                     if let (placed, _) = occupiedEntry {
-                                        onDragPieceChanged?(placed, value)
+                                        let grabbedCell = GridCoordinate(
+                                            x: coord.x - placed.origin.x,
+                                            y: coord.y - placed.origin.y
+                                        )
+                                        onDragPieceChanged?(placed, grabbedCell, value)
                                     }
                                 },
                                 onDragEnded: { value in

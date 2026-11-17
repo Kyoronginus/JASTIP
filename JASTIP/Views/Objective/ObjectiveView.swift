@@ -27,7 +27,10 @@ struct ObjectiveView: View {
     private let successFeedback = UINotificationFeedbackGenerator()
 
     private var actionBarPrompt: String {
-        viewModel.isMyTurn ? "anyone else need anything?" : "Wait for your turn"
+//        viewModel.isMyTurn ? "anyone else need anything?" : "Wait for your turn"
+        if !viewModel.isMyTurn { return "Wait for your turn" }
+        if viewModel.remainingTurnActionQuota <= 0 { return "You're too exhausted to move" }
+        return "anyone else need anything?"
     }
     
     // MARK: - Helper Formatting Teks Input Bar
@@ -216,7 +219,7 @@ struct ObjectiveView: View {
                     }
                 } label: {
                     ZStack{
-                        if !viewModel.isMyTurn {
+                        if !viewModel.isMyTurn || !viewModel.canUseTurnAction{
                             Image("addorderbackdisabled")
                                 .resizable()
                                 .scaledToFit()
@@ -238,7 +241,7 @@ struct ObjectiveView: View {
                             .foregroundColor(.white)
                     }
                 }
-                .disabled(!viewModel.isMyTurn)
+                .disabled(!viewModel.canUseTurnAction || !viewModel.isMyTurn)
             } else {
                 // TAMPILAN MODE DRAFTING (Saat memilih kartu)
                 ZStack{
@@ -297,6 +300,8 @@ struct ObjectiveView: View {
             viewModel.selectedOrderIds.removeAll()
             viewModel.visibleCandidateOrders.removeAll()
         }
+        
+        viewModel.consumeTurnActionQuota()
 
         let playerName = viewModel.playerName.trimmingCharacters(in: .whitespacesAndNewlines)
         viewModel.showToast(
@@ -356,6 +361,7 @@ struct ObjectiveView: View {
             order.isPersonal = true
             return order
         }
+        
         
         withAnimation(.easeInOut(duration: 0.3)) {
             // 1. Simpan ke histori chat

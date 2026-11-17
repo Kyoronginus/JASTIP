@@ -22,12 +22,12 @@ class NFCReaderManager: NSObject, NFCNDEFReaderSessionDelegate {
     // Mulai sesi scan NFC
     func startScan() {
         guard isNFCAvailable else {
-            errorMessage = "NFC tidak didukung di perangkat ini (atau sedang di Simulator)."
+            errorMessage = "NFC is not supported on this device (or in the Simulator)."
             return
         }
         
         session = NFCNDEFReaderSession(delegate: self, queue: nil, invalidateAfterFirstRead: true)
-        session?.alertMessage = "Dekatkan iPhone ke stiker NFC barang belanjaan."
+        session?.alertMessage = "Hold your iPhone near the item's NFC tag."
         session?.begin()
     }
     
@@ -43,7 +43,7 @@ class NFCReaderManager: NSObject, NFCNDEFReaderSessionDelegate {
                     DispatchQueue.main.async {
                         self.onTagScanned?(cleanText.trimmingCharacters(in: .whitespacesAndNewlines))
                     }
-                    session.alertMessage = "Item Berhasil Terbaca! 🎉"
+                    session.alertMessage = "Item Scanned Successfully! 🎉"
                     return
                 }
             }

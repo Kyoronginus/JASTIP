@@ -23,6 +23,7 @@ struct GameView: View {
     @Bindable private var viewModel: GameSessionViewModel
     var onOpenCamera: () -> Void
     var onOpenObjective: () -> Void
+    var onEventCardTargetFrameChange: (CGRect) -> Void = { _ in }
     
     // Properti UI Turn & Kalender (Siap disambungkan oleh dev yang mengerjakan logic turn/kalender)
     var currentTurnPlayerName: String? = nil
@@ -41,6 +42,8 @@ struct GameView: View {
     }
     
     @State private var isShowingScanner = false
+    var isInspectingActiveEvent: Bool = false
+    var onTapActiveEvent: () -> Void = {}
     @State private var draggingStagingItem: StagedItem? = nil
     @State private var draggingPlacedPiece: PlacedPiece? = nil
     @State private var dragLocation: CGPoint = .zero
@@ -50,6 +53,7 @@ struct GameView: View {
     @State private var suitcaseGridFrame: CGRect = .zero
     @State private var carryOnGridFrame: CGRect = .zero
     @State private var lastHapticCoord: GridCoordinate? = nil
+    @State private var grabbedCell = GridCoordinate(x: 0, y: 0)
     @State private var cellSize: CGFloat = 46
 
     private let cellSpacing: CGFloat = 2
@@ -63,14 +67,20 @@ struct GameView: View {
         daysToGo: Int? = nil,
         onEndTurn: (() -> Void)? = nil,
         onOpenCamera: @escaping () -> Void = {},
-        onOpenObjective: @escaping () -> Void = {}
-    ) {
+        onOpenObjective: @escaping () -> Void = {},
+        isInspectingActiveEvent: Bool = false,
+        onEventCardTargetFrameChange: @escaping (CGRect) -> Void = { _ in },
+        onTapActiveEvent: @escaping () -> Void = {}
+    ){
         self.viewModel = viewModel ?? GameSessionViewModel(airlineCard: airlineCard)
         self.currentTurnPlayerName = currentTurnPlayerName
         self.daysToGo = daysToGo
         self.onEndTurn = onEndTurn
         self.onOpenCamera = onOpenCamera
         self.onOpenObjective = onOpenObjective
+        self.isInspectingActiveEvent = isInspectingActiveEvent
+        self.onEventCardTargetFrameChange = onEventCardTargetFrameChange
+        self.onTapActiveEvent = onTapActiveEvent
     }
     
     var body: some View {
@@ -101,8 +111,9 @@ struct GameView: View {
                             }
                             UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
                         },
-                        onDragItemChanged: { item, value in
+                        onDragItemChanged: { item, cell, value in
                             draggingStagingItem = item
+                            grabbedCell = cell
                             dragLocation = value.location
                             updateHover(
                                 at: value.location,
@@ -266,12 +277,22 @@ struct GameView: View {
                 )
             }
 
-            VStack(spacing: 43) {
-                interactiveGrid(for: .carryOn, cellSize: cellSize)
-                LuggageWeightLabel(
-                    currentWeight: viewModel.carryWeight,
-                    maxWeight: viewModel.displayedAirlineCard.maxCarryOnKg
+            VStack(spacing: 18) {
+                ActiveEventCardSlot(
+                    event: (viewModel.currentEvent == nil && !isInspectingActiveEvent) ? viewModel.activeHourEvent : nil,
+                    currentHour: viewModel.currentHour,
+                    cellSize: cellSize,
+                    onFrameChange: onEventCardTargetFrameChange,
+                    onTap: onTapActiveEvent
                 )
+
+                VStack(spacing: 43) {
+                    interactiveGrid(for: .carryOn, cellSize: cellSize)
+                    LuggageWeightLabel(
+                        currentWeight: viewModel.carryWeight,
+                        maxWeight: viewModel.displayedAirlineCard.maxCarryOnKg
+                    )
+                }
             }
         }
     }
@@ -298,8 +319,9 @@ struct GameView: View {
                     UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
                 }
             },
-            onDragPieceChanged: { placed, value in
+            onDragPieceChanged: { placed, cell, value in
                 draggingPlacedPiece = placed
+                grabbedCell = cell
                 dragLocation = value.location
                 updateHover(
                     at: value.location,
@@ -317,9 +339,7 @@ struct GameView: View {
     }
 
     private var scanButton: some View {
-        let isEnabled = viewModel.isMyTurn &&
-            viewModel.currentEvent == nil &&
-            !viewModel.isBoarded
+        let isEnabled = viewModel.canUseTurnAction
 
         return Button {
             isShowingScanner = true
@@ -362,25 +382,33 @@ struct GameView: View {
     }
 
     private var floatingPiecePosition: CGPoint {
-        if let origin = hoverOrigin,
-           let luggage = hoverLuggage,
-           let (piece, rotation) = activeDraggedPieceAndRotation {
-            let base = PieceCatalog.baseCoordinates(for: piece.shape, pieceId: piece.id)
-            let rotated = LuggagePlacementEngine.rotate(coordinates: base, by: rotation)
-            let cols = (rotated.map(\.x).max() ?? 0) + 1
-            let rows = (rotated.map(\.y).max() ?? 0) + 1
-            let step = cellSize + cellSpacing
-            let pieceWidth = CGFloat(cols) * cellSize + CGFloat(cols - 1) * cellSpacing
-            let pieceHeight = CGFloat(rows) * cellSize + CGFloat(rows - 1) * cellSpacing
-            let gridFrame = gridFrame(for: luggage)
+        guard let (piece, rotation) = activeDraggedPieceAndRotation else {
+            return dragLocation
+        }
 
+        let base = PieceCatalog.baseCoordinates(for: piece.shape, pieceId: piece.id)
+        let rotated = LuggagePlacementEngine.rotate(coordinates: base, by: rotation)
+        let cols = (rotated.map(\.x).max() ?? 0) + 1
+        let rows = (rotated.map(\.y).max() ?? 0) + 1
+        let step = cellSize + cellSpacing
+        let pieceWidth = CGFloat(cols) * cellSize + CGFloat(max(0, cols - 1)) * cellSpacing
+        let pieceHeight = CGFloat(rows) * cellSize + CGFloat(max(0, rows - 1)) * cellSpacing
+
+        if let origin = hoverOrigin, let luggage = hoverLuggage {
+            let gridFrame = gridFrame(for: luggage)
             return CGPoint(
                 x: gridFrame.minX + CGFloat(origin.x) * step + pieceWidth / 2,
                 y: gridFrame.minY + CGFloat(origin.y) * step + pieceHeight / 2
             )
         }
 
-        return dragLocation
+        let grabbedCenterX = (CGFloat(grabbedCell.x) + 0.5) * cellSize + CGFloat(grabbedCell.x) * cellSpacing
+        let grabbedCenterY = (CGFloat(grabbedCell.y) + 0.5) * cellSize + CGFloat(grabbedCell.y) * cellSpacing
+
+        return CGPoint(
+            x: dragLocation.x - grabbedCenterX + pieceWidth / 2,
+            y: dragLocation.y - grabbedCenterY + pieceHeight / 2
+        )
     }
 
     private func gridFrame(for luggage: LuggageType) -> CGRect {
@@ -422,19 +450,14 @@ struct GameView: View {
 
         let targetGrid = grid(for: targetLuggage)
         let targetFrame = gridFrame(for: targetLuggage)
-        let base = PieceCatalog.baseCoordinates(for: piece.shape, pieceId: piece.id)
-        let rotated = LuggagePlacementEngine.rotate(coordinates: base, by: rotation)
-        let cols = (rotated.map(\.x).max() ?? 0) + 1
-        let rows = (rotated.map(\.y).max() ?? 0) + 1
         let step = cellSize + cellSpacing
-        let pieceWidth = CGFloat(cols) * cellSize + CGFloat(cols - 1) * cellSpacing
-        let pieceHeight = CGFloat(rows) * cellSize + CGFloat(rows - 1) * cellSpacing
 
-        let pieceTopLeftX = location.x - pieceWidth / 2
-        let pieceTopLeftY = location.y - pieceHeight / 2
-        let estimatedX = Int(round((pieceTopLeftX - targetFrame.minX) / step))
-        let estimatedY = Int(round((pieceTopLeftY - targetFrame.minY) / step))
-        let targetOrigin = GridCoordinate(x: estimatedX, y: estimatedY)
+        let hoveredCellX = Int(floor((location.x - targetFrame.minX) / step))
+        let hoveredCellY = Int(floor((location.y - targetFrame.minY) / step))
+        let targetOrigin = GridCoordinate(
+            x: hoveredCellX - grabbedCell.x,
+            y: hoveredCellY - grabbedCell.y
+        )
 
         if targetLuggage != hoverLuggage || targetOrigin != lastHapticCoord {
             lastHapticCoord = targetOrigin
@@ -483,6 +506,7 @@ struct GameView: View {
             hoverLuggage = nil
             isHoverValid = false
             lastHapticCoord = nil
+            grabbedCell = GridCoordinate(x: 0, y: 0)
         }
     }
 
@@ -690,6 +714,107 @@ private struct RestockStoreAnimationView: View {
                 try? await Task.sleep(nanoseconds: 200_000_000)
             }
         }
+    }
+}
+
+struct ActiveEventCardSlot: View {
+    let event: RandomEventModel?
+    let currentHour: Int
+    let cellSize: CGFloat
+    var onFrameChange: (CGRect) -> Void = { _ in }
+    var onTap: () -> Void = {}
+
+    @State private var cachedEvent: RandomEventModel? = nil
+    @State private var departingEvent: RandomEventModel? = nil
+    @State private var departOffsetX: CGFloat = 0
+    @State private var departOpacity: Double = 1
+    @State private var departToken: UUID? = nil
+
+    private var miniWidth: CGFloat { cellSize * 1.65 }
+    private var miniHeight: CGFloat { miniWidth * (393.0 / 270.0) }
+
+    var body: some View {
+        ZStack {
+            if let departingEvent {
+                miniCard(for: departingEvent)
+                    .offset(x: departOffsetX)
+                    .opacity(departOpacity)
+                    .allowsHitTesting(false)
+            }
+
+            if let event {
+                miniCard(for: event)
+                    .contentShape(Rectangle())
+                    .onTapGesture(perform: onTap)
+            } else if departingEvent == nil {
+                Color.clear
+                    .frame(width: miniWidth, height: miniHeight)
+            }
+        }
+        .frame(width: miniWidth, height: miniHeight)
+        .background(
+            GeometryReader { geo in
+                Color.clear
+                    .onAppear {
+                        onFrameChange(geo.frame(in: .global))
+                    }
+                    .onChange(of: geo.frame(in: .global)) { _, newFrame in
+                        onFrameChange(newFrame)
+                    }
+            }
+        )
+        .onAppear {
+            if let event {
+                cachedEvent = event
+            }
+        }
+        .onChange(of: event) { _, newEvent in
+            if let newEvent {
+                cachedEvent = newEvent
+            }
+        }
+        .onChange(of: currentHour) { oldHour, newHour in
+            guard newHour > oldHour, let previousEvent = cachedEvent else {
+                if newHour <= oldHour {
+                    cachedEvent = event
+                    departingEvent = nil
+                }
+                return
+            }
+
+            cachedEvent = event
+            departingEvent = previousEvent
+            departOffsetX = 0
+            departOpacity = 1
+
+            let token = UUID()
+            departToken = token
+
+            withAnimation(.easeIn(duration: 0.35)) {
+                departOffsetX = 240
+                departOpacity = 0
+            }
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.36) {
+                if departToken == token {
+                    departingEvent = nil
+                }
+            }
+        }
+    }
+
+    private func miniCard(for event: RandomEventModel) -> some View {
+        EventCard(
+            event: event,
+            isFaceUp: true,
+            shadowColor: .black.opacity(0.22),
+            shadowRadius: 0,
+            shadowX: 10,
+            shadowY: 12
+        )
+        .scaleEffect(miniWidth / 270.0)
+        .frame(width: miniWidth, height: miniHeight)
+        .rotationEffect(.degrees(7))
     }
 }
 

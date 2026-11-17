@@ -31,7 +31,7 @@ class QRScannerViewModel {
     private var hapticEngine: CHHapticEngine?
     
     var headerTitle: String {
-        confirmedWeight != nil ? "PIECE TERKONFIRMASI" : "QR TERDETEKSI"
+        confirmedWeight != nil ? "PIECE CONFIRMED" : "QR DETECTED"
     }
     
     var isShowingPopup: Bool {
@@ -109,8 +109,8 @@ class QRScannerViewModel {
             self.scannedCode = code
             self.detectedPiece = piece
             self.rejectionMessage = allowsEitherLuggage
-                ? "Barang ini tidak muat pada susunan Suitcase maupun Carry-On saat ini."
-                : "Barang ini tidak muat pada susunan \(targetIsSuitcase ? "Suitcase" : "Carry-On") saat ini."
+                ? "This item does not fit in your current Suitcase or Carry-On layout."
+                : "This item does not fit in your current \(targetIsSuitcase ? "Suitcase" : "Carry-On") layout."
             return
         }
         
