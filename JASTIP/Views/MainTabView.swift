@@ -14,6 +14,8 @@ struct MainTabView: View {
     @State private var isObjectivePresented = false
     @State private var turnBanner: TurnBannerPresentation?
     @State private var hasPendingTurnBanner = false
+    @State private var eventCardTargetFrame: CGRect = .zero
+    @State private var isInspectingActiveEvent = false
     
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -22,6 +24,15 @@ struct MainTabView: View {
                     viewModel: viewModel,
                     onOpenObjective: {
                         isObjectivePresented = true
+                    },
+                    isInspectingActiveEvent: isInspectingActiveEvent,
+                    onEventCardTargetFrameChange: { newFrame in
+                        if newFrame != .zero {
+                            eventCardTargetFrame = newFrame
+                        }
+                    },
+                    onTapActiveEvent: {
+                        isInspectingActiveEvent = true
                     }
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -50,14 +61,26 @@ struct MainTabView: View {
             if let event = viewModel.currentEvent,
                !viewModel.isGameOver,
                viewModel.roundAnimationPhase == .none {
-                EventAlertView(event: event) {
-                    withAnimation {
-                        viewModel.dismissEvent()
-                    }
+                EventAlertView(
+                    event: event,
+                    targetFrame: eventCardTargetFrame
+                ) {
+                    viewModel.dismissEvent()
                 }
-                .transition(.opacity)
                 .zIndex(100)
+            } else if isInspectingActiveEvent,
+                let activeEvent = viewModel.activeHourEvent,
+                !viewModel.isGameOver,
+                viewModel.roundAnimationPhase == .none {
+            EventAlertView(
+                event: activeEvent,
+                targetFrame: eventCardTargetFrame,
+                startsFromTarget: true
+            ) {
+                isInspectingActiveEvent = false
             }
+            .zIndex(100)
+        }
 
             if let turnBanner {
                 TurnChangeBanner(playerName: turnBanner.playerName)

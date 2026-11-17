@@ -23,6 +23,7 @@ struct GameView: View {
     @Bindable private var viewModel: GameSessionViewModel
     var onOpenCamera: () -> Void
     var onOpenObjective: () -> Void
+    var onEventCardTargetFrameChange: (CGRect) -> Void = { _ in }
     
     // Properti UI Turn & Kalender (Siap disambungkan oleh dev yang mengerjakan logic turn/kalender)
     var currentTurnPlayerName: String? = nil
@@ -41,6 +42,8 @@ struct GameView: View {
     }
     
     @State private var isShowingScanner = false
+    var isInspectingActiveEvent: Bool = false
+    var onTapActiveEvent: () -> Void = {}
     @State private var draggingStagingItem: StagedItem? = nil
     @State private var draggingPlacedPiece: PlacedPiece? = nil
     @State private var dragLocation: CGPoint = .zero
@@ -63,14 +66,20 @@ struct GameView: View {
         daysToGo: Int? = nil,
         onEndTurn: (() -> Void)? = nil,
         onOpenCamera: @escaping () -> Void = {},
-        onOpenObjective: @escaping () -> Void = {}
-    ) {
+        onOpenObjective: @escaping () -> Void = {},
+        isInspectingActiveEvent: Bool = false,
+        onEventCardTargetFrameChange: @escaping (CGRect) -> Void = { _ in },
+        onTapActiveEvent: @escaping () -> Void = {}
+    ){
         self.viewModel = viewModel ?? GameSessionViewModel(airlineCard: airlineCard)
         self.currentTurnPlayerName = currentTurnPlayerName
         self.daysToGo = daysToGo
         self.onEndTurn = onEndTurn
         self.onOpenCamera = onOpenCamera
         self.onOpenObjective = onOpenObjective
+        self.isInspectingActiveEvent = isInspectingActiveEvent
+        self.onEventCardTargetFrameChange = onEventCardTargetFrameChange
+        self.onTapActiveEvent = onTapActiveEvent
     }
     
     var body: some View {
@@ -266,12 +275,22 @@ struct GameView: View {
                 )
             }
 
-            VStack(spacing: 43) {
-                interactiveGrid(for: .carryOn, cellSize: cellSize)
-                LuggageWeightLabel(
-                    currentWeight: viewModel.carryWeight,
-                    maxWeight: viewModel.displayedAirlineCard.maxCarryOnKg
+            VStack(spacing: 18) {
+                ActiveEventCardSlot(
+                    event: (viewModel.currentEvent == nil && !isInspectingActiveEvent) ? viewModel.activeHourEvent : nil,
+                    currentHour: viewModel.currentHour,
+                    cellSize: cellSize,
+                    onFrameChange: onEventCardTargetFrameChange,
+                    onTap: onTapActiveEvent
                 )
+
+                VStack(spacing: 43) {
+                    interactiveGrid(for: .carryOn, cellSize: cellSize)
+                    LuggageWeightLabel(
+                        currentWeight: viewModel.carryWeight,
+                        maxWeight: viewModel.displayedAirlineCard.maxCarryOnKg
+                    )
+                }
             }
         }
     }
@@ -688,6 +707,107 @@ private struct RestockStoreAnimationView: View {
                 try? await Task.sleep(nanoseconds: 200_000_000)
             }
         }
+    }
+}
+
+struct ActiveEventCardSlot: View {
+    let event: RandomEventModel?
+    let currentHour: Int
+    let cellSize: CGFloat
+    var onFrameChange: (CGRect) -> Void = { _ in }
+    var onTap: () -> Void = {}
+
+    @State private var cachedEvent: RandomEventModel? = nil
+    @State private var departingEvent: RandomEventModel? = nil
+    @State private var departOffsetX: CGFloat = 0
+    @State private var departOpacity: Double = 1
+    @State private var departToken: UUID? = nil
+
+    private var miniWidth: CGFloat { cellSize * 1.65 }
+    private var miniHeight: CGFloat { miniWidth * (393.0 / 270.0) }
+
+    var body: some View {
+        ZStack {
+            if let departingEvent {
+                miniCard(for: departingEvent)
+                    .offset(x: departOffsetX)
+                    .opacity(departOpacity)
+                    .allowsHitTesting(false)
+            }
+
+            if let event {
+                miniCard(for: event)
+                    .contentShape(Rectangle())
+                    .onTapGesture(perform: onTap)
+            } else if departingEvent == nil {
+                Color.clear
+                    .frame(width: miniWidth, height: miniHeight)
+            }
+        }
+        .frame(width: miniWidth, height: miniHeight)
+        .background(
+            GeometryReader { geo in
+                Color.clear
+                    .onAppear {
+                        onFrameChange(geo.frame(in: .global))
+                    }
+                    .onChange(of: geo.frame(in: .global)) { _, newFrame in
+                        onFrameChange(newFrame)
+                    }
+            }
+        )
+        .onAppear {
+            if let event {
+                cachedEvent = event
+            }
+        }
+        .onChange(of: event) { _, newEvent in
+            if let newEvent {
+                cachedEvent = newEvent
+            }
+        }
+        .onChange(of: currentHour) { oldHour, newHour in
+            guard newHour > oldHour, let previousEvent = cachedEvent else {
+                if newHour <= oldHour {
+                    cachedEvent = event
+                    departingEvent = nil
+                }
+                return
+            }
+
+            cachedEvent = event
+            departingEvent = previousEvent
+            departOffsetX = 0
+            departOpacity = 1
+
+            let token = UUID()
+            departToken = token
+
+            withAnimation(.easeIn(duration: 0.35)) {
+                departOffsetX = 240
+                departOpacity = 0
+            }
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.36) {
+                if departToken == token {
+                    departingEvent = nil
+                }
+            }
+        }
+    }
+
+    private func miniCard(for event: RandomEventModel) -> some View {
+        EventCard(
+            event: event,
+            isFaceUp: true,
+            shadowColor: .black.opacity(0.22),
+            shadowRadius: 0,
+            shadowX: 10,
+            shadowY: 12
+        )
+        .scaleEffect(miniWidth / 270.0)
+        .frame(width: miniWidth, height: miniHeight)
+        .rotationEffect(.degrees(7))
     }
 }
 
