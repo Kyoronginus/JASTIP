@@ -112,19 +112,6 @@ struct MainTabView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .ignoresSafeArea(.keyboard, edges: .bottom)
         .toastNotification($viewModel.activeToast)
-        .sheet(isPresented: $isObjectivePresented) {
-            GeometryReader { geometry in
-                ObjectivePhoneContainer(viewModel: viewModel)
-                    .frame(
-                        width: min(geometry.size.width - 24, 420),
-                        height: min(geometry.size.height, UIScreen.main.bounds.height * 0.9)
-                    )
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-            .presentationDetents([.large])
-            .presentationDragIndicator(.visible)
-            .presentationBackground(.black.opacity(0.35))
-        }
         .onChange(of: viewModel.isGameOver) { _, isGameOver in
             guard isGameOver else { return }
 

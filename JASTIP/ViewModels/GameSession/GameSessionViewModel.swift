@@ -301,7 +301,6 @@ class GameSessionViewModel {
         suitWeight = 0
         carryWeight = 0
         placedPieceWeightContributions.removeAll()
-        droppedBlockKg = 0
         actionsUsedThisTurn = 0
         suitcaseGrid = .suitcase
         carryOnGrid = .carryOn
