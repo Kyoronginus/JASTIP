@@ -24,7 +24,7 @@ struct StatsView: View {
                 Button("Broadcast: Success Toast") {
                     if let vm = viewModel {
                         let sender = vm.playerName.isEmpty ? "Player" : vm.playerName
-                        vm.showToast("\(sender): Barang berhasil masuk koper! 🎉", type: .success)
+                        vm.showToast("\(sender): Item placed into luggage! 🎉", type: .success)
                     } else {
                         sampleToast = ToastOptions(message: "Success Toast Triggered!", type: .success)
                     }
@@ -35,7 +35,7 @@ struct StatsView: View {
                 Button("Broadcast: Error Toast") {
                     if let vm = viewModel {
                         let sender = vm.playerName.isEmpty ? "Player" : vm.playerName
-                        vm.showToast("\(sender): Koper kelebihan muatan! ⚠️", type: .error)
+                        vm.showToast("\(sender): Luggage is overweight! ⚠️", type: .error)
                     } else {
                         sampleToast = ToastOptions(message: "Error Toast Triggered!", type: .error)
                     }
@@ -46,7 +46,7 @@ struct StatsView: View {
                 Button("Broadcast: Info Toast") {
                     if let vm = viewModel {
                         let sender = vm.playerName.isEmpty ? "Player" : vm.playerName
-                        vm.showToast("\(sender) sedang menata koper...", type: .info)
+                        vm.showToast("\(sender) is organizing their luggage...", type: .info)
                     } else {
                         sampleToast = ToastOptions(message: "Info Toast Triggered!", type: .info)
                     }

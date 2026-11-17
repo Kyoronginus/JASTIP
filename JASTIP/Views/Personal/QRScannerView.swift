@@ -109,7 +109,7 @@ struct QRScannerView: View {
                             .frame(width: 180, height: 180)
                             .background(Color.black.opacity(0.15))
                         
-                        Text("Arahkan ke QR...")
+                        Text("Point camera at QR...")
                             .font(.subheadline)
                             .foregroundColor(.white)
                     }
@@ -130,7 +130,7 @@ struct QRScannerView: View {
                         .frame(width: 80, height: 80)
                         .padding(12)
                     
-                    Text("TIDAK MUAT!")
+                    Text("DOESN'T FIT!")
                         .font(.spaceGrotesk(24, .bold))
                         .foregroundStyle(Color("FragileRed"))
                     
@@ -140,13 +140,13 @@ struct QRScannerView: View {
                         .foregroundColor(.secondary)
                         .padding(.horizontal, 8)
                     
-                    Button("Scan Barang Lain") {
+                    Button("Scan Another Item") {
                         viewModel.resetScan()
                     }
                     .buttonStyle(PrimaryButtonStyle(isFullWidth: true))
                     .padding(.horizontal, 16)
                     
-                    Button("Kembali") {
+                    Button("Back") {
                         dismiss()
                     }
                     .font(.spaceGrotesk(14, .bold))
@@ -177,10 +177,10 @@ struct QRScannerView: View {
                         VStack(spacing: 12) {
                             if viewModel.session.isZeroWeightHour {
                                 VStack {
-                                    Text("Bobot: 0 kg")
+                                    Text("Weight: 0 kg")
                                         .font(.spaceGrotesk(32, .bold))
                                         .foregroundColor(.primary)
-                                    Text("Free Items Event! (Asli: \(weight) kg)")
+                                    Text("Free Items Event! (Original: \(weight) kg)")
                                         .font(.caption2.bold())
                                         .foregroundColor(.orange)
                                 }

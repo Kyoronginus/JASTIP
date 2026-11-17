@@ -156,7 +156,7 @@ struct HowToSheets: View {
                 badge: "NEXT HOUR",
                 title: "Host Press 'Next Hour' Button",
                 icon: "clock.arrow.circlepath",
-                description: "Host menekan tombol **Next Hour** di aplikasi untuk memajukan waktu 1 jam."
+                description: "The host taps the **Next Hour** button in the app to advance the time by 1 hour."
             )
             
             ruleCard(

@@ -73,7 +73,7 @@ struct ScannedItemChildView: View {
                     Image(systemName: "tray.fill")
                         .font(.system(size: 36))
                         .foregroundStyle(.secondary)
-                    Text("Belum ada item yang discan")
+                    Text("No items have been scanned yet")
                         .font(.spaceGrotesk(16, .medium))
                         .foregroundStyle(.secondary)
                 }
