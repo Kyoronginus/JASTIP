@@ -108,7 +108,7 @@ struct PersonalChildView: View {
                             UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
                         }
                     },
-                    onDragPieceChanged: { placed, value in
+                    onDragPieceChanged: { placed, _, value in
                         draggingPlacedPiece = placed
                         dragLocation = value.location
                         updateHover(
@@ -134,7 +134,7 @@ struct PersonalChildView: View {
                         }
                         UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
                     },
-                    onDragItemChanged: { item, value in
+                    onDragItemChanged: { item, _, value in
                         draggingStagingItem = item
                         dragLocation = value.location
                         updateHover(
@@ -345,9 +345,11 @@ struct StagingSectionView: View {
     let items: [StagedItem]
     let draggingItemId: UUID?
     let onRotateItem: (StagedItem) -> Void
-    let onDragItemChanged: (StagedItem, DragGesture.Value) -> Void
+    let onDragItemChanged: (StagedItem, GridCoordinate, DragGesture.Value) -> Void
     let onDragItemEnded: (StagedItem, DragGesture.Value) -> Void
     var height: CGFloat = 120
+
+    @State private var itemFrames: [UUID: CGRect] = [:]
     
     var body: some View {
         ZStack {
@@ -378,6 +380,17 @@ struct StagingSectionView: View {
                                         spacing: 2,
                                         cornerRadius: 5
                                     )
+                                    .background(
+                                        GeometryReader { geo in
+                                            Color.clear
+                                                .onAppear {
+                                                    itemFrames[item.id] = geo.frame(in: .named("LUGGAGE_CANVAS"))
+                                                }
+                                                .onChange(of: geo.frame(in: .named("LUGGAGE_CANVAS"))) { _, newFrame in
+                                                    itemFrames[item.id] = newFrame
+                                                }
+                                        }
+                                    )
                                     .padding(8)
 
                                     Text("\(item.weight) kg")
@@ -388,7 +401,8 @@ struct StagingSectionView: View {
                                 .gesture(
                                     DragGesture(minimumDistance: 4, coordinateSpace: .named("LUGGAGE_CANVAS"))
                                         .onChanged { value in
-                                            onDragItemChanged(item, value)
+                                            let grabbed = nearestCell(for: item, startLocation: value.startLocation)
+                                            onDragItemChanged(item, grabbed, value)
                                         }
                                         .onEnded { value in
                                             onDragItemEnded(item, value)
@@ -412,6 +426,22 @@ struct StagingSectionView: View {
             }
         }
         .frame(height: height)
+    }
+
+    private func nearestCell(for item: StagedItem, startLocation: CGPoint) -> GridCoordinate {
+        let base = PieceCatalog.baseCoordinates(for: item.piece.shape, pieceId: item.piece.id)
+        let rotated = LuggagePlacementEngine.rotate(coordinates: base, by: item.rotation)
+        guard let frame = itemFrames[item.id] else {
+            return rotated.first ?? GridCoordinate(x: 0, y: 0)
+        }
+
+        let step: CGFloat = 28 + 2
+        let rawX = Int(floor((startLocation.x - frame.minX) / step))
+        let rawY = Int(floor((startLocation.y - frame.minY) / step))
+
+        return rotated.min { a, b in
+            (abs(a.x - rawX) + abs(a.y - rawY)) < (abs(b.x - rawX) + abs(b.y - rawY))
+        } ?? GridCoordinate(x: 0, y: 0)
     }
 }
 

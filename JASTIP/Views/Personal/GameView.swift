@@ -53,6 +53,7 @@ struct GameView: View {
     @State private var suitcaseGridFrame: CGRect = .zero
     @State private var carryOnGridFrame: CGRect = .zero
     @State private var lastHapticCoord: GridCoordinate? = nil
+    @State private var grabbedCell = GridCoordinate(x: 0, y: 0)
     @State private var cellSize: CGFloat = 46
 
     private let cellSpacing: CGFloat = 2
@@ -110,8 +111,9 @@ struct GameView: View {
                             }
                             UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
                         },
-                        onDragItemChanged: { item, value in
+                        onDragItemChanged: { item, cell, value in
                             draggingStagingItem = item
+                            grabbedCell = cell
                             dragLocation = value.location
                             updateHover(
                                 at: value.location,
@@ -317,8 +319,9 @@ struct GameView: View {
                     UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
                 }
             },
-            onDragPieceChanged: { placed, value in
+            onDragPieceChanged: { placed, cell, value in
                 draggingPlacedPiece = placed
+                grabbedCell = cell
                 dragLocation = value.location
                 updateHover(
                     at: value.location,
@@ -379,25 +382,33 @@ struct GameView: View {
     }
 
     private var floatingPiecePosition: CGPoint {
-        if let origin = hoverOrigin,
-           let luggage = hoverLuggage,
-           let (piece, rotation) = activeDraggedPieceAndRotation {
-            let base = PieceCatalog.baseCoordinates(for: piece.shape, pieceId: piece.id)
-            let rotated = LuggagePlacementEngine.rotate(coordinates: base, by: rotation)
-            let cols = (rotated.map(\.x).max() ?? 0) + 1
-            let rows = (rotated.map(\.y).max() ?? 0) + 1
-            let step = cellSize + cellSpacing
-            let pieceWidth = CGFloat(cols) * cellSize + CGFloat(cols - 1) * cellSpacing
-            let pieceHeight = CGFloat(rows) * cellSize + CGFloat(rows - 1) * cellSpacing
-            let gridFrame = gridFrame(for: luggage)
+        guard let (piece, rotation) = activeDraggedPieceAndRotation else {
+            return dragLocation
+        }
 
+        let base = PieceCatalog.baseCoordinates(for: piece.shape, pieceId: piece.id)
+        let rotated = LuggagePlacementEngine.rotate(coordinates: base, by: rotation)
+        let cols = (rotated.map(\.x).max() ?? 0) + 1
+        let rows = (rotated.map(\.y).max() ?? 0) + 1
+        let step = cellSize + cellSpacing
+        let pieceWidth = CGFloat(cols) * cellSize + CGFloat(max(0, cols - 1)) * cellSpacing
+        let pieceHeight = CGFloat(rows) * cellSize + CGFloat(max(0, rows - 1)) * cellSpacing
+
+        if let origin = hoverOrigin, let luggage = hoverLuggage {
+            let gridFrame = gridFrame(for: luggage)
             return CGPoint(
                 x: gridFrame.minX + CGFloat(origin.x) * step + pieceWidth / 2,
                 y: gridFrame.minY + CGFloat(origin.y) * step + pieceHeight / 2
             )
         }
 
-        return dragLocation
+        let grabbedCenterX = (CGFloat(grabbedCell.x) + 0.5) * cellSize + CGFloat(grabbedCell.x) * cellSpacing
+        let grabbedCenterY = (CGFloat(grabbedCell.y) + 0.5) * cellSize + CGFloat(grabbedCell.y) * cellSpacing
+
+        return CGPoint(
+            x: dragLocation.x - grabbedCenterX + pieceWidth / 2,
+            y: dragLocation.y - grabbedCenterY + pieceHeight / 2
+        )
     }
 
     private func gridFrame(for luggage: LuggageType) -> CGRect {
@@ -439,19 +450,14 @@ struct GameView: View {
 
         let targetGrid = grid(for: targetLuggage)
         let targetFrame = gridFrame(for: targetLuggage)
-        let base = PieceCatalog.baseCoordinates(for: piece.shape, pieceId: piece.id)
-        let rotated = LuggagePlacementEngine.rotate(coordinates: base, by: rotation)
-        let cols = (rotated.map(\.x).max() ?? 0) + 1
-        let rows = (rotated.map(\.y).max() ?? 0) + 1
         let step = cellSize + cellSpacing
-        let pieceWidth = CGFloat(cols) * cellSize + CGFloat(cols - 1) * cellSpacing
-        let pieceHeight = CGFloat(rows) * cellSize + CGFloat(rows - 1) * cellSpacing
 
-        let pieceTopLeftX = location.x - pieceWidth / 2
-        let pieceTopLeftY = location.y - pieceHeight / 2
-        let estimatedX = Int(round((pieceTopLeftX - targetFrame.minX) / step))
-        let estimatedY = Int(round((pieceTopLeftY - targetFrame.minY) / step))
-        let targetOrigin = GridCoordinate(x: estimatedX, y: estimatedY)
+        let hoveredCellX = Int(floor((location.x - targetFrame.minX) / step))
+        let hoveredCellY = Int(floor((location.y - targetFrame.minY) / step))
+        let targetOrigin = GridCoordinate(
+            x: hoveredCellX - grabbedCell.x,
+            y: hoveredCellY - grabbedCell.y
+        )
 
         if targetLuggage != hoverLuggage || targetOrigin != lastHapticCoord {
             lastHapticCoord = targetOrigin
@@ -500,6 +506,7 @@ struct GameView: View {
             hoverLuggage = nil
             isHoverValid = false
             lastHapticCoord = nil
+            grabbedCell = GridCoordinate(x: 0, y: 0)
         }
     }
 
