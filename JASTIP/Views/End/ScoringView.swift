@@ -11,6 +11,7 @@ struct ScoringView: View {
     @Bindable var viewModel: GameSessionViewModel
     var onFinishGame: () -> Void = {}
     @State private var hasPresentedFinalScore = false
+    @Environment(\.dismiss) private var dismiss
     
     // MARK: - Automated Data dari ViewModel
     private var currentPlayer: PlayerStatusModel {
@@ -57,29 +58,7 @@ struct ScoringView: View {
     }
     
     var body: some View {
-        Group {
-            if showFinalScore {
-                FinalScoreView(
-                    viewModel: viewModel,
-                    onBackToHome: onFinishGame
-                )
-                .transition(.opacity)
-            } else {
-                calculatorBody
-                    .onAppear {
-                        viewModel.broadcastMyStatus()
-                    }
-                    .onChange(of: viewModel.droppedBlockKg) { _, _ in
-                        viewModel.broadcastMyStatus()
-                    }
-            }
-        }
-        .onAppear {
-            updateFinalScorePresentation()
-        }
-        .onChange(of: viewModel.areAllPlayersSubmitted) { _, _ in
-            updateFinalScorePresentation()
-        }
+        calculatorBody
     }
 
     private func updateFinalScorePresentation() {
@@ -233,13 +212,29 @@ struct ScoringView: View {
                     // MARK: - 4. Penalties Section
                     sectionCard(title: "PENALTIES") {
                         // Dropped Block (MANUAL STEPPER)
-                        stepperRow(
-                            label: "Dropped Block (-1 pt / kg)",
-                            value: $viewModel.droppedBlockKg,
-                            range: 0...30,
-                            isNegative: true
-                        )
-                        .disabled(viewModel.isScoreSubmitted)
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack(spacing: 6) {
+                                    Text("Dropped Items")
+                                        .font(.plusJakarta(15, .semibold))
+                                    autoBadge
+                                }
+
+                                Text("\(viewModel.droppedBlockKg) kg left in staging (-1 pt / kg)")
+                                    .font(.plusJakarta(12, .regular))
+                                    .foregroundStyle(.secondary)
+                            }
+
+                            Spacer()
+
+                            Text("-\(viewModel.droppedBlockKg) pts")
+                                .font(.spaceGrotesk(15, .bold))
+                                .foregroundStyle(
+                                    viewModel.droppedBlockKg > 0
+                                        ? Color("FragileRed")
+                                        : .secondary
+                                )
+                        }
                         
                         Divider()
                         
@@ -302,34 +297,12 @@ struct ScoringView: View {
                     }
                     
                     // MARK: - Finish Action Button
-                    if viewModel.isScoreSubmitted {
-                        HStack(spacing: 10) {
-                            ProgressView()
-                                .tint(.black)
-                            Text("Waiting for others… (\(viewModel.submittedPlayerCount)/\(viewModel.totalLobbyPlayerCount))")
-                                .font(.shantellSans(15, .bold))
-                                .foregroundStyle(Color("NavyBlack"))
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(Color("TaxiYellow").opacity(0.85))
-                        .clipShape(RoundedRectangle(cornerRadius: 15))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 15)
-                                .stroke(Color("NavyBlack"), lineWidth: 1.5)
-                        )
-                        .padding(.top, 8)
-                        .padding(.bottom, 24)
-                    } else {
-                        Button("FINISHED PLAYING") {
-                            viewModel.isScoreSubmitted = true
-                            viewModel.captureFinalStandingsIfReady()
-                            viewModel.broadcastMyStatus()
+                    Button("Close Details") {
+                            dismiss()
                         }
                         .buttonStyle(PrimaryButtonStyle())
                         .padding(.top, 8)
                         .padding(.bottom, 24)
-                    }
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 14)
@@ -455,4 +428,27 @@ struct ScoringView: View {
             }
         }
     }
+}
+
+private struct ScoringViewPreview: View {
+    private let viewModel: GameSessionViewModel
+
+    init() {
+        let model = GameSessionViewModel(
+            airlineCard: AirlineCardCatalog.allCards[2]
+        )
+        model.playerName = "Maxwell"
+        model.suitWeight = 21
+        model.carryWeight = 5
+
+        self.viewModel = model
+    }
+
+    var body: some View {
+        ScoringView(viewModel: viewModel)
+    }
+}
+
+#Preview("Scoring Calculator") {
+    ScoringViewPreview()
 }

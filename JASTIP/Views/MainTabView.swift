@@ -99,10 +99,20 @@ struct MainTabView: View {
             .presentationDragIndicator(.visible)
             .presentationBackground(.black.opacity(0.35))
         }
+        .onChange(of: viewModel.isGameOver) { _, isGameOver in
+            guard isGameOver else { return }
+
+            viewModel.isScoreSubmitted = true
+            viewModel.broadcastMyStatus()
+            viewModel.captureFinalStandingsIfReady()
+        }
         .fullScreenCover(isPresented: $viewModel.isGameOver) {
-            ScoringView(viewModel: viewModel) {
-                viewModel.resetToLobby()
-            }
+            FinalScoreView(
+                viewModel: viewModel,
+                onBackToHome: {
+                    viewModel.resetToLobby()
+                }
+            )
         }
         .task(id: turnBanner?.id) {
             guard turnBanner != nil else { return }

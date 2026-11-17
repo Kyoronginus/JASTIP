@@ -156,7 +156,12 @@ class GameSessionViewModel {
     var playerName: String = UIDevice.current.name
     var isBoarded: Bool = false
     var isScoreSubmitted: Bool = false
-    var droppedBlockKg: Int = 0
+    var droppedBlockKg: Int {
+        guard isGameOver else { return 0 }
+        return stagedItems.reduce(0) { total, item in
+            total + item.weight
+        }
+    }
     var remotePlayers: [String: PlayerSyncPayload] = [:]
     var finalStandingsSnapshot: [PlayerStandingModel]? = nil
     
@@ -268,7 +273,6 @@ class GameSessionViewModel {
         suitWeight = 0
         carryWeight = 0
         placedPieceWeightContributions.removeAll()
-        droppedBlockKg = 0
         suitcaseGrid = .suitcase
         carryOnGrid = .carryOn
         stagedItems.removeAll()

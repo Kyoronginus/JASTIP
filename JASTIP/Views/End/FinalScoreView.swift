@@ -16,10 +16,24 @@ struct FinalScoreView: View {
     @State private var isWinnerVisible: Bool = false
     @State private var isBackToHomeVisible: Bool = false
     @State private var animationTask: Task<Void, Never>? = nil
+    @State private var hasStartedReveal = false
+    @State private var isShowingDetails = false
     
     private let rowImpact = UIImpactFeedbackGenerator(style: .light)
     private let winnerFeedback = UINotificationFeedbackGenerator()
     
+    private var areScoresReady: Bool {
+        viewModel?.areAllPlayersSubmitted ?? true
+    }
+
+    private func startRevealWhenReady() {
+        guard areScoresReady, !hasStartedReveal else { return }
+
+        viewModel?.captureFinalStandingsIfReady()
+        hasStartedReveal = true
+        startRevealSequence()
+    }
+
     private var activeStandings: [PlayerStandingModel] {
         if let vm = viewModel {
             return vm.finalStandings
@@ -163,27 +177,62 @@ struct FinalScoreView: View {
                         .buttonStyle(
                             PrimaryButtonStyle(
                                 backgroundColor: Color("TaxiYellow"),
-                                borderColor: Color("NavyBlack"),
                                 foregroundColor: Color("NavyBlack"),
                                 font: .shantellSans(20, .bold),
                                 cornerRadius: 15,
-                                borderWidth: 1.5,
                                 yShadowOffset: 4,
                                 xShadowOffset: 2,
                                 isFullWidth: true,
                                 paddingVertical: 16
                             )
                         )
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        // .transition(.move(edge: .bottom).combined(with: .opacity))
+                        
+                        Button("See Details") {
+                            isShowingDetails = true
+                        }
+                        .buttonStyle(
+                            PrimaryButtonStyle(
+                                backgroundColor: Color("TaxiYellow150"),
+                                foregroundColor: Color("NavyBlack"),
+                                font: .shantellSans(20, .bold),
+                                cornerRadius: 15,
+                                yShadowOffset: 4,
+                                xShadowOffset: 2,
+                                isFullWidth: true,
+                                paddingVertical: 16
+                            )
+                        )
                     }
                 }
-                .frame(height: 64)
+                .frame(height: 80)
                 .padding(.horizontal, 30)
-                .padding(.bottom, 28)
+                .padding(.bottom, 70)
+
+                if !areScoresReady {
+                    ZStack {
+                        Color("finalscoreBackground")
+                            .ignoresSafeArea()
+
+                        ProgressView("Collecting final scores…")
+                            .tint(.white)
+                            .foregroundStyle(.white)
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $isShowingDetails) {
+            if let viewModel {
+                ScoringView(viewModel: viewModel)
+                    .presentationDetents([.large])
+                    .presentationDragIndicator(.visible)
             }
         }
         .onAppear {
             startRevealSequence()
+        }
+        .onChange(of: areScoresReady) { _, _ in
+            startRevealWhenReady()
         }
         .onDisappear {
             animationTask?.cancel()
