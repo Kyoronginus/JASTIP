@@ -39,6 +39,8 @@ struct QRScannerView: View {
                 session: viewModel.scanner.session,
                 cameraPosition: viewModel.scanner.currentPosition
             )
+            .blur(radius: viewModel.scanner.isSwitchingCamera ? 6 : 0)
+            .animation(.easeInOut(duration: 0.15), value: viewModel.scanner.isSwitchingCamera)
             .ignoresSafeArea()
             
             // 2. Viewfinder Target & Header Bar (Hanya saat mencari QR)
