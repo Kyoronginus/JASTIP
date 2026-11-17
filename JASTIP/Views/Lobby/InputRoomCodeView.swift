@@ -10,6 +10,7 @@ import SwiftUI
 struct InputRoomCodeView: View {
     @Binding var code: String
     var codeLength: Int = 4
+    var isLoading: Bool = false
     var onBack: () -> Void = {}
     var onSubmit: () -> Void
 
@@ -54,7 +55,7 @@ struct InputRoomCodeView: View {
                 font: .shantellSans(20, .bold),
                 isFullWidth: true
             ))
-            .disabled(!isCodeComplete)
+            .disabled(!isCodeComplete || isLoading)
             .padding(.horizontal, 24)
             .padding(.bottom, 24)
         }

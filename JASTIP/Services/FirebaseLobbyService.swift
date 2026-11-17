@@ -90,6 +90,30 @@ final class FirebaseLobbyService {
         }
     }
 
+    func validateLobbyCode(_ code: String) async -> Bool {
+        var isValid = false
+        await performLobbyAction {
+            let uid = try await self.ensureSignedIn()
+            let normalizedCode = code.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+            guard normalizedCode.count == 4,
+                normalizedCode.allSatisfy({ Self.codeAlphabet.contains($0) }) else {
+                throw LobbyError.invalidCode
+            }
+
+            let reference = self.database.collection("lobbies").document(normalizedCode)
+            let snapshot = try await reference.getDocument()
+            guard let data = snapshot.data() else { throw LobbyError.lobbyNotFound }
+            guard data["status"] as? String == "waiting" else { throw LobbyError.lobbyAlreadyStarted }
+
+            let players = data["players"] as? [String: [String: String]] ?? [:]
+            if players[uid] == nil {
+                guard players.count < 5 else { throw LobbyError.lobbyFull }
+            }
+            isValid = true
+        }
+        return isValid
+    }
+
     func joinLobby(code: String, playerName: String) async {
         await performLobbyAction {
             let uid = try await self.ensureSignedIn()
