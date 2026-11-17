@@ -48,6 +48,11 @@ struct FinalScoreView: View {
     private var winnerName: String {
         displayedStandings.first?.name.lowercased() ?? "-"
     }
+
+    private func currencyText(for points: Int) -> String {
+        let amount = points * 10
+        return amount < 0 ? "-$\(abs(amount))" : "$\(amount)"
+    }
     
     private let receiptTextColor = Color(red: 58/255, green: 58/255, blue: 60/255)
     
@@ -112,15 +117,15 @@ struct FinalScoreView: View {
                                         .lineLimit(1)
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                     
-                                    Text("$\(player.income)")
+                                    Text(currencyText(for: player.income))
                                         .font(.system(size: 15, weight: .regular))
                                         .frame(width: 66, alignment: .center)
                                     
-                                    Text(player.penalty > 0 ? "-$\(player.penalty)" : "-")
+                                    Text(player.penalty > 0 ? "-\(currencyText(for: player.penalty))" : "-")
                                         .font(.system(size: 15, weight: .regular))
                                         .frame(width: 66, alignment: .center)
                                     
-                                    Text("$\(player.total)")
+                                    Text(currencyText(for: player.total))
                                         .font(.system(size: 15, weight: .bold))
                                         .frame(width: 54, alignment: .trailing)
                                 }

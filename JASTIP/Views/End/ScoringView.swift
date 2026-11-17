@@ -25,7 +25,7 @@ struct ScoringView: View {
     private var completedOrders: [JastipOrderModel] { viewModel.completedJastipOrders }
     private var jastipCardPoints: Int { viewModel.totalCompletedJastipPoints }
     
-    // MARK: - Overweight Penalty (-1 pt per kg)
+    // MARK: - Overweight Penalty (-$10 per kg)
     private var suitcaseOverweight: Int { max(0, currentPlayer.suitcaseWeight - currentPlayer.suitcaseMax) }
     private var carryOnOverweight: Int { max(0, currentPlayer.carryOnWeight - currentPlayer.carryOnMax) }
     private var totalOverweightPenalty: Int { suitcaseOverweight + carryOnOverweight }
@@ -57,6 +57,11 @@ struct ScoringView: View {
         hasPresentedFinalScore || viewModel.areAllPlayersSubmitted
     }
     
+    private func currencyText(for points: Int) -> String {
+        let amount = points * 10
+        return amount < 0 ? "-$\(abs(amount))" : "$\(amount)"
+    }
+
     var body: some View {
         calculatorBody
     }
@@ -112,7 +117,7 @@ struct ScoringView: View {
                             Text("TOTAL FINAL SCORE")
                                 .font(.plusJakarta(12, .bold))
                                 .foregroundStyle(.secondary)
-                            Text("\(totalScore) Points")
+                            Text(currencyText(for: totalScore))
                                 .font(.spaceGrotesk(32, .bold))
                                 .foregroundStyle(totalScore >= 0 ? Color("PassportBlue850") : Color("FragileRed"))
                         }
@@ -132,13 +137,13 @@ struct ScoringView: View {
                         autoScoreRow(
                             label: "Suitcase Grid",
                             detail: "\(suitcaseFilled) / 15 slots",
-                            scoreText: "+\(suitcaseFilled) pts"
+                            scoreText: "+\(currencyText(for: suitcaseFilled))"
                         )
                         Divider()
                         autoScoreRow(
                             label: "Carry-On Grid",
                             detail: "\(carryOnFilled) / 4 slots",
-                            scoreText: "+\(carryOnFilled) pts"
+                            scoreText: "+\(currencyText(for: carryOnFilled))"
                         )
                     }
                     
@@ -150,7 +155,7 @@ struct ScoringView: View {
                                     .font(.plusJakarta(14, .regular))
                                     .foregroundStyle(.secondary)
                                 Spacer()
-                                Text("0 pts")
+                                Text(currencyText(for: 0))
                                     .font(.spaceGrotesk(14, .semibold))
                                     .foregroundStyle(.secondary)
                             }
@@ -164,7 +169,7 @@ struct ScoringView: View {
                                             .font(.plusJakarta(15, .semibold))
                                     }
                                     Spacer()
-                                    Text("+\(order.points) pts")
+                                    Text(currencyText(for: order.points))
                                         .font(.spaceGrotesk(15, .bold))
                                         .foregroundStyle(.green)
                                 }
@@ -178,7 +183,7 @@ struct ScoringView: View {
                         autoBonusRow(
                             label: "Suitcase Perfect Weight (\(currentPlayer.suitcaseWeight)/\(currentPlayer.suitcaseMax) kg)",
                             isAchieved: isSuitcasePerfectWeight,
-                            rewardText: "+3 pts"
+                            rewardText: currencyText(for: 3)
                         )
                         
                         Divider()
@@ -187,7 +192,7 @@ struct ScoringView: View {
                         autoBonusRow(
                             label: "Carry-On Perfect Weight (\(currentPlayer.carryOnWeight)/\(currentPlayer.carryOnMax) kg)",
                             isAchieved: isCarryOnPerfectWeight,
-                            rewardText: "+2 pts"
+                            rewardText: currencyText(for: 2)
                         )
                         
                         Divider()
@@ -196,7 +201,7 @@ struct ScoringView: View {
                         autoBonusRow(
                             label: "Suitcase Perfect Shape (15/15 slots)",
                             isAchieved: isSuitcasePerfectShape,
-                            rewardText: "+2 pts"
+                            rewardText: currencyText(for: 2)
                         )
                         
                         Divider()
@@ -205,7 +210,7 @@ struct ScoringView: View {
                         autoBonusRow(
                             label: "Carry-On Perfect Shape (4/4 slots)",
                             isAchieved: isCarryOnPerfectShape,
-                            rewardText: "+1 pt"
+                            rewardText: currencyText(for: 1)
                         )
                     }
                     
@@ -220,14 +225,14 @@ struct ScoringView: View {
                                     autoBadge
                                 }
 
-                                Text("\(viewModel.droppedBlockKg) kg left in staging (-1 pt / kg)")
+                                Text("\(viewModel.droppedBlockKg) kg left in staging area (-$10 / kg)")
                                     .font(.plusJakarta(12, .regular))
                                     .foregroundStyle(.secondary)
                             }
 
                             Spacer()
 
-                            Text("-\(viewModel.droppedBlockKg) pts")
+                            Text(currencyText(for: -viewModel.droppedBlockKg))
                                 .font(.spaceGrotesk(15, .bold))
                                 .foregroundStyle(
                                     viewModel.droppedBlockKg > 0
@@ -246,18 +251,18 @@ struct ScoringView: View {
                                         .font(.plusJakarta(15, .semibold))
                                     autoBadge
                                 }
-                                Text("Suitcase: +\(suitcaseOverweight) kg, Carry-On: +\(carryOnOverweight) kg (-1 pt / kg)")
+                                Text("Suitcase: +\(suitcaseOverweight) kg, Carry-On: +\(carryOnOverweight) kg (-$10 / kg)")
                                     .font(.plusJakarta(12, .regular))
                                     .foregroundStyle(.secondary)
                             }
                             Spacer()
                             
                             if totalOverweightPenalty > 0 {
-                                Text("-\(totalOverweightPenalty) pts")
+                                Text(currencyText(for: -totalOverweightPenalty))
                                     .font(.spaceGrotesk(15, .bold))
                                     .foregroundStyle(Color("FragileRed"))
                             } else {
-                                Text("0 pts")
+                                Text(currencyText(for: 0))
                                     .font(.spaceGrotesk(14, .medium))
                                     .foregroundStyle(.secondary)
                             }
@@ -273,7 +278,7 @@ struct ScoringView: View {
                                     autoBadge
                                 }
                                 Spacer()
-                                Text("0 pts")
+                                Text(currencyText(for: 0))
                                     .font(.spaceGrotesk(14, .medium))
                                     .foregroundStyle(.secondary)
                             }
@@ -288,7 +293,7 @@ struct ScoringView: View {
                                         autoBadge
                                     }
                                     Spacer()
-                                    Text("-\(order.points) pts")
+                                    Text(currencyText(for: -order.points))
                                         .font(.spaceGrotesk(15, .bold))
                                         .foregroundStyle(Color("FragileRed"))
                                 }
@@ -356,7 +361,7 @@ struct ScoringView: View {
                     .font(.spaceGrotesk(15, .bold))
                     .foregroundStyle(.green)
             } else {
-                Text("0 pts")
+                Text(currencyText(for: 0))
                     .font(.spaceGrotesk(14, .medium))
                     .foregroundStyle(.secondary)
             }

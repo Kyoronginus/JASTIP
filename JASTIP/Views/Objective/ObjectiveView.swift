@@ -14,6 +14,8 @@ struct ObjectiveView: View {
         static let sent: SystemSoundID = 1004
     }
 
+    @Environment(\.dismiss) private var dismiss
+
     // Terima viewModel dari MainTabView
     @Bindable var viewModel: GameSessionViewModel
     
@@ -56,11 +58,35 @@ struct ObjectiveView: View {
     var body: some View {
         VStack(spacing: 0) {
             // 1. Header Bar
-            VStack(spacing: 0){
-                Text("Jastip Order")
-                    .font(.spaceGrotesk(33.4, .bold))
-                
-                Image("HeaderLine")
+            ZStack() {
+                HStack {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 14, weight: .bold))
+                    }
+                    .buttonStyle(PrimaryButtonStyle(
+                        backgroundColor: .white,
+                        foregroundColor: Color(.black),
+                        cornerRadius: 14,
+                        paddingVertical: 14,
+                        paddingHorizontal: 15
+                    ))
+
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, -10)
+
+                VStack(spacing: 0) {
+                    Text("Jastip Order")
+                        .font(.spaceGrotesk(33.4, .bold))
+                        .padding(.top, 10)
+                        .padding(.bottom, 10)
+
+                    Image("HeaderLine")
+                }
             }
             
             // 2. Scrollable Chat Content

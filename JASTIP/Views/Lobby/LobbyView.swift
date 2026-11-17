@@ -43,16 +43,11 @@ struct LobbyView: View {
                 Button {
                     showLeaveConfirmation = true
                 } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 14, weight: .bold))
-//                            Text(lobby.isHost ? "Close Lobby" : "Leave")
-////                                .font(.plusJakarta(13, .bold))
-                    }
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 14, weight: .bold))
                 }
                 .buttonStyle(PrimaryButtonStyle(
                     backgroundColor: .white,
-//                        borderColor: Color("TaxiYellow"),
                     foregroundColor: Color(.black),
                     cornerRadius: 14,
                     paddingVertical: 14,

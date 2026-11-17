@@ -39,6 +39,7 @@ struct MainTabView: View {
                 .navigationDestination(isPresented: $isObjectivePresented) {
                     ObjectiveView(viewModel: viewModel)
                         .navigationBarTitleDisplayMode(.inline)
+                        .navigationBarBackButtonHidden(true)
                 }
             }
 

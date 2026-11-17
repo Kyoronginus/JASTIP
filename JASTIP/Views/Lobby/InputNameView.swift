@@ -39,12 +39,11 @@ struct InputNameView: View {
                     onBack()
                 } label: {
                     Image(systemName: "chevron.left")
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.system(size: 14, weight: .bold))
                 }
                 .buttonStyle(PrimaryButtonStyle(
-                    backgroundColor: .black,
-                    borderColor: Color("TaxiYellow"),
-                    foregroundColor: Color("TaxiYellow"),
+                    backgroundColor: .white,
+                    foregroundColor: Color(.black),
                     cornerRadius: 14,
                     paddingVertical: 14,
                     paddingHorizontal: 15
