@@ -153,31 +153,34 @@ struct LuggageGridView: View {
                 }
             )
             .overlay(alignment: .topLeading) {
-                ForEach(grid.placedPieces.filter { !$0.piece.imageName.isEmpty }) { placed in
-                    let coordinates = LuggagePlacementEngine.absoluteCoordinates(
-                        for: placed.piece,
-                        at: placed.origin,
-                        rotation: placed.rotation
-                    )
-                    let columns = (coordinates.map(\.x).max() ?? 0) - placed.origin.x + 1
-                    let rows = (coordinates.map(\.y).max() ?? 0) - placed.origin.y + 1
-                    let imageSize = CGSize(
-                        width: CGFloat(columns) * cellSize + CGFloat(columns - 1) * cellSpacing,
-                        height: CGFloat(rows) * cellSize + CGFloat(rows - 1) * cellSpacing
-                    )
-                    let step = cellSize + cellSpacing
+                ZStack(alignment: .topLeading) {
+                    ForEach(grid.placedPieces.filter { !$0.piece.imageName.isEmpty }) { placed in
+                        let coordinates = LuggagePlacementEngine.absoluteCoordinates(
+                            for: placed.piece,
+                            at: placed.origin,
+                            rotation: placed.rotation
+                        )
+                        let columns = (coordinates.map(\.x).max() ?? 0) - placed.origin.x + 1
+                        let rows = (coordinates.map(\.y).max() ?? 0) - placed.origin.y + 1
+                        let imageSize = CGSize(
+                            width: CGFloat(columns) * cellSize + CGFloat(columns - 1) * cellSpacing,
+                            height: CGFloat(rows) * cellSize + CGFloat(rows - 1) * cellSpacing
+                        )
+                        let step = cellSize + cellSpacing
 
-                    PieceItemImageView(
-                        piece: placed.piece,
-                        rotation: placed.rotation,
-                        size: imageSize
-                    )
-                    .opacity(placed.id == draggingPieceId ? 0.15 : 1)
-                    .offset(
-                        x: CGFloat(placed.origin.x) * step,
-                        y: CGFloat(placed.origin.y) * step
-                    )
+                        PieceItemImageView(
+                            piece: placed.piece,
+                            rotation: placed.rotation,
+                            size: imageSize
+                        )
+                        .position(
+                            x: CGFloat(placed.origin.x) * step + imageSize.width / 2,
+                            y: CGFloat(placed.origin.y) * step + imageSize.height / 2
+                        )
+                        .opacity(placed.id == draggingPieceId ? 0.15 : 1)
+                    }
                 }
+                .frame(width: gridWidth, height: gridHeight, alignment: .topLeading)
                 .allowsHitTesting(false)
             }
             .offset(gridCenterOffset)
