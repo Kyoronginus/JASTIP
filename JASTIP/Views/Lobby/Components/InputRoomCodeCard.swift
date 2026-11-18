@@ -51,7 +51,7 @@ struct InputRoomCodeCard: View {
                             }
                         } else {
                             Text(code)
-                                .font(.spaceGrotesk(48, .medium))
+                                .font(.spaceGrotesk(38, .medium))
                                 .tracking(6)
                                 .foregroundColor(.black)
                         }
@@ -87,7 +87,7 @@ struct InputRoomCodeCard: View {
 #Preview {
     ZStack {
         Color.gray.ignoresSafeArea()
-        InputRoomCodeCard(code: .constant("DRPF"))
+        InputRoomCodeCard(code: .constant("AJKW"))
             .padding()
     }
 }

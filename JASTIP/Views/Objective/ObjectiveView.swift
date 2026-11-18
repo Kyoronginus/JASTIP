@@ -14,6 +14,8 @@ struct ObjectiveView: View {
         static let sent: SystemSoundID = 1004
     }
 
+    @Environment(\.dismiss) private var dismiss
+
     // Terima viewModel dari MainTabView
     @Bindable var viewModel: GameSessionViewModel
     
@@ -27,7 +29,10 @@ struct ObjectiveView: View {
     private let successFeedback = UINotificationFeedbackGenerator()
 
     private var actionBarPrompt: String {
-        viewModel.isMyTurn ? "anyone else need anything?" : "Wait for your turn"
+//        viewModel.isMyTurn ? "anyone else need anything?" : "Wait for your turn"
+        if !viewModel.isMyTurn { return "Wait for your turn" }
+        if viewModel.remainingTurnActionQuota <= 0 { return "You're too exhausted to move" }
+        return "anyone else need anything?"
     }
     
     // MARK: - Helper Formatting Teks Input Bar
@@ -53,11 +58,35 @@ struct ObjectiveView: View {
     var body: some View {
         VStack(spacing: 0) {
             // 1. Header Bar
-            VStack(spacing: 0){
-                Text("Jastip Order")
-                    .font(.spaceGrotesk(33.4, .bold))
-                
-                Image("HeaderLine")
+            ZStack() {
+                HStack {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 14, weight: .bold))
+                    }
+                    .buttonStyle(PrimaryButtonStyle(
+                        backgroundColor: .white,
+                        foregroundColor: Color(.black),
+                        cornerRadius: 14,
+                        paddingVertical: 14,
+                        paddingHorizontal: 15
+                    ))
+
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, -10)
+
+                VStack(spacing: 0) {
+                    Text("Jastip Order")
+                        .font(.spaceGrotesk(33.4, .bold))
+                        .padding(.top, 10)
+                        .padding(.bottom, 10)
+
+                    Image("HeaderLine")
+                }
             }
             
             // 2. Scrollable Chat Content
@@ -216,7 +245,7 @@ struct ObjectiveView: View {
                     }
                 } label: {
                     ZStack{
-                        if !viewModel.isMyTurn {
+                        if !viewModel.isMyTurn || !viewModel.canUseTurnAction{
                             Image("addorderbackdisabled")
                                 .resizable()
                                 .scaledToFit()
@@ -238,7 +267,7 @@ struct ObjectiveView: View {
                             .foregroundColor(.white)
                     }
                 }
-                .disabled(!viewModel.isMyTurn)
+                .disabled(!viewModel.canUseTurnAction || !viewModel.isMyTurn)
             } else {
                 // TAMPILAN MODE DRAFTING (Saat memilih kartu)
                 ZStack{
@@ -297,6 +326,8 @@ struct ObjectiveView: View {
             viewModel.selectedOrderIds.removeAll()
             viewModel.visibleCandidateOrders.removeAll()
         }
+        
+        viewModel.consumeTurnActionQuota()
 
         let playerName = viewModel.playerName.trimmingCharacters(in: .whitespacesAndNewlines)
         viewModel.showToast(
@@ -356,6 +387,7 @@ struct ObjectiveView: View {
             order.isPersonal = true
             return order
         }
+        
         
         withAnimation(.easeInOut(duration: 0.3)) {
             // 1. Simpan ke histori chat

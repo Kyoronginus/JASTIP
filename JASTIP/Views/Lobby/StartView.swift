@@ -71,6 +71,7 @@ struct StartView: View {
                     case .inputCode:
                         InputRoomCodeView(
                             code: $joinCode,
+                            isLoading: viewModel.lobbyService.isLoading,
                             onBack: {
                                 withAnimation(.easeInOut(duration: 0.15)) {
                                     step = .home
@@ -78,8 +79,12 @@ struct StartView: View {
                                 }
                             },
                             onSubmit: {
-                                withAnimation(.easeInOut(duration: 0.15)) {
-                                    step = .inputName(isHost: false)
+                                Task {
+                                    if await viewModel.lobbyService.validateLobbyCode(joinCode) {
+                                        withAnimation(.easeInOut(duration: 0.15)) {
+                                            step = .inputName(isHost: false)
+                                        }
+                                    }
                                 }
                             }
                         )

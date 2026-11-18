@@ -8,11 +8,15 @@
 import SwiftUI
 import AVFoundation
 import CoreHaptics
+import CoreMotion
 import UIKit
 
 @Observable
 class QRScannerViewModel {
     let scanner = QRScannerManager()
+    private let motionManager = CMMotionManager()
+    private var isDeviceFlat = true
+    private var hasReceivedInitialMotion = false
     
     var scannedCode: String? = nil
     var detectedPiece: PieceModel? = nil
@@ -27,7 +31,7 @@ class QRScannerViewModel {
     private var hapticEngine: CHHapticEngine?
     
     var headerTitle: String {
-        confirmedWeight != nil ? "PIECE TERKONFIRMASI" : "QR TERDETEKSI"
+        confirmedWeight != nil ? "PIECE CONFIRMED" : "QR DETECTED"
     }
     
     var isShowingPopup: Bool {
@@ -49,6 +53,7 @@ class QRScannerViewModel {
     }
     
     func startScanning() {
+        startCameraPositionMonitoring()
         scanner.startScanning()
         scanner.onCodeDetected = { [weak self] code in
             self?.handleDetectedCode(code)
@@ -56,7 +61,33 @@ class QRScannerViewModel {
     }
     
     func stopScanning() {
+        motionManager.stopDeviceMotionUpdates()
         scanner.stopScanning()
+    }
+
+    private func startCameraPositionMonitoring() {
+        guard motionManager.isDeviceMotionAvailable else { return }
+
+        motionManager.deviceMotionUpdateInterval = 0.25
+        motionManager.startDeviceMotionUpdates(to: .main) { [weak self] motion, _ in
+            guard let self, let motion else { return }
+
+            let verticalGravity = abs(motion.gravity.z)
+            let shouldUseFrontCamera: Bool
+            if self.hasReceivedInitialMotion {
+                shouldUseFrontCamera = self.isDeviceFlat
+                    ? verticalGravity >= 0.82
+                    : verticalGravity >= 0.92
+            } else {
+                shouldUseFrontCamera = verticalGravity >= 0.92
+                self.hasReceivedInitialMotion = true
+            }
+
+            guard shouldUseFrontCamera != self.isDeviceFlat else { return }
+
+            self.isDeviceFlat = shouldUseFrontCamera
+            self.scanner.setCameraPosition(shouldUseFrontCamera ? .front : .back)
+        }
     }
     
     func handleDetectedCode(_ code: String) {
@@ -78,8 +109,8 @@ class QRScannerViewModel {
             self.scannedCode = code
             self.detectedPiece = piece
             self.rejectionMessage = allowsEitherLuggage
-                ? "Barang ini tidak muat pada susunan Suitcase maupun Carry-On saat ini."
-                : "Barang ini tidak muat pada susunan \(targetIsSuitcase ? "Suitcase" : "Carry-On") saat ini."
+                ? "This item does not fit in your current Suitcase or Carry-On layout."
+                : "This item does not fit in your current \(targetIsSuitcase ? "Suitcase" : "Carry-On") layout."
             return
         }
         

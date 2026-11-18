@@ -11,6 +11,7 @@ struct ScoringView: View {
     @Bindable var viewModel: GameSessionViewModel
     var onFinishGame: () -> Void = {}
     @State private var hasPresentedFinalScore = false
+    @Environment(\.dismiss) private var dismiss
     
     // MARK: - Automated Data dari ViewModel
     private var currentPlayer: PlayerStatusModel {
@@ -24,7 +25,7 @@ struct ScoringView: View {
     private var completedOrders: [JastipOrderModel] { viewModel.completedJastipOrders }
     private var jastipCardPoints: Int { viewModel.totalCompletedJastipPoints }
     
-    // MARK: - Overweight Penalty (-1 pt per kg)
+    // MARK: - Overweight Penalty (-$10 per kg)
     private var suitcaseOverweight: Int { max(0, currentPlayer.suitcaseWeight - currentPlayer.suitcaseMax) }
     private var carryOnOverweight: Int { max(0, currentPlayer.carryOnWeight - currentPlayer.carryOnMax) }
     private var totalOverweightPenalty: Int { suitcaseOverweight + carryOnOverweight }
@@ -56,30 +57,13 @@ struct ScoringView: View {
         hasPresentedFinalScore || viewModel.areAllPlayersSubmitted
     }
     
+    private func currencyText(for points: Int) -> String {
+        let amount = points * 10
+        return amount < 0 ? "-$\(abs(amount))" : "$\(amount)"
+    }
+
     var body: some View {
-        Group {
-            if showFinalScore {
-                FinalScoreView(
-                    viewModel: viewModel,
-                    onBackToHome: onFinishGame
-                )
-                .transition(.opacity)
-            } else {
-                calculatorBody
-                    .onAppear {
-                        viewModel.broadcastMyStatus()
-                    }
-                    .onChange(of: viewModel.droppedBlockKg) { _, _ in
-                        viewModel.broadcastMyStatus()
-                    }
-            }
-        }
-        .onAppear {
-            updateFinalScorePresentation()
-        }
-        .onChange(of: viewModel.areAllPlayersSubmitted) { _, _ in
-            updateFinalScorePresentation()
-        }
+        calculatorBody
     }
 
     private func updateFinalScorePresentation() {
@@ -133,7 +117,7 @@ struct ScoringView: View {
                             Text("TOTAL FINAL SCORE")
                                 .font(.plusJakarta(12, .bold))
                                 .foregroundStyle(.secondary)
-                            Text("\(totalScore) Points")
+                            Text(currencyText(for: totalScore))
                                 .font(.spaceGrotesk(32, .bold))
                                 .foregroundStyle(totalScore >= 0 ? Color("PassportBlue850") : Color("FragileRed"))
                         }
@@ -153,13 +137,13 @@ struct ScoringView: View {
                         autoScoreRow(
                             label: "Suitcase Grid",
                             detail: "\(suitcaseFilled) / 15 slots",
-                            scoreText: "+\(suitcaseFilled) pts"
+                            scoreText: "+\(currencyText(for: suitcaseFilled))"
                         )
                         Divider()
                         autoScoreRow(
                             label: "Carry-On Grid",
                             detail: "\(carryOnFilled) / 4 slots",
-                            scoreText: "+\(carryOnFilled) pts"
+                            scoreText: "+\(currencyText(for: carryOnFilled))"
                         )
                     }
                     
@@ -171,7 +155,7 @@ struct ScoringView: View {
                                     .font(.plusJakarta(14, .regular))
                                     .foregroundStyle(.secondary)
                                 Spacer()
-                                Text("0 pts")
+                                Text(currencyText(for: 0))
                                     .font(.spaceGrotesk(14, .semibold))
                                     .foregroundStyle(.secondary)
                             }
@@ -185,7 +169,7 @@ struct ScoringView: View {
                                             .font(.plusJakarta(15, .semibold))
                                     }
                                     Spacer()
-                                    Text("+\(order.points) pts")
+                                    Text(currencyText(for: order.points))
                                         .font(.spaceGrotesk(15, .bold))
                                         .foregroundStyle(.green)
                                 }
@@ -199,7 +183,7 @@ struct ScoringView: View {
                         autoBonusRow(
                             label: "Suitcase Perfect Weight (\(currentPlayer.suitcaseWeight)/\(currentPlayer.suitcaseMax) kg)",
                             isAchieved: isSuitcasePerfectWeight,
-                            rewardText: "+3 pts"
+                            rewardText: currencyText(for: 3)
                         )
                         
                         Divider()
@@ -208,7 +192,7 @@ struct ScoringView: View {
                         autoBonusRow(
                             label: "Carry-On Perfect Weight (\(currentPlayer.carryOnWeight)/\(currentPlayer.carryOnMax) kg)",
                             isAchieved: isCarryOnPerfectWeight,
-                            rewardText: "+2 pts"
+                            rewardText: currencyText(for: 2)
                         )
                         
                         Divider()
@@ -217,7 +201,7 @@ struct ScoringView: View {
                         autoBonusRow(
                             label: "Suitcase Perfect Shape (15/15 slots)",
                             isAchieved: isSuitcasePerfectShape,
-                            rewardText: "+2 pts"
+                            rewardText: currencyText(for: 2)
                         )
                         
                         Divider()
@@ -226,20 +210,36 @@ struct ScoringView: View {
                         autoBonusRow(
                             label: "Carry-On Perfect Shape (4/4 slots)",
                             isAchieved: isCarryOnPerfectShape,
-                            rewardText: "+1 pt"
+                            rewardText: currencyText(for: 1)
                         )
                     }
                     
                     // MARK: - 4. Penalties Section
                     sectionCard(title: "PENALTIES") {
                         // Dropped Block (MANUAL STEPPER)
-                        stepperRow(
-                            label: "Dropped Block (-1 pt / kg)",
-                            value: $viewModel.droppedBlockKg,
-                            range: 0...30,
-                            isNegative: true
-                        )
-                        .disabled(viewModel.isScoreSubmitted)
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack(spacing: 6) {
+                                    Text("Dropped Items")
+                                        .font(.plusJakarta(15, .semibold))
+                                    autoBadge
+                                }
+
+                                Text("\(viewModel.droppedBlockKg) kg left in staging area (-$10 / kg)")
+                                    .font(.plusJakarta(12, .regular))
+                                    .foregroundStyle(.secondary)
+                            }
+
+                            Spacer()
+
+                            Text(currencyText(for: -viewModel.droppedBlockKg))
+                                .font(.spaceGrotesk(15, .bold))
+                                .foregroundStyle(
+                                    viewModel.droppedBlockKg > 0
+                                        ? Color("FragileRed")
+                                        : .secondary
+                                )
+                        }
                         
                         Divider()
                         
@@ -251,18 +251,18 @@ struct ScoringView: View {
                                         .font(.plusJakarta(15, .semibold))
                                     autoBadge
                                 }
-                                Text("Suitcase: +\(suitcaseOverweight) kg, Carry-On: +\(carryOnOverweight) kg (-1 pt / kg)")
+                                Text("Suitcase: +\(suitcaseOverweight) kg, Carry-On: +\(carryOnOverweight) kg (-$10 / kg)")
                                     .font(.plusJakarta(12, .regular))
                                     .foregroundStyle(.secondary)
                             }
                             Spacer()
                             
                             if totalOverweightPenalty > 0 {
-                                Text("-\(totalOverweightPenalty) pts")
+                                Text(currencyText(for: -totalOverweightPenalty))
                                     .font(.spaceGrotesk(15, .bold))
                                     .foregroundStyle(Color("FragileRed"))
                             } else {
-                                Text("0 pts")
+                                Text(currencyText(for: 0))
                                     .font(.spaceGrotesk(14, .medium))
                                     .foregroundStyle(.secondary)
                             }
@@ -278,7 +278,7 @@ struct ScoringView: View {
                                     autoBadge
                                 }
                                 Spacer()
-                                Text("0 pts")
+                                Text(currencyText(for: 0))
                                     .font(.spaceGrotesk(14, .medium))
                                     .foregroundStyle(.secondary)
                             }
@@ -293,7 +293,7 @@ struct ScoringView: View {
                                         autoBadge
                                     }
                                     Spacer()
-                                    Text("-\(order.points) pts")
+                                    Text(currencyText(for: -order.points))
                                         .font(.spaceGrotesk(15, .bold))
                                         .foregroundStyle(Color("FragileRed"))
                                 }
@@ -302,34 +302,12 @@ struct ScoringView: View {
                     }
                     
                     // MARK: - Finish Action Button
-                    if viewModel.isScoreSubmitted {
-                        HStack(spacing: 10) {
-                            ProgressView()
-                                .tint(.black)
-                            Text("Waiting for others… (\(viewModel.submittedPlayerCount)/\(viewModel.totalLobbyPlayerCount))")
-                                .font(.shantellSans(15, .bold))
-                                .foregroundStyle(Color("NavyBlack"))
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(Color("TaxiYellow").opacity(0.85))
-                        .clipShape(RoundedRectangle(cornerRadius: 15))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 15)
-                                .stroke(Color("NavyBlack"), lineWidth: 1.5)
-                        )
-                        .padding(.top, 8)
-                        .padding(.bottom, 24)
-                    } else {
-                        Button("FINISHED PLAYING") {
-                            viewModel.isScoreSubmitted = true
-                            viewModel.captureFinalStandingsIfReady()
-                            viewModel.broadcastMyStatus()
+                    Button("Close Details") {
+                            dismiss()
                         }
                         .buttonStyle(PrimaryButtonStyle())
                         .padding(.top, 8)
                         .padding(.bottom, 24)
-                    }
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 14)
@@ -383,7 +361,7 @@ struct ScoringView: View {
                     .font(.spaceGrotesk(15, .bold))
                     .foregroundStyle(.green)
             } else {
-                Text("0 pts")
+                Text(currencyText(for: 0))
                     .font(.spaceGrotesk(14, .medium))
                     .foregroundStyle(.secondary)
             }
@@ -455,4 +433,27 @@ struct ScoringView: View {
             }
         }
     }
+}
+
+private struct ScoringViewPreview: View {
+    private let viewModel: GameSessionViewModel
+
+    init() {
+        let model = GameSessionViewModel(
+            airlineCard: AirlineCardCatalog.allCards[2]
+        )
+        model.playerName = "Maxwell"
+        model.suitWeight = 21
+        model.carryWeight = 5
+
+        self.viewModel = model
+    }
+
+    var body: some View {
+        ScoringView(viewModel: viewModel)
+    }
+}
+
+#Preview("Scoring Calculator") {
+    ScoringViewPreview()
 }

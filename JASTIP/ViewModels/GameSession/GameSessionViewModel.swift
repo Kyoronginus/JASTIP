@@ -52,6 +52,7 @@ class GameSessionViewModel {
     var turnOrder: [TurnPlayer] = []
     var currentTurnIndex: Int = 0
     var daysToGo: Int = 7
+    var actionsUsedThisTurn: Int = 0
     var roundAnimationPhase: RoundAnimationPhase = .none
     
     func triggerRoundTransitionAnimation(from oldDay: Int, to newDay: Int) {
@@ -156,7 +157,12 @@ class GameSessionViewModel {
     var playerName: String = UIDevice.current.name
     var isBoarded: Bool = false
     var isScoreSubmitted: Bool = false
-    var droppedBlockKg: Int = 0
+    var droppedBlockKg: Int {
+        guard isGameOver else { return 0 }
+        return stagedItems.reduce(0) { total, item in
+            total + item.weight
+        }
+    }
     var remotePlayers: [String: PlayerSyncPayload] = [:]
     var finalStandingsSnapshot: [PlayerStandingModel]? = nil
     
@@ -175,6 +181,33 @@ class GameSessionViewModel {
     var canEndTurn: Bool {
         isMyTurn && !isDraftingObjective
     }
+    
+    // MARK: - Turn Action
+    
+    var maxTurnActionQuota: Int {
+        switch activeHourEvent?.type {
+        case .energyBoost:
+            return 3
+        case .customsIssue, .evacuation:
+            return 1
+        default:
+            return 2
+        }
+    }
+    
+    var remainingTurnActionQuota: Int {
+        maxTurnActionQuota - actionsUsedThisTurn
+    }
+    
+    var canUseTurnAction: Bool {
+        isMyTurn && remainingTurnActionQuota > 0 && currentEvent == nil && !isBoarded && !isGameOver
+    }
+    
+    
+    func consumeTurnActionQuota() {
+        actionsUsedThisTurn += 1
+    }
+
     
     // MARK: - Initialization
     init(airlineCard: AirlineCardModel = AirlineCardCatalog.getRandomCard()) {
@@ -268,7 +301,7 @@ class GameSessionViewModel {
         suitWeight = 0
         carryWeight = 0
         placedPieceWeightContributions.removeAll()
-        droppedBlockKg = 0
+        actionsUsedThisTurn = 0
         suitcaseGrid = .suitcase
         carryOnGrid = .carryOn
         stagedItems.removeAll()
@@ -419,7 +452,7 @@ class GameSessionViewModel {
         captureGridSnapshotIfNeeded()
         stagingWeight = weight
         // Hapus barang scan lama yang belum ditaruh jika ada, pertahankan barang yang sedang ditata ulang
-        stagedItems.removeAll { !$0.isAlreadyCountedInWeight }
+        consumeTurnActionQuota()
         stagedItems.append(
             StagedItem(
                 id: UUID(),
@@ -441,6 +474,15 @@ class GameSessionViewModel {
             carryOnGrid.placedPieces.removeAll { $0.id == placedPiece.id }
         }
         
+        let contribution = placedPieceWeightContributions[placedPiece.id]
+            ?? weight(for: placedPiece.piece.id)
+
+        if placedPiece.assignedLuggage == .suitcase {
+            suitWeight = max(0, suitWeight - contribution)
+        } else {
+            carryWeight = max(0, carryWeight - contribution)
+        }
+
         let item = StagedItem(
             id: placedPiece.id,
             piece: placedPiece.piece,
@@ -452,6 +494,7 @@ class GameSessionViewModel {
         )
         if !stagedItems.contains(where: { $0.id == item.id }) {
             stagedItems.append(item)
+            broadcastMyStatus()
         }
     }
     
@@ -504,15 +547,16 @@ class GameSessionViewModel {
         if !item.isAlreadyCountedInWeight {
             recordItemPlacement(piece: item.piece, weight: item.weight, isSuitcase: luggage == .suitcase)
             placedPieceWeightContributions[placed.id] = isZeroWeightHour ? 0 : item.weight
-        } else if let sourceLuggage = item.weightLuggage, sourceLuggage != luggage {
-            let contribution = placedPieceWeightContributions[item.id] ?? weight(for: item.piece.id)
-            if sourceLuggage == .suitcase {
-                suitWeight = max(0, suitWeight - contribution)
-                carryWeight += contribution
-            } else {
-                carryWeight = max(0, carryWeight - contribution)
+        } else {
+            let contribution = placedPieceWeightContributions[item.id]
+                ?? weight(for: item.piece.id)
+
+            if luggage == .suitcase {
                 suitWeight += contribution
+            } else {
+                carryWeight += contribution
             }
+
             placedPieceWeightContributions[item.id] = contribution
             broadcastMyStatus()
         }

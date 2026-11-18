@@ -37,17 +37,61 @@ struct CardFlipView<Front: View, Back: View>: View, Animatable {
 
 struct EventAlertView: View {
     let event: RandomEventModel
+    var targetFrame: CGRect = .zero
+    var startsFromTarget: Bool = false
     var onDismiss: () -> Void = {}
     
     @State private var angle: Double = 0
     @State private var offsetY: CGFloat = 650
     @State private var showButton: Bool = false
     @State private var isDismissing: Bool = false
+    @State private var isFlyingToTarget: Bool = false
+    @State private var backdropOpacity: Double = 0.55
+    @State private var cardRestCenter: CGPoint = .zero
+    
+    init(
+        event: RandomEventModel,
+        targetFrame: CGRect = .zero,
+        startsFromTarget: Bool = false,
+        onDismiss: @escaping () -> Void = {}
+    ) {
+        self.event = event
+        self.targetFrame = targetFrame
+        self.startsFromTarget = startsFromTarget
+        self.onDismiss = onDismiss
+        _angle = State(initialValue: startsFromTarget ? 180 : 0)
+        _offsetY = State(initialValue: startsFromTarget ? 0 : 650)
+        _isFlyingToTarget = State(initialValue: startsFromTarget)
+        _backdropOpacity = State(initialValue: startsFromTarget ? 0 : 0.55)
+    }
+
+    private var hasValidTarget: Bool {
+        targetFrame.width > 0 && targetFrame.height > 0 && cardRestCenter != .zero
+    }
+    
+    private var cardScale: CGFloat {
+        (isFlyingToTarget && hasValidTarget) ? (targetFrame.width / 270.0) : 1.0
+    }
+    
+    private var cardTiltDegrees: Double {
+        (isFlyingToTarget && hasValidTarget) ? 7.0 : 0.0
+    }
+    
+    private var cardOffsetX: CGFloat {
+        (isFlyingToTarget && hasValidTarget) ? (targetFrame.midX - cardRestCenter.x) : 0
+    }
+    
+    private var cardOffsetY: CGFloat {
+        if isFlyingToTarget {
+            return hasValidTarget ? (targetFrame.midY - cardRestCenter.y) : 700
+        }
+        return offsetY
+    }
     
     var body: some View {
         ZStack {
             // Dimmed overlay background
-            Color.black.opacity(0.55)
+            Color.black.opacity(backdropOpacity)
                 .ignoresSafeArea()
                 .onTapGesture {
                     if angle >= 180 {
@@ -56,43 +100,64 @@ struct EventAlertView: View {
                 }
             
             VStack(spacing: 24) {
-                // 3D Flip Card using EventCard component
-                CardFlipView(angle: angle) {
-                    EventCard(event: event, isFaceUp: true)
-                } back: {
-                    EventCard(event: event, isFaceUp: false)
-                }
-                .onTapGesture {
-                    if angle >= 180 {
-                        dismissWithAnimation()
+                // Layout slot tetap di tengah agar titik istirahat kartu terukur akurat dalam koordinat global
+                Color.clear
+                    .frame(width: 270, height: 393)
+                    .background(
+                        GeometryReader { slotGeo in
+                            Color.clear
+                                .onAppear {
+                                    let frame = slotGeo.frame(in: .global)
+                                    cardRestCenter = CGPoint(x: frame.midX, y: frame.midY)
+                                }
+                                .onChange(of: slotGeo.frame(in: .global)) { _, newFrame in
+                                    cardRestCenter = CGPoint(x: newFrame.midX, y: newFrame.midY)
+                                }
+                        }
+                    )
+                    .overlay {
+                        // 3D Flip Card using EventCard component
+                        CardFlipView(angle: angle) {
+                            EventCard(
+                                event: event,
+                                isFaceUp: true,
+                                shadowColor: .black.opacity(isFlyingToTarget && hasValidTarget ? 0.22 : 0.45),
+                                shadowRadius: (isFlyingToTarget && hasValidTarget) ? 0 : 20,
+                                shadowX: (isFlyingToTarget && hasValidTarget) ? 10 : 0,
+                                shadowY: (isFlyingToTarget && hasValidTarget) ? 12 : 10
+                            )
+                        } back: {
+                            EventCard(event: event, isFaceUp: false)
+                        }
+                        .scaleEffect(cardScale)
+                        .rotationEffect(.degrees(cardTiltDegrees))
+                        .offset(x: cardOffsetX, y: cardOffsetY)
+                        .onTapGesture {
+                            if angle >= 180 {
+                                dismissWithAnimation()
+                            }
+                        }
                     }
-                }
                 
-                // OK Button
-                if showButton {
-                    Button {
-                        dismissWithAnimation()
-                    } label: {
-                        Text("OK, GOT IT")
-//                            .font(.system(size: 16, weight: .bold, design: .rounded))
-                            .tracking(1)
-                            .frame(maxWidth: 240)
-                    }
-                    .buttonStyle(PrimaryButtonStyle(
-//                        backgroundColor: Color("NavyBlack"),
-//                        borderColor: Color("TaxiYellow"),
-                        foregroundColor: .black,
-                        cornerRadius: 16,
-                        paddingVertical: 14,
-                        paddingHorizontal: 20
-                    ))
-                    .transition(.opacity.combined(with: .scale(scale: 0.92)))
-                } else {
-                    Color.clear
-                        .frame(height: 52)
+                // OK Button (layout tetap agar kartu tidak bergeser saat showButton berubah)
+                Button {
+                    dismissWithAnimation()
+                } label: {
+                    Text("OK, GOT IT")
+                        .tracking(1)
+                        .frame(maxWidth: 240)
                 }
+                .buttonStyle(PrimaryButtonStyle(
+                    foregroundColor: .black,
+                    cornerRadius: 16,
+                    paddingVertical: 14,
+                    paddingHorizontal: 20
+                ))
+                .opacity(showButton ? 1 : 0)
+                .scaleEffect(showButton ? 1 : 0.92)
+                .disabled(!showButton)
+                .allowsHitTesting(showButton)
             }
-            .offset(y: offsetY)
         }
         .onAppear {
             startEntranceSequence()
@@ -101,19 +166,31 @@ struct EventAlertView: View {
     
     // MARK: - Animation Sequence
     private func startEntranceSequence() {
-        // 1. Slide up face-down
+        if startsFromTarget {
+            // Tunggu 1 runloop agar slotGeo.onAppear sudah mengisi cardRestCenter
+            DispatchQueue.main.async {
+                withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
+                    isFlyingToTarget = false
+                    backdropOpacity = 0.55
+                }
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                withAnimation(.easeIn(duration: 0.2)) {
+                    showButton = true
+                }
+            }
+            return
+        }
+
+        // Flow lama untuk event baru
         withAnimation(.spring(response: 0.5, dampingFraction: 0.78)) {
             offsetY = 0
         }
-        
-        // 2. 3D Flip reveal
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.38) {
             withAnimation(.easeInOut(duration: 0.65)) {
                 angle = 180
             }
         }
-        
-        // 3. Reveal dismiss button
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.05) {
             withAnimation(.easeIn(duration: 0.25)) {
                 showButton = true
@@ -124,11 +201,13 @@ struct EventAlertView: View {
     private func dismissWithAnimation() {
         guard !isDismissing else { return }
         isDismissing = true
-        withAnimation(.easeIn(duration: 0.28)) {
-            offsetY = 700
+        withAnimation(.easeOut(duration: 0.18)) {
             showButton = false
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.28) {
+        withAnimation(.spring(response: 0.42, dampingFraction: 0.85)) {
+            backdropOpacity = 0
+            isFlyingToTarget = true
+        } completion: {
             onDismiss()
         }
     }
