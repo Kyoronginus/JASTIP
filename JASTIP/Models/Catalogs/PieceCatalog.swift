@@ -72,36 +72,41 @@ struct PieceCatalog {
         PieceModel(id: "JASTIP5-8", shape: .square, color: .purple, gridCount: 4, isAnomaly: false),
         
         // unique pieces
-        // lupa, ntar ditambah
-        // xx
-        //  xx
-        //   x
-        PieceModel(id: "JASTIP5-9", shape:.unique, color: .purple, gridCount: 3, isAnomaly: true),
         
+        // xxx
+        // x x
+        // xxx
+        PieceModel(id: "JASTIP1-9", shape:.unique, color: .red, gridCount: 5, isAnomaly: true),
+
         // x x
         // xxx
         PieceModel(id: "JASTIP2-9", shape:.unique, color: .orange, gridCount: 3, isAnomaly: true),
-        
+
         //  x
+        //  x
+        // xxx
+        // xxx
+        PieceModel(id: "JASTIP3-9", shape:.unique, color: .green, gridCount: 5, isAnomaly: true),
+
+        //    x
         // xxxx
         // x
         PieceModel(id: "JASTIP4-9", shape:.unique, color: .blue, gridCount: 3, isAnomaly: true),
-        
+
+        // x
         // xx
-        // xxxx
-        // xx
-        PieceModel(id: "JASTIP3-9", shape:.unique, color: .green, gridCount: 5, isAnomaly: true),
-       //
-        // xxxx
-        //  x x
-        PieceModel(id: "JASTIP1-9", shape:.unique, color: .red, gridCount: 3, isAnomaly: true),
-    ]
+        //  xx
+        PieceModel(id: "JASTIP5-9", shape:.unique, color: .purple, gridCount: 3, isAnomaly: true)
+    ].map { piece in
+        var piece = piece
+        piece.imageName = piece.assetName
+        return piece
+    }
     
     static func findPiece(by id: String) -> PieceModel? {
             allPieces.first { $0.id == id }
         }
-        
-        
+
     // MARK: - Shape Coordinates & Rotation
     static func baseCoordinates(for shape: PieceShape, pieceId: String? = nil) -> [GridCoordinate] {
         switch shape {
@@ -133,9 +138,11 @@ struct PieceCatalog {
             return [GridCoordinate(x: 0, y: 0),
                     GridCoordinate(x: 1, y: 0),
                     GridCoordinate(x: 2, y: 0),
-                    GridCoordinate(x: 3, y: 0),
-                    GridCoordinate(x: 1, y: 1),
-                    GridCoordinate(x: 3, y: 1)]
+                    GridCoordinate(x: 2, y: 1),
+                    GridCoordinate(x: 2, y: 2),
+                    GridCoordinate(x: 1, y: 2),
+                    GridCoordinate(x: 0, y: 2),
+                    GridCoordinate(x: 0, y: 1)]
         case "JASTIP2-9":
             return [GridCoordinate(x: 0, y: 0),
                     GridCoordinate(x: 2, y: 0),
@@ -143,26 +150,26 @@ struct PieceCatalog {
                     GridCoordinate(x: 1, y: 1),
                     GridCoordinate(x: 2, y: 1)]
         case "JASTIP3-9":
-            return [GridCoordinate(x: 0, y: 0),
-                    GridCoordinate(x: 1, y: 0),
-                    GridCoordinate(x: 0, y: 1),
-                    GridCoordinate(x: 1, y: 1),
-                    GridCoordinate(x: 2, y: 1),
-                    GridCoordinate(x: 3, y: 1),
-                    GridCoordinate(x: 0, y: 2),
-                    GridCoordinate(x: 1, y: 2)]
-        case "JASTIP4-9":
             return [GridCoordinate(x: 1, y: 0),
-                    GridCoordinate(x: 0, y: 1),
+                    GridCoordinate(x: 1, y: 1),
+                    GridCoordinate(x: 0, y: 2),
+                    GridCoordinate(x: 1, y: 2),
+                    GridCoordinate(x: 2, y: 2),
+                    GridCoordinate(x: 0, y: 3),
+                    GridCoordinate(x: 1, y: 3),
+                    GridCoordinate(x: 2, y: 3)]
+        case "JASTIP4-9":
+            return [GridCoordinate(x: 0, y: 1),
+                    GridCoordinate(x: 0, y: 2),
                     GridCoordinate(x: 1, y: 1),
                     GridCoordinate(x: 2, y: 1),
                     GridCoordinate(x: 3, y: 1),
-                    GridCoordinate(x: 0, y: 2)]
+                    GridCoordinate(x: 3, y: 0)]
         case "JASTIP5-9":
             return [GridCoordinate(x: 0, y: 0),
-                    GridCoordinate(x: 1, y: 0),
+                    GridCoordinate(x: 0, y: 1),
                     GridCoordinate(x: 1, y: 1),
-                    GridCoordinate(x: 2, y: 1),
+                    GridCoordinate(x: 1, y: 2),
                     GridCoordinate(x: 2, y: 2)]
         default:
             return [GridCoordinate(x: 0, y: 0)]

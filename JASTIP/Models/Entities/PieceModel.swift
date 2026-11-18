@@ -59,6 +59,19 @@ struct PieceModel: Codable, Identifiable, Equatable {
     var assetName: String {
         id.replacingOccurrences(of: "JASTIP", with: "")
     }
+
+    var hasItemImage: Bool {
+        !imageName.isEmpty
+    }
+
+    var hasCompositeGridImage: Bool {
+        hasItemImage && imageName == assetName
+    }
+
+    var tileDisplayColor: Color {
+        if hasCompositeGridImage { return .clear }
+        return hasItemImage ? Color(red: 0.92, green: 0.40, blue: 0.50) : color.displayColor
+    }
 }
 
 struct RevealedPiece: Codable, Identifiable, Equatable {

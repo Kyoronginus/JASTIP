@@ -152,7 +152,57 @@ struct LuggageGridView: View {
                         }
                 }
             )
+            .overlay(alignment: .topLeading) {
+                ForEach(grid.placedPieces.filter { !$0.piece.imageName.isEmpty }) { placed in
+                    let coordinates = LuggagePlacementEngine.absoluteCoordinates(
+                        for: placed.piece,
+                        at: placed.origin,
+                        rotation: placed.rotation
+                    )
+                    let columns = (coordinates.map(\.x).max() ?? 0) - placed.origin.x + 1
+                    let rows = (coordinates.map(\.y).max() ?? 0) - placed.origin.y + 1
+                    let imageSize = CGSize(
+                        width: CGFloat(columns) * cellSize + CGFloat(columns - 1) * cellSpacing,
+                        height: CGFloat(rows) * cellSize + CGFloat(rows - 1) * cellSpacing
+                    )
+                    let step = cellSize + cellSpacing
+
+                    PieceItemImageView(
+                        piece: placed.piece,
+                        rotation: placed.rotation,
+                        size: imageSize
+                    )
+                    .opacity(placed.id == draggingPieceId ? 0.15 : 1)
+                    .offset(
+                        x: CGFloat(placed.origin.x) * step,
+                        y: CGFloat(placed.origin.y) * step
+                    )
+                }
+                .allowsHitTesting(false)
+            }
             .offset(gridCenterOffset)
+        }
+    }
+}
+
+struct PieceItemImageView: View {
+    let piece: PieceModel
+    let rotation: LuggageRotation
+    let size: CGSize
+
+    private var imageSizeBeforeRotation: CGSize {
+        guard rotation.rawValue % 180 != 0 else { return size }
+        return CGSize(width: size.height, height: size.width)
+    }
+
+    var body: some View {
+        if !piece.imageName.isEmpty {
+            Image(piece.imageName)
+                .resizable()
+                .scaledToFit()
+                .frame(width: imageSizeBeforeRotation.width, height: imageSizeBeforeRotation.height)
+                .rotationEffect(.degrees(Double(rotation.rawValue)))
+                .frame(width: size.width, height: size.height)
         }
     }
 }
@@ -187,42 +237,51 @@ private struct LuggageCellView: View {
     var body: some View {
         ZStack {
             // 1. Kotak Sel Kosong dengan Inner Shadow
-            RoundedRectangle(cornerRadius: cornerRadius)
-                .fill(
-                    emptyColor.shadow(
-                        .inner(color: .black.opacity(0.48), radius: 1, x: 0, y: 2)
+            if occupied?.piece.hasCompositeGridImage != true {
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .fill(
+                        emptyColor.shadow(
+                            .inner(color: .black.opacity(0.48), radius: 1, x: 0, y: 2)
+                        )
                     )
-                )
+            }
             
             // 2. Kepingan Terpasang (dengan penyambung antar-sel piece yang sama & outer contour gelap)
             if let (_, piece) = occupied {
                 let pieceVisual = ZStack {
-                    PieceCellFillShape(
-                        cornerRadius: cornerRadius,
-                        spacing: spacing,
-                        neighbors: neighbors
-                    )
-                    .fill(piece.color.displayColor.opacity(0.92))
-                    
-                    PieceCellInnerGridShape(
-                        spacing: spacing,
-                        neighbors: neighbors
-                    )
-                    .stroke(Color.black.opacity(0.24), lineWidth: isInteractive ? 1.2 : 0.8)
-                    
-                    PieceCellOuterContourShape(
-                        cornerRadius: cornerRadius,
-                        spacing: spacing,
-                        neighbors: neighbors
-                    )
-                    .stroke(
-                        Color("SuitcaseFrame"),
-                        style: StrokeStyle(
-                            lineWidth: isInteractive ? 3.2 : 1.8,
-                            lineCap: .round,
-                            lineJoin: .round
+                    if piece.hasCompositeGridImage {
+                        Color.clear
+                    } else if piece.hasItemImage {
+                        RoundedRectangle(cornerRadius: max(cornerRadius, size * 0.15))
+                            .fill(piece.tileDisplayColor)
+                    } else {
+                        PieceCellFillShape(
+                            cornerRadius: cornerRadius,
+                            spacing: spacing,
+                            neighbors: neighbors
                         )
-                    )
+                        .fill(piece.color.displayColor.opacity(0.92))
+
+                        PieceCellInnerGridShape(
+                            spacing: spacing,
+                            neighbors: neighbors
+                        )
+                        .stroke(Color.black.opacity(0.24), lineWidth: isInteractive ? 1.2 : 0.8)
+
+                        PieceCellOuterContourShape(
+                            cornerRadius: cornerRadius,
+                            spacing: spacing,
+                            neighbors: neighbors
+                        )
+                        .stroke(
+                            Color("SuitcaseFrame"),
+                            style: StrokeStyle(
+                                lineWidth: isInteractive ? 3.2 : 1.8,
+                                lineCap: .round,
+                                lineJoin: .round
+                            )
+                        )
+                    }
                 }
                 
                 if isInteractive {

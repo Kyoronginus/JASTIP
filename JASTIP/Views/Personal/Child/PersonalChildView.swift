@@ -467,19 +467,31 @@ struct PieceShapeView: View {
     }
     
     var body: some View {
-        VStack(spacing: spacing) {
-            ForEach(0..<rowsCount, id: \.self) { y in
-                HStack(spacing: spacing) {
-                    ForEach(0..<columnsCount, id: \.self) { x in
-                        PieceBlockCellView(
-                            isFilled: rotatedCoordinates.contains(GridCoordinate(x: x, y: y)),
-                            color: piece.color.displayColor,
-                            size: blockSize,
-                            cornerRadius: cornerRadius
-                        )
+        ZStack(alignment: .topLeading) {
+            VStack(spacing: spacing) {
+                ForEach(0..<rowsCount, id: \.self) { y in
+                    HStack(spacing: spacing) {
+                        ForEach(0..<columnsCount, id: \.self) { x in
+                            PieceBlockCellView(
+                                isFilled: rotatedCoordinates.contains(GridCoordinate(x: x, y: y)),
+                                color: piece.tileDisplayColor,
+                                size: blockSize,
+                                cornerRadius: piece.hasItemImage ? max(cornerRadius, blockSize * 0.15) : cornerRadius,
+                                hidesBorder: piece.hasItemImage
+                            )
+                        }
                     }
                 }
             }
+
+            PieceItemImageView(
+                piece: piece,
+                rotation: rotation,
+                size: CGSize(
+                    width: CGFloat(columnsCount) * blockSize + CGFloat(columnsCount - 1) * spacing,
+                    height: CGFloat(rowsCount) * blockSize + CGFloat(rowsCount - 1) * spacing
+                )
+            )
         }
     }
 }
@@ -489,13 +501,17 @@ private struct PieceBlockCellView: View {
     let color: Color
     let size: CGFloat
     let cornerRadius: CGFloat
+    let hidesBorder: Bool
     
     var body: some View {
         RoundedRectangle(cornerRadius: cornerRadius)
-            .fill(isFilled ? color.opacity(0.92) : Color.clear)
+            .fill(isFilled ? color.opacity(hidesBorder ? 1 : 0.92) : Color.clear)
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius)
-                    .stroke(isFilled ? Color.white.opacity(0.45) : Color.clear, lineWidth: 1.5)
+                    .stroke(
+                        isFilled && !hidesBorder ? Color.white.opacity(0.45) : Color.clear,
+                        lineWidth: 1.5
+                    )
             )
             .frame(width: size, height: size)
     }
