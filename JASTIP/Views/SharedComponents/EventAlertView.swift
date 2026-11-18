@@ -204,11 +204,10 @@ struct EventAlertView: View {
         withAnimation(.easeOut(duration: 0.18)) {
             showButton = false
         }
-        withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
+        withAnimation(.spring(response: 0.42, dampingFraction: 0.85)) {
             backdropOpacity = 0
             isFlyingToTarget = true
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.42) {
+        } completion: {
             onDismiss()
         }
     }

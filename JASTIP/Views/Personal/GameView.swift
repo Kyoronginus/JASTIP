@@ -197,7 +197,7 @@ struct GameView: View {
                 .ignoresSafeArea()
         )
 
-        .animation(.easeInOut(duration: 0.2), value: viewModel.currentEvent != nil)
+        // .animation(.easeInOut(duration: 0.2), value: viewModel.currentEvent != nil)
         .navigationBarBackButtonHidden(true)
         .fullScreenCover(isPresented: $isShowingScanner) {
             QRScannerView(session: viewModel, allowsEitherLuggage: true) { piece, _, weight, _ in
