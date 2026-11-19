@@ -64,7 +64,8 @@ final class AirlineCardViewModel {
                 withAnimation(animation) {
                     self.visibleBubbleCount = index + 1
                 }
-                AudioServicesPlaySystemSound(MessageSound.sent)
+                // AudioServicesPlaySystemSound(MessageSound.sent)
+                AudioManager.shared.play("send")
             }
 
             try? await Task.sleep(nanoseconds: buttonDelayNs)

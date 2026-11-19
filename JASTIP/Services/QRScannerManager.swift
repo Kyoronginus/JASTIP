@@ -37,6 +37,7 @@ class QRScannerManager: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
     
     private func setupCamera() {
         session.beginConfiguration()
+        session.automaticallyConfiguresApplicationAudioSession = false
         if session.canSetSessionPreset(.hd1280x720) {
             session.sessionPreset = .hd1280x720
         }

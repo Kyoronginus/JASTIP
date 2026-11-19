@@ -30,7 +30,8 @@ struct ToastModifier: ViewModifier {
                 if toastID != nil {
                     scheduleDismissal()
                     if toast?.playsNotificationSound == true {
-                        AudioServicesPlaySystemSound(1003)
+                        // AudioServicesPlaySystemSound(1003)
+                        AudioManager.shared.play("send")
                     }
                 }
             }

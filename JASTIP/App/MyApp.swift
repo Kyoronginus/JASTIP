@@ -7,6 +7,7 @@ struct MyApp: App {
 
     init() {
         FirebaseApp.configure()
+        AudioManager.configureAudioSession()
     }
     
     var body: some Scene {

@@ -335,6 +335,7 @@ struct ObjectiveView: View {
     /// Memulai alur request chat & memunculkan 3 kandidat dengan jeda 0.5s
     private func startDraftingFlow() {
         AudioServicesPlaySystemSound(MessageSound.sent)
+        AudioManager.shared.play("send")
         withAnimation {
             viewModel.isDraftingObjective = true
             viewModel.selectedOrderIds.removeAll()
@@ -381,7 +382,8 @@ struct ObjectiveView: View {
                         guard index < self.viewModel.candidateOrders.count else { return }
 
                         self.viewModel.visibleCandidateOrders.append(self.viewModel.candidateOrders[index])
-                        AudioServicesPlaySystemSound(MessageSound.received)
+                        // AudioServicesPlaySystemSound(MessageSound.received)
+                        AudioManager.shared.play("received")
                     }
                 }
             }
@@ -392,6 +394,7 @@ struct ObjectiveView: View {
     private func confirmSelectedDraftOrders() {
         let templateMessage = confirmationTemplateText
         AudioServicesPlaySystemSound(MessageSound.sent)
+        AudioManager.shared.play("send")
         successFeedback.notificationOccurred(.success)
         
         // Ambil order yang dicentang & tandai sebagai Personal

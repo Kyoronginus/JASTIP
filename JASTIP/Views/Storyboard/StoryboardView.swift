@@ -65,6 +65,7 @@ struct StoryboardView: View {
 
     private func startIntroPlayback() {
         guard player == nil else { return }
+        AudioManager.configureAudioSession()
 
         guard let videoURL = Self.cachedIntroVideoURL() else {
             finishPlayback()

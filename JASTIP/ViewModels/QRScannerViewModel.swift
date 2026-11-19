@@ -135,6 +135,7 @@ class QRScannerViewModel {
     
     // preload audio ke buffer hardware)
     private func setupAudioPlayer() {
+        AudioManager.configureAudioSession()
         guard let data = NSDataAsset(name: "cashier-beep")?.data else { return }
         audioPlayer = try? AVAudioPlayer(data: data)
         audioPlayer?.currentTime = 0.27 // Langsung arahkan ke titik suara mulai
@@ -183,6 +184,7 @@ class QRScannerViewModel {
     }
 
     func playBeep() {
+        AudioManager.configureAudioSession()
         audioPlayer?.currentTime = 0.27 // Reset ke titik suara mulai, bukan ke bagian hening
         audioPlayer?.play()
     }
