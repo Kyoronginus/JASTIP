@@ -36,6 +36,8 @@ struct CardFlipView<Front: View, Back: View>: View, Animatable {
 }
 
 struct EventAlertView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     let event: RandomEventModel
     var targetFrame: CGRect = .zero
     var startsFromTarget: Bool = false
@@ -47,6 +49,8 @@ struct EventAlertView: View {
     @State private var isDismissing: Bool = false
     @State private var isFlyingToTarget: Bool = false
     @State private var backdropOpacity: Double = 0.55
+    @State private var reduceMotionBackdropOpacity: Double = 0
+    @State private var cardOpacity: Double = 0
     @State private var cardRestCenter: CGPoint = .zero
     
     init(
@@ -89,12 +93,14 @@ struct EventAlertView: View {
     }
     
     var body: some View {
+        let isFlyingVisual = !reduceMotion && isFlyingToTarget && hasValidTarget
+
         ZStack {
             // Dimmed overlay background
-            Color.black.opacity(backdropOpacity)
+            Color.black.opacity(reduceMotion ? reduceMotionBackdropOpacity : backdropOpacity)
                 .ignoresSafeArea()
                 .onTapGesture {
-                    if angle >= 180 {
+                    if reduceMotion || angle >= 180 {
                         dismissWithAnimation()
                     }
                 }
@@ -117,23 +123,24 @@ struct EventAlertView: View {
                     )
                     .overlay {
                         // 3D Flip Card using EventCard component
-                        CardFlipView(angle: angle) {
+                        CardFlipView(angle: reduceMotion ? 180 : angle) {
                             EventCard(
                                 event: event,
                                 isFaceUp: true,
-                                shadowColor: .black.opacity(isFlyingToTarget && hasValidTarget ? 0.22 : 0.45),
-                                shadowRadius: (isFlyingToTarget && hasValidTarget) ? 0 : 20,
-                                shadowX: (isFlyingToTarget && hasValidTarget) ? 10 : 0,
-                                shadowY: (isFlyingToTarget && hasValidTarget) ? 12 : 10
+                                shadowColor: .black.opacity(isFlyingVisual ? 0.22 : 0.45),
+                                shadowRadius: isFlyingVisual ? 0 : 20,
+                                shadowX: isFlyingVisual ? 10 : 0,
+                                shadowY: isFlyingVisual ? 12 : 10
                             )
                         } back: {
                             EventCard(event: event, isFaceUp: false)
                         }
-                        .scaleEffect(cardScale)
-                        .rotationEffect(.degrees(cardTiltDegrees))
-                        .offset(x: cardOffsetX, y: cardOffsetY)
+                        .scaleEffect(reduceMotion ? 1.0 : cardScale)
+                        .rotationEffect(.degrees(reduceMotion ? 0.0 : cardTiltDegrees))
+                        .offset(x: reduceMotion ? 0 : cardOffsetX, y: reduceMotion ? 0 : cardOffsetY)
+                        .opacity(reduceMotion ? cardOpacity : 1.0)
                         .onTapGesture {
-                            if angle >= 180 {
+                            if reduceMotion || angle >= 180 {
                                 dismissWithAnimation()
                             }
                         }
@@ -154,7 +161,7 @@ struct EventAlertView: View {
                     paddingHorizontal: 20
                 ))
                 .opacity(showButton ? 1 : 0)
-                .scaleEffect(showButton ? 1 : 0.92)
+                .scaleEffect(reduceMotion ? 1 : (showButton ? 1 : 0.92))
                 .disabled(!showButton)
                 .allowsHitTesting(showButton)
             }
@@ -166,6 +173,15 @@ struct EventAlertView: View {
     
     // MARK: - Animation Sequence
     private func startEntranceSequence() {
+        if reduceMotion {
+            withAnimation(.easeInOut(duration: 0.25)) {
+                reduceMotionBackdropOpacity = 0.55
+                cardOpacity = 1
+                showButton = true
+            }
+            return
+        }
+
         if startsFromTarget {
             // Tunggu 1 runloop agar slotGeo.onAppear sudah mengisi cardRestCenter
             DispatchQueue.main.async {
@@ -201,6 +217,16 @@ struct EventAlertView: View {
     private func dismissWithAnimation() {
         guard !isDismissing else { return }
         isDismissing = true
+        if reduceMotion {
+            withAnimation(.easeInOut(duration: 0.22)) {
+                showButton = false
+                reduceMotionBackdropOpacity = 0
+                cardOpacity = 0
+            } completion: {
+                onDismiss()
+            }
+            return
+        }
         withAnimation(.easeOut(duration: 0.18)) {
             showButton = false
         }

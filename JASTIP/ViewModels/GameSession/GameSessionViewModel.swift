@@ -234,9 +234,7 @@ class GameSessionViewModel {
             guard let self = self else { return }
             // Cegah re-trigger animasi jika ID toast-nya sama
             if self.activeToast?.id != toast.id {
-                withAnimation {
-                    self.activeToast = toast
-                }
+                self.activeToast = toast
             }
         }
         lobbyService.onScannedPiecesChanged = { [weak self] scans in
@@ -268,9 +266,7 @@ class GameSessionViewModel {
             senderID: broadcast ? lobbyService.currentPlayerID : nil
         )
         if displayLocally {
-            withAnimation {
-                self.activeToast = toast
-            }
+            self.activeToast = toast
         }
         
         // Kirim ke semua device lain via Firebase

@@ -10,6 +10,7 @@ import AudioToolbox
 import AVFoundation
 
 struct StoryboardView: View {
+    @Environment(\.accessibilityReduceMotion) private var isReduceMotionEnabled
     @Bindable var session: GameSessionViewModel
     var onFinish: () -> Void
     
@@ -42,29 +43,41 @@ struct StoryboardView: View {
             Group {
                 if currentSheet == 1 {
                     StoryboardSheet1View(step: currentStep)
-                        .transition(.asymmetric(
-                            insertion: .opacity,
-                            removal: .move(edge: .leading).combined(with: .opacity)
-                        ))
+                        .transition(
+                            isReduceMotionEnabled
+                                ? .opacity
+                                : .asymmetric(
+                                    insertion: .opacity,
+                                    removal: .move(edge: .leading).combined(with: .opacity)
+                                )
+                        )
                 } else if currentSheet == 2 {
                     StoryboardSheet2View(step: currentStep)
-                        .transition(.asymmetric(
-                            insertion: .move(edge: .trailing).combined(with: .opacity),
-                            removal: .move(edge: .leading).combined(with: .opacity)
-                        ))
+                        .transition(
+                            isReduceMotionEnabled
+                                ? .opacity
+                                : .asymmetric(
+                                    insertion: .move(edge: .trailing).combined(with: .opacity),
+                                    removal: .move(edge: .leading).combined(with: .opacity)
+                                )
+                        )
                 } else {
                     StoryboardSheet3View(
                         step: currentStep,
                         orders: session.sharedJastipOrders
                     )
-                    .transition(.asymmetric(
-                        insertion: .move(edge: .trailing).combined(with: .opacity),
-                        removal: .opacity
-                    ))
+                    .transition(
+                        isReduceMotionEnabled
+                            ? .opacity
+                            : .asymmetric(
+                                insertion: .move(edge: .trailing).combined(with: .opacity),
+                                removal: .opacity
+                            )
+                    )
 
                 }
             }
-            .animation(.spring(response: 0.45, dampingFraction: 0.8), value: currentSheet)
+            .animation(isReduceMotionEnabled ? .easeInOut(duration: 0.25) : .spring(response: 0.45, dampingFraction: 0.8), value: currentSheet)
             
             // Overlay Navigasi (Tombol Skip & Indikator Halaman)
             VStack {
@@ -125,7 +138,7 @@ struct StoryboardView: View {
     // MARK: - Step Advancement
     private func advanceStep() {
         if currentStep < 5 {
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
+            withAnimation(isReduceMotionEnabled ? .easeInOut(duration: 0.25) : .spring(response: 0.4, dampingFraction: 0.75)) {
                 currentStep += 1
             }
             playStepSFX(step: currentStep)
@@ -170,9 +183,14 @@ struct StoryboardView: View {
 
 // MARK: - Subview: Lembar 1 (Departure & Boarding - 3 Panels)
 struct StoryboardSheet1View: View {
+    @Environment(\.accessibilityReduceMotion) private var isReduceMotionEnabled
     let step: Int
     
     var body: some View {
+        let stepAnimation: Animation = isReduceMotionEnabled
+            ? .easeInOut(duration: 0.25)
+            : .spring(response: 0.4, dampingFraction: 0.75)
+
         VStack(spacing: 12) {
             Spacer().frame(height: 48)
             
@@ -193,11 +211,11 @@ struct StoryboardSheet1View: View {
                     .frame(width: 110)
                     .offset(x: -60, y: 32)
                     .opacity(step >= 0 ? 1 : 0)
-                    .scaleEffect(step >= 0 ? 1 : 0.6)
+                    .scaleEffect(isReduceMotionEnabled ? 1 : (step >= 0 ? 1 : 0.6))
             }
             .opacity(step >= 0 ? 1 : 0)
-            .scaleEffect(step >= 0 ? 1 : 0.94)
-            .animation(.spring(response: 0.4, dampingFraction: 0.75), value: step)
+            .scaleEffect(isReduceMotionEnabled ? 1 : (step >= 0 ? 1 : 0.94))
+            .animation(stepAnimation, value: step)
             
             // Panel 2: Jet Bridge & Koper + SFX KLAK KLAK..
             ZStack(alignment: .bottomLeading) {
@@ -216,11 +234,11 @@ struct StoryboardSheet1View: View {
                     .frame(width: 155)
                     .offset(x: 10, y: 12)
                     .opacity(step >= 1 ? 1 : 0)
-                    .scaleEffect(step >= 1 ? 1 : 0.6)
+                    .scaleEffect(isReduceMotionEnabled ? 1 : (step >= 1 ? 1 : 0.6))
             }
             .opacity(step >= 1 ? 1 : 0)
-            .scaleEffect(step >= 1 ? 1 : 0.94)
-            .animation(.spring(response: 0.4, dampingFraction: 0.75), value: step)
+            .scaleEffect(isReduceMotionEnabled ? 1 : (step >= 1 ? 1 : 0.94))
+            .animation(stepAnimation, value: step)
             
             // Panel 3: Duduk di Kabin Pesawat + SFX KLIK!
             ZStack(alignment: .topTrailing) {
@@ -239,11 +257,11 @@ struct StoryboardSheet1View: View {
                     .frame(width: 115)
                     .offset(x: -30, y: 18)
                     .opacity(step >= 2 ? 1 : 0)
-                    .scaleEffect(step >= 2 ? 1 : 0.6)
+                    .scaleEffect(isReduceMotionEnabled ? 1 : (step >= 2 ? 1 : 0.6))
             }
             .opacity(step >= 2 ? 1 : 0)
-            .scaleEffect(step >= 2 ? 1 : 0.94)
-            .animation(.spring(response: 0.4, dampingFraction: 0.75), value: step)
+            .scaleEffect(isReduceMotionEnabled ? 1 : (step >= 2 ? 1 : 0.94))
+            .animation(stepAnimation, value: step)
             
             Spacer().frame(height: 36)
         }
@@ -253,9 +271,14 @@ struct StoryboardSheet1View: View {
 
 // MARK: - Subview: Lembar 2 (Flight & Arrival - 2 Panels)
 struct StoryboardSheet2View: View {
+    @Environment(\.accessibilityReduceMotion) private var isReduceMotionEnabled
     let step: Int
     
     var body: some View {
+        let stepAnimation: Animation = isReduceMotionEnabled
+            ? .easeInOut(duration: 0.25)
+            : .spring(response: 0.4, dampingFraction: 0.75)
+
         VStack(spacing: 16) {
             Spacer().frame(height: 52)
             
@@ -276,11 +299,11 @@ struct StoryboardSheet2View: View {
                     .frame(width: 180)
                     .offset(x: 2, y: 16)
                     .opacity(step >= 3 ? 1 : 0)
-                    .scaleEffect(step >= 3 ? 1 : 0.6)
+                    .scaleEffect(isReduceMotionEnabled ? 1 : (step >= 3 ? 1 : 0.6))
             }
             .opacity(step >= 3 ? 1 : 0)
-            .scaleEffect(step >= 3 ? 1 : 0.94)
-            .animation(.spring(response: 0.4, dampingFraction: 0.75), value: step)
+            .scaleEffect(isReduceMotionEnabled ? 1 : (step >= 3 ? 1 : 0.94))
+            .animation(stepAnimation, value: step)
             
             // Panel 5: Keluar Gate Kedatangan + SFX TAP TAP
             ZStack(alignment: .bottomLeading) {
@@ -299,11 +322,11 @@ struct StoryboardSheet2View: View {
                     .frame(width: 145)
                     .offset(x: 6, y: 14)
                     .opacity(step >= 4 ? 1 : 0)
-                    .scaleEffect(step >= 4 ? 1 : 0.6)
+                    .scaleEffect(isReduceMotionEnabled ? 1 : (step >= 4 ? 1 : 0.6))
             }
             .opacity(step >= 4 ? 1 : 0)
-            .scaleEffect(step >= 4 ? 1 : 0.94)
-            .animation(.spring(response: 0.4, dampingFraction: 0.75), value: step)
+            .scaleEffect(isReduceMotionEnabled ? 1 : (step >= 4 ? 1 : 0.94))
+            .animation(stepAnimation, value: step)
             
             Spacer().frame(height: 40)
         }
@@ -313,6 +336,7 @@ struct StoryboardSheet2View: View {
 
 // MARK: - Subview: Lembar 3 (HP Besar & 3 Kartu Jastip)
 struct StoryboardSheet3View: View {
+    @Environment(\.accessibilityReduceMotion) private var isReduceMotionEnabled
     let step: Int
     let orders: [JastipOrderModel]
 
@@ -348,10 +372,14 @@ struct StoryboardSheet3View: View {
                                 .scaleEffect(x: bubbleScale, y: bubbleScale * 0.9, anchor: .topLeading)
                                 .frame(height: 110, alignment: .topLeading)
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                                .transition(.asymmetric(
-                                    insertion: .move(edge: .bottom).combined(with: .opacity).combined(with: .scale(scale: 0.8)),
-                                    removal: .opacity
-                                ))
+                                .transition(
+                                    isReduceMotionEnabled
+                                        ? .opacity
+                                        : .asymmetric(
+                                            insertion: .move(edge: .bottom).combined(with: .opacity).combined(with: .scale(scale: 0.8)),
+                                            removal: .opacity
+                                        )
+                                )
                         }
                     }
                     
@@ -367,7 +395,7 @@ struct StoryboardSheet3View: View {
             
             let total = min(3, orders.count)
             for i in 1...total {
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.72)) {
+                withAnimation(isReduceMotionEnabled ? .easeInOut(duration: 0.25) : .spring(response: 0.35, dampingFraction: 0.72)) {
                     visibleBubbleCount = i
                 }
                 // Mainkan suara ping & haptic per bubble

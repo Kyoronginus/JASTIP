@@ -12,16 +12,19 @@ struct QRScannerView: View {
 
     let isSuitcase: Bool
     let allowsEitherLuggage: Bool
+    var onDismissOverride: (() -> Void)? = nil
     @State private var viewModel: QRScannerViewModel
     
     init(
         session: GameSessionViewModel,
         isSuitcase: Bool = true,
         allowsEitherLuggage: Bool = false,
+        onDismissOverride: (() -> Void)? = nil,
         onScanned: ((PieceModel?, String, Int?, Bool) -> Void)? = nil
     ) {
         self.isSuitcase = isSuitcase
         self.allowsEitherLuggage = allowsEitherLuggage
+        self.onDismissOverride = onDismissOverride
         _viewModel = State(
             initialValue: QRScannerViewModel(
                 session: session,
@@ -49,7 +52,7 @@ struct QRScannerView: View {
                 HStack {
                     // Back Button
                     Button {
-                        dismiss()
+                        closeScanner()
                     } label: {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 16, weight: .bold))
@@ -155,7 +158,7 @@ struct QRScannerView: View {
 
                             Button("Continue") {
                                 viewModel.confirmAndContinue(isSuitcase: isSuitcase)
-                                dismiss()
+                                closeScanner()
                             }
                             .buttonStyle(PrimaryButtonStyle(isFullWidth: true))
                             .padding(.horizontal, 16)
@@ -176,6 +179,14 @@ struct QRScannerView: View {
         }
         .onDisappear {
             viewModel.stopScanning()
+        }
+    }
+
+    private func closeScanner() {
+        if let onDismissOverride {
+            onDismissOverride()
+        } else {
+            dismiss()
         }
     }
 }

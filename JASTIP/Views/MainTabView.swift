@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct MainTabView: View {
+    @Environment(\.accessibilityReduceMotion) private var isReduceMotionEnabled
     @Bindable var viewModel: GameSessionViewModel
     
     // State Objective child page
@@ -23,7 +24,13 @@ struct MainTabView: View {
                 GameView(
                     viewModel: viewModel,
                     onOpenObjective: {
-                        isObjectivePresented = true
+                        if isReduceMotionEnabled {
+                            withAnimation(.easeInOut(duration: 0.25)) {
+                                isObjectivePresented = true
+                            }
+                        } else {
+                            isObjectivePresented = true
+                        }
                     },
                     isInspectingActiveEvent: isInspectingActiveEvent,
                     onEventCardTargetFrameChange: { newFrame in
@@ -36,7 +43,10 @@ struct MainTabView: View {
                     }
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .navigationDestination(isPresented: $isObjectivePresented) {
+                .navigationDestination(isPresented: Binding(
+                    get: { !isReduceMotionEnabled && isObjectivePresented },
+                    set: { isObjectivePresented = $0 }
+                )) {
                     ObjectiveView(viewModel: viewModel)
                         .navigationBarTitleDisplayMode(.inline)
                         .navigationBarBackButtonHidden(true)
@@ -90,15 +100,43 @@ struct MainTabView: View {
                     .frame(maxWidth: .infinity)
                     .frame(maxHeight: .infinity, alignment: .center)
                     .transition(
-                        .asymmetric(
-                            insertion: .move(edge: .trailing).combined(with: .opacity),
-                            removal: .move(edge: .leading).combined(with: .opacity)
-                        )
+                        isReduceMotionEnabled
+                            ? .opacity
+                            : .asymmetric(
+                                insertion: .move(edge: .trailing).combined(with: .opacity),
+                                removal: .move(edge: .leading).combined(with: .opacity)
+                            )
                     )
                     .zIndex(110)
                     .allowsHitTesting(false)
             }
+
+            if isReduceMotionEnabled && isObjectivePresented {
+                ObjectiveView(
+                    viewModel: viewModel,
+                    onDismissOverride: {
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            isObjectivePresented = false
+                        }
+                    }
+                )
+                .transition(.opacity)
+                .zIndex(120)
+            }
+
+            if isReduceMotionEnabled && viewModel.isGameOver {
+                FinalScoreView(
+                    viewModel: viewModel,
+                    onBackToHome: {
+                        viewModel.resetToLobby()
+                    }
+                )
+                .transition(.opacity)
+                .zIndex(200)
+            }
         }
+        .animation(isReduceMotionEnabled ? .easeInOut(duration: 0.25) : nil, value: isObjectivePresented)
+        .animation(isReduceMotionEnabled ? .easeInOut(duration: 0.25) : nil, value: viewModel.isGameOver)
         .onChange(of: turnBannerTrigger) { _, _ in
             guard viewModel.isGameStarted, !viewModel.isGameOver else { return }
             hasPendingTurnBanner = true
@@ -120,7 +158,10 @@ struct MainTabView: View {
             viewModel.broadcastMyStatus()
             viewModel.captureFinalStandingsIfReady()
         }
-        .fullScreenCover(isPresented: $viewModel.isGameOver) {
+        .fullScreenCover(isPresented: Binding(
+            get: { !isReduceMotionEnabled && viewModel.isGameOver },
+            set: { viewModel.isGameOver = $0 }
+        )) {
             FinalScoreView(
                 viewModel: viewModel,
                 onBackToHome: {
@@ -136,7 +177,7 @@ struct MainTabView: View {
                 return
             }
             guard !Task.isCancelled else { return }
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
+            withAnimation(isReduceMotionEnabled ? .easeInOut(duration: 0.25) : .spring(response: 0.5, dampingFraction: 0.85)) {
                 turnBanner = nil
             }
         }
@@ -151,7 +192,7 @@ struct MainTabView: View {
               let player = viewModel.currentTurnPlayer else { return }
 
         hasPendingTurnBanner = false
-        withAnimation(.spring(response: 0.55, dampingFraction: 0.78)) {
+        withAnimation(isReduceMotionEnabled ? .easeInOut(duration: 0.25) : .spring(response: 0.55, dampingFraction: 0.78)) {
             turnBanner = TurnBannerPresentation(playerName: player.name)
         }
     }

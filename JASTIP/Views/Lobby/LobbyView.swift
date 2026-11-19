@@ -16,6 +16,7 @@ private struct LobbyPlayerFramePreferenceKey: PreferenceKey {
 }
 
 struct LobbyView: View {
+    @Environment(\.accessibilityReduceMotion) private var isReduceMotionEnabled
     var lobby: GameLobby
     var roomCode: String? = nil
     var isLoading: Bool = false
@@ -78,7 +79,7 @@ struct LobbyView: View {
                                 }
                             }
                             .offset(y: draggingPlayerID == player.id ? dragOffset : 0)
-                            .scaleEffect(draggingPlayerID == player.id ? 1.03 : 1)
+                            .scaleEffect((draggingPlayerID == player.id && !isReduceMotionEnabled) ? 1.03 : 1)
                             .zIndex(draggingPlayerID == player.id ? 1 : 0)
                     }
                 }

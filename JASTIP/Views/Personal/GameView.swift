@@ -20,6 +20,7 @@ extension LuggageType: Identifiable {
 }
 
 struct GameView: View {
+    @Environment(\.accessibilityReduceMotion) private var isReduceMotionEnabled
     @Bindable private var viewModel: GameSessionViewModel
     var onOpenCamera: () -> Void
     var onOpenObjective: () -> Void
@@ -84,7 +85,8 @@ struct GameView: View {
     }
     
     var body: some View {
-        GeometryReader { geometry in
+        ZStack {
+            GeometryReader { geometry in
             let fittedCellSize = min(
                 54, // ini keknya min-nya yg ke-return
                 max(26, min((geometry.size.width - 80) / 5, (geometry.size.height - 450) / 4))
@@ -106,7 +108,7 @@ struct GameView: View {
                         items: viewModel.stagedItems,
                         draggingItemId: draggingStagingItem?.id,
                         onRotateItem: { item in
-                            withAnimation(.spring(response: 0.25, dampingFraction: 0.65)) {
+                            withAnimation(isReduceMotionEnabled ? .easeInOut(duration: 0.15) : .spring(response: 0.25, dampingFraction: 0.65)) {
                                 viewModel.rotateStagedItem(id: item.id)
                             }
                             UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
@@ -174,7 +176,7 @@ struct GameView: View {
                     )
                     .shadow(color: .black.opacity(0.45), radius: 12, y: 6)
                     .position(floatingPiecePosition)
-                    .animation(.interactiveSpring(response: 0.16, dampingFraction: 0.75), value: hoverOrigin)
+                    .animation(isReduceMotionEnabled ? nil : .interactiveSpring(response: 0.16, dampingFraction: 0.75), value: hoverOrigin)
                     .allowsHitTesting(false)
                 }
             }
@@ -197,9 +199,31 @@ struct GameView: View {
                 .ignoresSafeArea()
         )
 
+            if isReduceMotionEnabled && isShowingScanner {
+                QRScannerView(
+                    session: viewModel,
+                    allowsEitherLuggage: true,
+                    onDismissOverride: {
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            isShowingScanner = false
+                        }
+                    }
+                ) { piece, _, weight, _ in
+                    if let piece, let weight {
+                        viewModel.stageScannedPiece(piece, weight: weight)
+                    }
+                }
+                .transition(.opacity)
+                .zIndex(200)
+            }
+        }
+        .animation(isReduceMotionEnabled ? .easeInOut(duration: 0.25) : nil, value: isShowingScanner)
         // .animation(.easeInOut(duration: 0.2), value: viewModel.currentEvent != nil)
         .navigationBarBackButtonHidden(true)
-        .fullScreenCover(isPresented: $isShowingScanner) {
+        .fullScreenCover(isPresented: Binding(
+            get: { !isReduceMotionEnabled && isShowingScanner },
+            set: { isShowingScanner = $0 }
+        )) {
             QRScannerView(session: viewModel, allowsEitherLuggage: true) { piece, _, weight, _ in
                 if let piece, let weight {
                     viewModel.stageScannedPiece(piece, weight: weight)
@@ -261,7 +285,12 @@ struct GameView: View {
             
             // 3. KANAN: KALENDER OTOMATIS BERKURANG TIAP ROUND
             CalendarCountdownView(daysToGo: displayedDaysToGo)
-                .animation(.spring(response: 0.45, dampingFraction: 0.7), value: displayedDaysToGo)
+                .animation(
+                    isReduceMotionEnabled
+                        ? .easeInOut(duration: 0.25)
+                        : .spring(response: 0.45, dampingFraction: 0.7),
+                    value: displayedDaysToGo
+                )
         }
     }
     
@@ -342,7 +371,13 @@ struct GameView: View {
         let isEnabled = viewModel.canUseTurnAction
 
         return Button {
-            isShowingScanner = true
+            if isReduceMotionEnabled {
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    isShowingScanner = true
+                }
+            } else {
+                isShowingScanner = true
+            }
         } label: {
             Text("Scan Item")
                 .frame(maxWidth: .infinity)
@@ -499,7 +534,7 @@ struct GameView: View {
     }
 
     private func finishDragging() {
-        withAnimation(.spring(response: 0.25, dampingFraction: 0.75)) {
+        withAnimation(isReduceMotionEnabled ? .easeInOut(duration: 0.15) : .spring(response: 0.25, dampingFraction: 0.75)) {
             draggingStagingItem = nil
             draggingPlacedPiece = nil
             hoverOrigin = nil
@@ -520,6 +555,7 @@ struct GameView: View {
 
 // MARK: - Subview: Kalender Countdown (ZStack Image + Angka)
 struct CalendarCountdownView: View {
+    @Environment(\.accessibilityReduceMotion) private var isReduceMotionEnabled
     let daysToGo: Int
     
     // Memilih nama asset otomatis: "Calendar-7", "Calendar-6", dst.
@@ -534,7 +570,7 @@ struct CalendarCountdownView: View {
             .scaledToFit()
             .frame(width: 100, height: 148)
             .id(daysToGo) // Memicu re-render & animasi saat harinya berkurang
-            .transition(.scale.combined(with: .opacity))
+            .transition(isReduceMotionEnabled ? .opacity : .scale.combined(with: .opacity))
     }
 }
 // MARK: - Subview: Weight label for baggages
@@ -588,6 +624,7 @@ struct RoundTransitionOverlayView: View {
 
 // MARK: - 1. Animasi Geser Sobek Kalender (Pure Slide ke Kanan)
 private struct CalendarTearAnimationView: View {
+    @Environment(\.accessibilityReduceMotion) private var isReduceMotionEnabled
     let oldDay: Int
     let newDay: Int
     let onFinished: () -> Void
@@ -617,8 +654,8 @@ private struct CalendarTearAnimationView: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: 220, height: 226)
-                .offset(x: isSlidAway ? 380 : -4, y: 40)
-                .opacity(isSlidAway ? 0.3 : 1.0)
+                .offset(x: (!isReduceMotionEnabled && isSlidAway) ? 380 : -4, y: 40)
+                .opacity(isSlidAway ? (isReduceMotionEnabled ? 0.0 : 0.3) : 1.0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .clipped()
@@ -718,6 +755,7 @@ private struct RestockStoreAnimationView: View {
 }
 
 struct ActiveEventCardSlot: View {
+    @Environment(\.accessibilityReduceMotion) private var isReduceMotionEnabled
     let event: RandomEventModel?
     let currentHour: Int
     let cellSize: CGFloat
@@ -790,8 +828,8 @@ struct ActiveEventCardSlot: View {
             let token = UUID()
             departToken = token
 
-            withAnimation(.easeIn(duration: 0.35)) {
-                departOffsetX = 240
+            withAnimation(isReduceMotionEnabled ? .easeInOut(duration: 0.25) : .easeIn(duration: 0.35)) {
+                departOffsetX = isReduceMotionEnabled ? 0 : 240
                 departOpacity = 0
             }
 

@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct FinalScoreView: View {
+    @Environment(\.accessibilityReduceMotion) private var isReduceMotionEnabled
     var viewModel: GameSessionViewModel? = nil
     var standings: [PlayerStandingModel] = []
     var onBackToHome: () -> Void = {}
@@ -131,7 +132,7 @@ struct FinalScoreView: View {
                                 }
                                 .foregroundStyle(receiptTextColor)
                                 .opacity(isRevealed ? 1 : 0)
-                                .offset(y: isRevealed ? 0 : 6)
+                                .offset(y: isReduceMotionEnabled ? 0 : (isRevealed ? 0 : 6))
                             }
                         }
                         .frame(minHeight: 140, alignment: .top)
@@ -158,7 +159,8 @@ struct FinalScoreView: View {
                                         .rotationEffect(.degrees(-8))
                                         .offset(y: 8)
                                         .opacity(isWinnerVisible ? 1 : 0)
-                                        .scaleEffect(isWinnerVisible ? 1 : 0.6)                                )
+                                        .scaleEffect(isReduceMotionEnabled ? 1 : (isWinnerVisible ? 1 : 0.6))
+                                )
                                 .frame(height: 70)
                                 .padding(.bottom, 16)
                         }
@@ -194,7 +196,13 @@ struct FinalScoreView: View {
                         // .transition(.move(edge: .bottom).combined(with: .opacity))
                         
                         Button("See Details") {
-                            isShowingDetails = true
+                            if isReduceMotionEnabled {
+                                withAnimation(.easeInOut(duration: 0.25)) {
+                                    isShowingDetails = true
+                                }
+                            } else {
+                                isShowingDetails = true
+                            }
                         }
                         .buttonStyle(
                             PrimaryButtonStyle(
@@ -225,8 +233,24 @@ struct FinalScoreView: View {
                     }
                 }
             }
+            if isReduceMotionEnabled && isShowingDetails, let viewModel {
+                ScoringView(
+                    viewModel: viewModel,
+                    onDismissOverride: {
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            isShowingDetails = false
+                        }
+                    }
+                )
+                .transition(.opacity)
+                .zIndex(50)
+            }
         }
-        .sheet(isPresented: $isShowingDetails) {
+        .animation(isReduceMotionEnabled ? .easeInOut(duration: 0.25) : nil, value: isShowingDetails)
+        .sheet(isPresented: Binding(
+            get: { !isReduceMotionEnabled && isShowingDetails },
+            set: { isShowingDetails = $0 }
+        )) {
             if let viewModel {
                 ScoringView(viewModel: viewModel)
                     .presentationDetents([.large])
@@ -245,7 +269,7 @@ struct FinalScoreView: View {
         .onChange(of: activeStandings) { _, newStandings in
             // Jika data pemain lain baru masuk setelah animasi selesai atau sedang jalan:
             if isWinnerVisible {
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                withAnimation(isReduceMotionEnabled ? .easeInOut(duration: 0.25) : .spring(response: 0.35, dampingFraction: 0.8)) {
                     revealedRowCount = min(5, newStandings.count)
                 }
             }
@@ -274,7 +298,7 @@ struct FinalScoreView: View {
             if totalRows > 0 {
                 for index in 1...totalRows {
                     guard !Task.isCancelled else { return }
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                    withAnimation(isReduceMotionEnabled ? .easeInOut(duration: 0.25) : .spring(response: 0.35, dampingFraction: 0.8)) {
                         revealedRowCount = index
                     }
                     rowImpact.impactOccurred()
@@ -283,14 +307,14 @@ struct FinalScoreView: View {
             }
             
             guard !Task.isCancelled else { return }
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.65)) {
+            withAnimation(isReduceMotionEnabled ? .easeInOut(duration: 0.25) : .spring(response: 0.4, dampingFraction: 0.65)) {
                 isWinnerVisible = true
             }
             winnerFeedback.notificationOccurred(.success)
             
             try? await Task.sleep(nanoseconds: 400_000_000)
             guard !Task.isCancelled else { return }
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            withAnimation(isReduceMotionEnabled ? .easeInOut(duration: 0.25) : .spring(response: 0.35, dampingFraction: 0.8)) {
                 isBackToHomeVisible = true
             }
         }
@@ -298,7 +322,7 @@ struct FinalScoreView: View {
     
     private func skipAnimation() {
         animationTask?.cancel()
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+        withAnimation(isReduceMotionEnabled ? .easeInOut(duration: 0.2) : .spring(response: 0.3, dampingFraction: 0.8)) {
             revealedRowCount = displayedStandings.count
             isWinnerVisible = true
             isBackToHomeVisible = true
