@@ -141,7 +141,7 @@ class GameSessionViewModel {
                     StagedItem(
                         id: UUID(),
                         piece: newPiece,
-                        weight: stagingWeight ?? weight(for: newPiece.id),
+                        weight: stagingWeight ?? (isZeroWeightHour ? 0 : weight(for: newPiece.id)),
                         rotation: .deg0,
                         lockedLuggage: nil,
                         isAlreadyCountedInWeight: false
@@ -397,7 +397,12 @@ class GameSessionViewModel {
     }
     
     // Fungsi untuk mencatat item sekaligus memilih tempat (Suitcase / Carry-On)
-    func recordItemPlacement(piece: PieceModel, weight: Int, isSuitcase: Bool) {
+    func recordItemPlacement(
+        piece: PieceModel,
+        weight: Int,
+        isSuitcase: Bool,
+        effectiveWeight: Int? = nil
+    ) {
         guard !isBoarded && !isGameOver else { return }
         
         let revealed = RevealedPiece(piece: piece, weight: weight, scannedBy: currentPlayerStatus.name)
@@ -415,11 +420,11 @@ class GameSessionViewModel {
         }
         
         // 3. Tambahin bobot HANYA ke tracker HP ini sendiri (berat suitcase/carry-on gak digabung ke HP lain)
-        let effectiveWeight = isZeroWeightHour ? 0 : weight
+        let appliedWeight = effectiveWeight ?? (isZeroWeightHour ? 0 : weight)
         if isSuitcase {
-            suitWeight += effectiveWeight
+            suitWeight += appliedWeight
         } else {
-            carryWeight += effectiveWeight
+            carryWeight += appliedWeight
         }
         
         broadcastMyStatus()
@@ -446,14 +451,15 @@ class GameSessionViewModel {
     /// Menambahkan barang baru hasil scan ke area staging
     func stageScannedPiece(_ piece: PieceModel, weight: Int, targetLuggage: LuggageType? = nil) {
         captureGridSnapshotIfNeeded()
-        stagingWeight = weight
+        let effectiveWeight = isZeroWeightHour ? 0 : weight
+        stagingWeight = effectiveWeight
         // Hapus barang scan lama yang belum ditaruh jika ada, pertahankan barang yang sedang ditata ulang
         consumeTurnActionQuota()
         stagedItems.append(
             StagedItem(
                 id: UUID(),
                 piece: piece,
-                weight: weight,
+                weight: effectiveWeight,
                 rotation: .deg0,
                 lockedLuggage: targetLuggage,
                 isAlreadyCountedInWeight: false
@@ -482,7 +488,7 @@ class GameSessionViewModel {
         let item = StagedItem(
             id: placedPiece.id,
             piece: placedPiece.piece,
-            weight: weight(for: placedPiece.piece.id),
+            weight: contribution,
             rotation: placedPiece.rotation,
             lockedLuggage: nil,
             isAlreadyCountedInWeight: true,
@@ -541,8 +547,14 @@ class GameSessionViewModel {
         
         // Hanya tambahkan bobot jika barang ini baru di-scan (belum dihitung sebelumnya)
         if !item.isAlreadyCountedInWeight {
-            recordItemPlacement(piece: item.piece, weight: item.weight, isSuitcase: luggage == .suitcase)
-            placedPieceWeightContributions[placed.id] = isZeroWeightHour ? 0 : item.weight
+            let catalogWeight = self.weight(for: item.piece.id)
+            recordItemPlacement(
+                piece: item.piece,
+                weight: catalogWeight,
+                isSuitcase: luggage == .suitcase,
+                effectiveWeight: item.weight
+            )
+            placedPieceWeightContributions[placed.id] = item.weight
         } else {
             let contribution = placedPieceWeightContributions[item.id]
                 ?? weight(for: item.piece.id)
