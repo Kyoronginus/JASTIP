@@ -439,259 +439,271 @@ enum JastipOrderCatalog {
     }
     
 
-        /// Mengembalikan array boolean [Bool] penanda centang untuk masing-masing slot item di order
-        /// 
+        /// Mengembalikan array opsional [PieceModel?] sesuai urutan slot item di order
+        ///
         /// Consumes one matching item from the pool per slot.
         /// Note: Always place specific predicates before general/"Any" predicates.
-        private static func matchSlots(
+        private static func matchSlotPieces(
             items: [PieceModel],
             predicates: [(PieceModel) -> Bool]
-        ) -> [Bool] {
+        ) -> [PieceModel?] {
             var pool = items
             return predicates.map { predicate in
-                guard let index = pool.firstIndex(where: predicate) else { return false }
-                pool.remove(at: index)
-                return true
+                guard let index = pool.firstIndex(where: predicate) else { return nil }
+                return pool.remove(at: index)
             }
         }
+
         static func checkItemFulfillment(orderKey: String, items: [PieceModel]) -> [Bool] {
+            let predicates = slotPredicates(for: orderKey)
+            guard !predicates.isEmpty else { return [] }
+            return matchSlotPieces(items: items, predicates: predicates).map { $0 != nil }
+        }
+
+        /// Mengembalikan piece yang memenuhi tiap slot order saat seluruh slot terpenuhi
+        static func fulfilledPieces(orderKey: String, items: [PieceModel]) -> [PieceModel] {
+            let predicates = slotPredicates(for: orderKey)
+            guard !predicates.isEmpty else { return [] }
+            let matched = matchSlotPieces(items: items, predicates: predicates)
+            guard matched.allSatisfy({ $0 != nil }) else { return [] }
+            return matched.compactMap { $0 }
+        }
+
+        private static func slotPredicates(for orderKey: String) -> [(PieceModel) -> Bool] {
             switch orderKey {
             // --- 1. Thomas (1 slot) ---
             case "thomas":
-                // return [items.contains { ($0.color == .green || $0.color == .blue) && $0.isAnomaly }]
-                return matchSlots(items: items, predicates: [
+                return [
                     { ($0.color == .green || $0.color == .blue) && $0.isAnomaly }
-                ])
+                ]
                 
             // --- 2. Toyib (1 slot) ---
             case "toyib":
-                // return [items.contains { ($0.color == .red || $0.color == .orange) && $0.isAnomaly }]
-                return matchSlots(items: items, predicates: [
+                return [
                     { ($0.color == .red || $0.color == .orange) && $0.isAnomaly }
-                ])
+                ]
                 
             // --- 3. Quincy (1 slot) ---
             case "quincy":
-                // return [items.contains { ($0.color == .green || $0.color == .purple) && $0.isAnomaly }]
-                return matchSlots(items: items, predicates: [
+                return [
                     { ($0.color == .green || $0.color == .purple) && $0.isAnomaly }
-                ])
+                ]
                 
             // --- 4. Henry (2 slot) ---
             case "henry":
-                return matchSlots(items: items, predicates: [
+                return [
                     { $0.color != .purple && ($0.shape == .single || $0.shape == .domino) },
                     { $0.color == .purple && $0.isAnomaly }
-                ])
+                ]
                 
             // --- 5. Molly (2 slot) ---
             case "molly":
-                return matchSlots(items: items, predicates: [
+                return [
                     { $0.color == .orange && $0.shape == .square },
                     { $0.color == .orange && $0.shape == .tetrominoT }
-                ])
+                ]
                 
             // --- 6. Mackenzie (2 slot: 2x Domino Green/Blue) ---
             case "mackenzie":
-                return matchSlots(items: items, predicates: [
+                return [
                     { $0.shape == .domino && ($0.color == .green || $0.color == .blue) },
                     { $0.shape == .domino && ($0.color == .green || $0.color == .blue) }
-                ])
+                ]
                 
             // --- 7. Joe (2 slot) ---
             case "joe":
-                return matchSlots(items: items, predicates: [
+                return [
                     { $0.color == .orange && $0.shape == .single },
                     { $0.color != .orange && $0.shape == .tetrominoI }
-                ])
+                ]
                 
             // --- 8. Billie (2 slot) ---
             case "billie":
-                return matchSlots(items: items, predicates: [
+                return [
                     { ($0.color == .red || $0.color == .orange) && ($0.shape == .square || $0.shape == .tetrominoT) },
                     { ($0.color == .red || $0.color == .orange) && ($0.shape == .smallL || $0.shape == .tetrominoL) }
-                ])
+                ]
                 
             // --- 9. Jude (2 slot) ---
             case "jude":
-                return matchSlots(items: items, predicates: [
+                return [
                     { $0.color == .blue && ($0.shape == .smallL || $0.shape == .tetrominoL) },
                     { $0.color == .orange && ($0.shape == .smallL || $0.shape == .tetrominoL) }
-                ])
+                ]
                 
             // --- 10. Brie (3 slot: Blue Line, Blue T/Square, Blue Any) ---
             case "brie":
                 let lineShapes: [PieceShape] = [.domino, .triominoI, .tetrominoI]
                 let tOrSquare: [PieceShape] = [.tetrominoT, .square]
-                return matchSlots(items: items, predicates: [
+                return [
                     { $0.color == .blue && lineShapes.contains($0.shape) },
                     { $0.color == .blue && tOrSquare.contains($0.shape) },
                     { $0.color == .blue }
-                ])
+                ]
                 
             // --- 11. Bella (3 slot: Purple Line x2, Purple Any) ---
             case "bella":
                 let lineShapes: [PieceShape] = [.domino, .triominoI, .tetrominoI]
-                return matchSlots(items: items, predicates: [
+                return [
                     { $0.color == .purple && lineShapes.contains($0.shape) },
                     { $0.color == .purple && lineShapes.contains($0.shape) },
                     { $0.color == .purple }
-                ])
+                ]
                 
             // --- 12. Roxanne (2 slot) ---
             case "roxanne":
-                return matchSlots(items: items, predicates: [
+                return [
                     { ($0.color == .blue || $0.color == .green) && ($0.shape == .square || $0.shape == .tetrominoT) },
                     { ($0.color == .blue || $0.color == .green) && ($0.shape == .triominoI || $0.shape == .smallL) }
-                ])
+                ]
                 
             // --- 13. Diana (2 slot) ---
             case "diana":
-                return matchSlots(items: items, predicates: [
+                return [
                     { ($0.color == .orange || $0.color == .purple) && ($0.shape == .domino || $0.shape == .triominoI || $0.shape == .tetrominoI) },
                     { ($0.color == .orange || $0.color == .purple) && ($0.shape == .square || $0.shape == .tetrominoT) }
-                ])
+                ]
                 
             // --- 14. Caroline (2 slot) ---
             case "caroline":
-                return matchSlots(items: items, predicates: [
+                return [
                     { $0.color == .blue && ($0.shape == .single || $0.shape == .domino) },
                     { $0.color == .blue && $0.isAnomaly }
-                ])
+                ]
                 
             // --- 15. Kayden (2 slot) ---
             case "kayden":
-                return matchSlots(items: items, predicates: [
+                return [
                     { $0.isAnomaly },
                     { $0.shape == .single }
-                ])
+                ]
                 
             // --- 16. Fernando (2 slot) ---
             case "fernando":
-                return matchSlots(items: items, predicates: [
+                return [
                     { ($0.color == .purple || $0.color == .red) && ($0.shape == .triominoI || $0.shape == .tetrominoI) },
                     { ($0.color == .purple || $0.color == .red) && ($0.shape == .tetrominoL || $0.shape == .smallL || $0.shape == .tetrominoT) }
-                ])
+                ]
                 
             // --- 17. Alvin (3 slot) ---
             case "alvin":
-                return matchSlots(items: items, predicates: [
+                return [
                     { $0.color == .blue && ($0.shape == .single || $0.shape == .domino) },
                     { ($0.color == .red || $0.color == .orange) && ($0.shape == .single || $0.shape == .domino) },
                     { ($0.color == .purple || $0.color == .green) && ($0.shape == .triominoI || $0.shape == .tetrominoI) }
-                ])
+                ]
                 
             // --- 18. Enzo (2 slot) ---
             case "enzo":
-                return matchSlots(items: items, predicates: [
+                return [
                     { ($0.color == .blue || $0.color == .green) && $0.shape == .square },
                     { ($0.color == .blue || $0.color == .green) && ($0.shape == .smallL || $0.shape == .tetrominoL || $0.shape == .tetrominoT) }
-                ])
+                ]
                 
             // --- 19. Taylor (3 slot) ---
             case "taylor":
-                return matchSlots(items: items, predicates: [
+                return [
                     { $0.color == .blue && $0.shape == .domino },
                     { ($0.color == .red || $0.color == .orange) && ($0.shape == .smallL || $0.shape == .tetrominoL || $0.shape == .tetrominoT) },
                     { ($0.color == .purple || $0.color == .green) && ($0.shape == .square || $0.shape == .tetrominoI) }
-                ])
+                ]
                 
             // --- 20. Silvia (3 slot) ---
             case "silvia":
-                return matchSlots(items: items, predicates: [
+                return [
                     { $0.color == .blue && ($0.shape == .triominoI || $0.shape == .smallL) },
                     { ($0.color == .red || $0.color == .orange) && ($0.shape == .triominoI || $0.shape == .smallL) },
                     { ($0.color == .purple || $0.color == .green) && ($0.shape == .triominoI || $0.shape == .smallL) }
-                ])
+                ]
                 
             // --- 21. David (3 slot: Green Square, Green Any, Green Any) ---
             case "david":
-                return matchSlots(items: items, predicates: [
+                return [
                     { $0.color == .green && $0.shape == .square },
                     { $0.color == .green },
                     { $0.color == .green }
-                ])
+                ]
                 
             // --- 22. Jimmy (3 slot: Red Line, Red Sq/T, Red Any) ---
             case "jimmy":
-                return matchSlots(items: items, predicates: [
+                return [
                     { $0.color == .red && ($0.shape == .triominoI || $0.shape == .tetrominoI) },
                     { $0.color == .red && ($0.shape == .square || $0.shape == .tetrominoT) },
                     { $0.color == .red }
-                ])
+                ]
                 
             // --- 23. Wayne (3 slot: Orange Sq/T, Orange Tri/L, Orange Any) ---
             case "wayne":
-                return matchSlots(items: items, predicates: [
+                return [
                     { $0.color == .orange && ($0.shape == .square || $0.shape == .tetrominoT) },
                     { $0.color == .orange && ($0.shape == .triominoI || $0.shape == .smallL) },
                     { $0.color == .orange }
-                ])
+                ]
                 
             // --- 24. Kevin Straight (2 slot) ---
             case "kevin_straight":
                 let validShapes: [PieceShape] = [.domino, .triominoI, .tetrominoI]
-                return matchSlots(items: items, predicates: [
+                return [
                     { ($0.color == .green || $0.color == .purple) && validShapes.contains($0.shape) },
                     { ($0.color == .green || $0.color == .purple) && validShapes.contains($0.shape) }
-                ])
+                ]
                 
             // --- 25. Lloyd (2 slot: 2x Tetromino L Orange/Red) ---
             case "lloyd":
-                return matchSlots(items: items, predicates: [
+                return [
                     { ($0.color == .red || $0.color == .orange) && ($0.shape == .tetrominoL || $0.shape == .smallL) },
                     { ($0.color == .red || $0.color == .orange) && ($0.shape == .tetrominoL || $0.shape == .smallL) }
-                ])
+                ]
                 
             // --- 26. Hannah (2 slot: 2x Square Orange/Blue) ---
             case "hannah":
-                return matchSlots(items: items, predicates: [
+                return [
                     { ($0.color == .orange || $0.color == .blue) && $0.shape == .square },
                     { ($0.color == .orange || $0.color == .blue) && $0.shape == .square }
-                ])
+                ]
                 
             // --- 27. Elliott (2 slot) ---
             case "elliott":
-                return matchSlots(items: items, predicates: [
+                return [
                     { ($0.color == .blue || $0.color == .red) && ($0.shape == .tetrominoL || $0.shape == .smallL) },
                     { ($0.color == .blue || $0.color == .red) && $0.shape == .tetrominoT }
-                ])
+                ]
                 
             // --- 28. Jake (2 slot) ---
             case "jake":
-                return matchSlots(items: items, predicates: [
+                return [
                     { $0.color == .red && $0.shape == .square },
                     { $0.color == .green && $0.shape == .tetrominoT }
-                ])
+                ]
                 
             // --- 29. Leon (2 slot: 2x Orange Triomino/Tetromino I) ---
             case "leon":
-                return matchSlots(items: items, predicates: [
+                return [
                     { $0.color == .orange && ($0.shape == .triominoI || $0.shape == .tetrominoI) },
                     { $0.color == .orange && ($0.shape == .triominoI || $0.shape == .tetrominoI) }
-                ])
+                ]
                 
             // --- 30. Matheo (2 slot: 2x Tetromino T) ---
             case "matheo_tetris_t":
-                return matchSlots(items: items, predicates: [
+                return [
                     { $0.shape == .tetrominoT },
                     { $0.shape == .tetrominoT }
-                ])
+                ]
                 
             // --- 31. Pixie (3 slot) ---
             case "pixie":
-                return matchSlots(items: items, predicates: [
+                return [
                     { ($0.color == .red || $0.color == .orange) && ($0.shape == .single || $0.shape == .domino) },
                     { ($0.color == .purple || $0.color == .green) && ($0.shape == .single || $0.shape == .domino) },
                     { $0.color == .blue && ($0.shape == .single || $0.shape == .domino) }
-                ])
+                ]
                 
             // --- 32. Minnie (2 slot: 2x Red/Orange Single) ---
             case "minnie":
-                return matchSlots(items: items, predicates: [
+                return [
                     { ($0.color == .red || $0.color == .orange) && $0.shape == .single },
                     { ($0.color == .red || $0.color == .orange) && $0.shape == .single }
-                ])
+                ]
                 
             default:
                 return []

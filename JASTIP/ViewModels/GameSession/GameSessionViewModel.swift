@@ -753,6 +753,11 @@ class GameSessionViewModel {
     func isOrderFulfilled(_ order: JastipOrderModel) -> Bool {
         order.isFulfilled(by: allLuggagePieces)
     }
+
+    /// Daftar piece dari koper yang memenuhi slot pada order tertentu
+    func fulfilledPieces(for order: JastipOrderModel) -> [PieceModel] {
+        order.fulfilledPieces(from: allLuggagePieces)
+    }
     
     // MARK: - Automated Scoring Helpers
     
