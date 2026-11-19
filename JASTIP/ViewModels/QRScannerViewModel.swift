@@ -21,7 +21,6 @@ class QRScannerViewModel {
     var scannedCode: String? = nil
     var detectedPiece: PieceModel? = nil
     var confirmedWeight: Int? = nil
-    var rejectionMessage: String? = nil
     
     var session: GameSessionViewModel
     var targetIsSuitcase: Bool
@@ -94,29 +93,8 @@ class QRScannerViewModel {
         guard scannedCode == nil else { return }
         guard let piece = PieceCatalog.findPiece(by: code) else { return }
         
-        // Cek apakah kepingan muat di koper target, atau salah satu koper.
-        let targetGrid = targetIsSuitcase ? session.suitcaseGrid : session.carryOnGrid
-        let canFit = allowsEitherLuggage
-            ? LuggagePlacementEngine.canScan(
-                piece: piece,
-                suitcase: session.suitcaseGrid,
-                carryOn: session.carryOnGrid
-            )
-            : LuggagePlacementEngine.canFit(piece: piece, in: targetGrid)
-        
-        guard canFit else {
-            UINotificationFeedbackGenerator().notificationOccurred(.error)
-            self.scannedCode = code
-            self.detectedPiece = piece
-            self.rejectionMessage = allowsEitherLuggage
-                ? "This item does not fit in your current Suitcase or Carry-On layout."
-                : "This item does not fit in your current \(targetIsSuitcase ? "Suitcase" : "Carry-On") layout."
-            return
-        }
-        
         playBeep()
         playScanHaptic()
-        self.rejectionMessage = nil
         self.scannedCode = code
         self.detectedPiece = piece
         self.confirmedWeight = session.weight(for: code)
@@ -131,7 +109,6 @@ class QRScannerViewModel {
         self.scannedCode = nil
         self.detectedPiece = nil
         self.confirmedWeight = nil
-        self.rejectionMessage = nil
         scanner.startScanning()
     }
     
