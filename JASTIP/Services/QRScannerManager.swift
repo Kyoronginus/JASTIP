@@ -38,13 +38,16 @@ class QRScannerManager: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
     private func setupCamera() {
         session.beginConfiguration()
         session.automaticallyConfiguresApplicationAudioSession = false
-        if session.canSetSessionPreset(.hd1280x720) {
+        if session.canSetSessionPreset(.hd1920x1080) {
+            session.sessionPreset = .hd1920x1080
+        } else if session.canSetSessionPreset(.hd1280x720) {
             session.sessionPreset = .hd1280x720
         }
         
         if let initialInput = cachedInput(for: .front), session.canAddInput(initialInput) {
             self.currentInput = initialInput
             session.addInput(initialInput)
+            configureFocus(for: initialInput.device)
         }
         
         // Pre-warm opposite camera input off the main thread for faster flips.
@@ -58,7 +61,8 @@ class QRScannerManager: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
         
         if let connection = videoOutput.connection(with: .video), connection.isVideoMirroringSupported {
             connection.automaticallyAdjustsVideoMirroring = false
-            connection.isVideoMirrored = true
+            // Keep Vision buffer un-mirrored; preview layer handles selfie mirroring separately.
+            connection.isVideoMirrored = false
         }
         
         session.commitConfiguration()
@@ -123,10 +127,12 @@ class QRScannerManager: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
 
             self.session.addInput(newInput)
             self.currentInput = newInput
+            self.configureFocus(for: newInput.device)
 
             if let connection = self.videoOutput.connection(with: .video), connection.isVideoMirroringSupported {
                 connection.automaticallyAdjustsVideoMirroring = false
-                connection.isVideoMirrored = (position == .front)
+                // Keep Vision buffer un-mirrored on both cameras so QR decoding works reliably.
+                connection.isVideoMirrored = false
             }
 
             self.session.commitConfiguration()
@@ -134,6 +140,22 @@ class QRScannerManager: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
             DispatchQueue.main.async {
                 self.currentPosition = position
             }
+        }
+    }
+
+    private func configureFocus(for device: AVCaptureDevice) {
+        do {
+            try device.lockForConfiguration()
+            defer { device.unlockForConfiguration() }
+
+            if device.isFocusModeSupported(.continuousAutoFocus) {
+                device.focusMode = .continuousAutoFocus
+            }
+            if device.isAutoFocusRangeRestrictionSupported {
+                device.autoFocusRangeRestriction = .near
+            }
+        } catch {
+            // Device focus configuration is optional; scanning still proceeds with defaults.
         }
     }
     
