@@ -27,27 +27,30 @@ private struct RootAppFlowView: View {
 
     var body: some View {
         ZStack {
+            if gameSessionVM.isGameStarted && !gameSessionVM.hasSeenStoryboard {
+                Color("BackgroundChat")
+                    .ignoresSafeArea()
+            }
+
             if !gameSessionVM.isGameStarted {
                 // 1. LOBBY (STARTVIEW)
                 StartView(viewModel: gameSessionVM)
                     .transition(.opacity)
                     .onAppear { UIApplication.shared.isIdleTimerDisabled = true }
             } else if !gameSessionVM.hasProceededToGame {
-                // 2. REVEAL AIRLINE CARD (FLIP / DISSOLVE)
+                // 2. AIRLINE CARD (CHAT ALLOWANCE) -> FADES CONTENT TO BACKGROUND BEFORE VIDEO
                 AirlineCardView(airlineCard: gameSessionVM.displayedAirlineCard) {
-                    withAnimation(.easeInOut(duration: 0.25)) {
-                        gameSessionVM.hasProceededToGame = true
-                    }
+                    gameSessionVM.hasProceededToGame = true
                 }
-                .transition(.opacity)
+                .transition(.identity)
             } else if !gameSessionVM.hasSeenStoryboard {
-                // 3. STORYBOARD CUTSCENE
+                // 3. INTRO VIDEO CUTSCENE (ON MATCHING BACKGROUND)
                 StoryboardView(session: gameSessionVM) {
                     withAnimation(.easeInOut(duration: 0.25)) {
                         gameSessionVM.hasSeenStoryboard = true
                     }
                 }
-                .transition(.opacity)
+                .transition(.identity)
             } else {
                 // 4. MAIN GAMEPLAY
                 MainTabView(viewModel: gameSessionVM)
