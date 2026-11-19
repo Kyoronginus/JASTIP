@@ -118,48 +118,7 @@ struct QRScannerView: View {
                 Spacer()
             }
             
-            // 3. Popup Penolakan (Jika barang tidak muat di koper target)
-            if let piece = viewModel.detectedPiece, let rejection = viewModel.rejectionMessage {
-                Color.black.opacity(0.4)
-                    .ignoresSafeArea()
-                
-                VStack(spacing: 14) {
-                    Image(piece.assetName)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 80, height: 80)
-                        .padding(12)
-                    
-                    Text("DOESN'T FIT!")
-                        .font(.spaceGrotesk(24, .bold))
-                        .foregroundStyle(Color("FragileRed"))
-                    
-                    Text(rejection)
-                        .font(.spaceGrotesk(14, .medium))
-                        .multilineTextAlignment(.center)
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 8)
-                    
-                    Button("Scan Another Item") {
-                        viewModel.resetScan()
-                    }
-                    .buttonStyle(PrimaryButtonStyle(isFullWidth: true))
-                    .padding(.horizontal, 16)
-                    
-                    Button("Back") {
-                        dismiss()
-                    }
-                    .font(.spaceGrotesk(14, .bold))
-                    .foregroundColor(.secondary)
-                    .padding(.top, 4)
-                }
-                .padding()
-                .frame(maxWidth: 320)
-                .background(Color(uiColor: .systemBackground))
-                .cornerRadius(12)
-            }
-            
-            // 4. Popup Konfirmasi (Tampil di tengah saat QR terdeteksi)
+            // 3. Popup Konfirmasi (Tampil di tengah saat QR terdeteksi)
             if let piece = viewModel.detectedPiece, let _ = viewModel.confirmedWeight {
                 Color.black.opacity(0.4)
                     .ignoresSafeArea()
@@ -190,7 +149,7 @@ struct QRScannerView: View {
                                     .foregroundColor(.primary)
                             }
                             
-                            Text(isSuitcase ? "Adding to Suitcase" : "Adding to Carry-On")
+                            Text(allowsEitherLuggage ? "Adding to Staging Area" : (isSuitcase ? "Adding to Suitcase" : "Adding to Carry-On"))
                                 .font(.subheadline.bold())
                                 .foregroundColor(.secondary)
 
