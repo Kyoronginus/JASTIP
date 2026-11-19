@@ -445,17 +445,34 @@ struct StagingSectionView: View {
     }
 }
 
-// MARK: - Subview: Bentuk Kepingan (Digunakan untuk Staging Kecil & Drag Ukuran Grid)
+// MARK: - Subview: Bentuk Kepingan (Digunakan untuk Staging, Drag, dan Isi Koper)
 struct PieceShapeView: View {
     let piece: PieceModel
     let rotation: LuggageRotation
     var blockSize: CGFloat = 28
     var spacing: CGFloat = 2
     var cornerRadius: CGFloat = 5
+
+    @State private var displayedAngle: Double
+
+    init(
+        piece: PieceModel,
+        rotation: LuggageRotation,
+        blockSize: CGFloat = 28,
+        spacing: CGFloat = 2,
+        cornerRadius: CGFloat = 5
+    ) {
+        self.piece = piece
+        self.rotation = rotation
+        self.blockSize = blockSize
+        self.spacing = spacing
+        self.cornerRadius = cornerRadius
+        _displayedAngle = State(initialValue: Double(rotation.rawValue))
+    }
     
-    private var rotatedCoordinates: Set<GridCoordinate> {
+    private var rotatedCoordinates: [GridCoordinate] {
         let base = PieceCatalog.baseCoordinates(for: piece.shape, pieceId: piece.id)
-        return Set(LuggagePlacementEngine.rotate(coordinates: base, by: rotation))
+        return LuggagePlacementEngine.rotate(coordinates: base, by: rotation)
     }
     
     private var columnsCount: Int {
@@ -465,39 +482,27 @@ struct PieceShapeView: View {
     private var rowsCount: Int {
         (rotatedCoordinates.map(\.y).max() ?? 0) + 1
     }
-    
-    var body: some View {
-        VStack(spacing: spacing) {
-            ForEach(0..<rowsCount, id: \.self) { y in
-                HStack(spacing: spacing) {
-                    ForEach(0..<columnsCount, id: \.self) { x in
-                        PieceBlockCellView(
-                            isFilled: rotatedCoordinates.contains(GridCoordinate(x: x, y: y)),
-                            color: piece.color.displayColor,
-                            size: blockSize,
-                            cornerRadius: cornerRadius
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
 
-private struct PieceBlockCellView: View {
-    let isFilled: Bool
-    let color: Color
-    let size: CGFloat
-    let cornerRadius: CGFloat
+    private func dimension(cells: Int) -> CGFloat {
+        CGFloat(cells) * blockSize + CGFloat(max(0, cells - 1)) * spacing
+    }
     
     var body: some View {
-        RoundedRectangle(cornerRadius: cornerRadius)
-            .fill(isFilled ? color.opacity(0.92) : Color.clear)
-            .overlay(
-                RoundedRectangle(cornerRadius: cornerRadius)
-                    .stroke(isFilled ? Color.white.opacity(0.45) : Color.clear, lineWidth: 1.5)
-            )
-            .frame(width: size, height: size)
+        let spec = PieceCatalog.visualSpec(for: piece)
+        let pngWidth = dimension(cells: spec.pngCols)
+        let pngHeight = dimension(cells: spec.pngRows)
+        let rotatedWidth = dimension(cells: columnsCount)
+        let rotatedHeight = dimension(cells: rowsCount)
+
+        Image(piece.assetName)
+            .resizable()
+            .frame(width: pngWidth, height: pngHeight)
+            .rotationEffect(.degrees(spec.baseAngleDegrees + displayedAngle))
+            .frame(width: rotatedWidth, height: rotatedHeight)
+            .onChange(of: rotation) { oldRotation, newRotation in
+                let delta = (newRotation.rawValue - oldRotation.rawValue + 360) % 360
+                displayedAngle += Double(delta)
+            }
     }
 }
 

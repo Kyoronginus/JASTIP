@@ -14,6 +14,7 @@ enum StartStep {
 }
 
 struct StartView: View {
+    @Environment(\.accessibilityReduceMotion) private var isReduceMotionEnabled
     @Bindable var viewModel: GameSessionViewModel
     @State private var joinCode = ""
     @State private var step: StartStep = .home
@@ -23,7 +24,7 @@ struct StartView: View {
     }
     
     var body: some View {
-        Group {
+        ZStack {
             if let lobby = viewModel.lobbyService.lobby {
                 LobbyView(
                     lobby: lobby,
@@ -50,6 +51,7 @@ struct StartView: View {
                         Task { await viewModel.lobbyService.transferHost(to: playerID) }
                     }
                 )
+                .transition(.opacity)
             } else {
                 ZStack {
                     switch step {
@@ -120,8 +122,10 @@ struct StartView: View {
                         .transition(.opacity)
                     }
                 }
+                .transition(.opacity)
             }
         }
+        .animation(isReduceMotionEnabled ? .easeInOut(duration: 0.25) : .easeInOut(duration: 0.2), value: viewModel.lobbyService.lobby != nil)
         .appBackground()
         .onChange(of: viewModel.lobbyService.lobby == nil) { _, isLobbyNil in
             // Jika sebelumnya di dalam lobby dan host menutup room, kembalikan ke home

@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct AirlineCardView: View {
+    @Environment(\.accessibilityReduceMotion) private var isReduceMotionEnabled
     @State private var viewModel: AirlineCardViewModel
 
     init(viewModel: AirlineCardViewModel) {
@@ -24,17 +25,24 @@ struct AirlineCardView: View {
 
             // MARK: - KARTU 3D FLIP CONTAINER
             ZStack {
-                if !viewModel.isFlipped {
-                    // SISI BELAKANG (Back Card)
+                if isReduceMotionEnabled {
                     cardBackView
-                } else {
-                    // SISI DEPAN (Front Ticket Card)
+                        .opacity(viewModel.isFlipped ? 0 : 1)
                     cardFrontView
-                        .rotation3DEffect(.degrees(180), axis: (x: 0, y: 1, z: 0)) // agar tidak terbalik secara horizontal
+                        .opacity(viewModel.isFlipped ? 1 : 0)
+                } else {
+                    if !viewModel.isFlipped {
+                        // SISI BELAKANG (Back Card)
+                        cardBackView
+                    } else {
+                        // SISI DEPAN (Front Ticket Card)
+                        cardFrontView
+                            .rotation3DEffect(.degrees(180), axis: (x: 0, y: 1, z: 0)) // agar tidak terbalik secara horizontal
+                    }
                 }
             }
             .rotation3DEffect(
-                .degrees(viewModel.rotationDegrees),
+                .degrees(isReduceMotionEnabled ? 0 : viewModel.rotationDegrees),
                 axis: (x: 0, y: 1, z: 0),
                 perspective: 0.5
             )
@@ -53,7 +61,7 @@ struct AirlineCardView: View {
         .padding(.vertical, 20)
         .appBackground()
         .onAppear {
-            viewModel.triggerFlipAnimation()
+            viewModel.triggerFlipAnimation(reduceMotion: isReduceMotionEnabled)
         }
     }
 

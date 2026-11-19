@@ -15,9 +15,11 @@ struct ObjectiveView: View {
     }
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var isReduceMotionEnabled
 
     // Terima viewModel dari MainTabView
     @Bindable var viewModel: GameSessionViewModel
+    var onDismissOverride: (() -> Void)? = nil
     
     // 3 Order awal (Shared) membaca data yang sudah tersinkronisasi dari Firebase/ViewModel
     private var sharedOrders: [JastipOrderModel] {
@@ -61,7 +63,11 @@ struct ObjectiveView: View {
             ZStack() {
                 HStack {
                     Button {
-                        dismiss()
+                        if let onDismissOverride {
+                            onDismissOverride()
+                        } else {
+                            dismiss()
+                        }
                     } label: {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 14, weight: .bold))
@@ -137,10 +143,14 @@ struct ObjectiveView: View {
                                     }
                                 )
                                 .id(order.id)
-                                .transition(.asymmetric(
-                                    insertion: .move(edge: .leading).combined(with: .opacity),
-                                    removal: .opacity
-                                ))
+                                .transition(
+                                    isReduceMotionEnabled
+                                        ? .opacity
+                                        : .asymmetric(
+                                            insertion: .move(edge: .leading).combined(with: .opacity),
+                                            removal: .opacity
+                                        )
+                                )
                             }
                         }
                         Color.clear
@@ -201,7 +211,11 @@ struct ObjectiveView: View {
             .shadow(color: .black.opacity(0.04), radius: 4, x: 0, y: 2)
         }
         .padding(.horizontal, 16)
-        .transition(.move(edge: .trailing).combined(with: .opacity))
+        .transition(
+            isReduceMotionEnabled
+                ? .opacity
+                : .move(edge: .trailing).combined(with: .opacity)
+        )
     }
     
     // MARK: - Subview: Bottom Action Bar
@@ -362,7 +376,7 @@ struct ObjectiveView: View {
             let delay = initialPause + (0.5 * Double(index))
             
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                withAnimation(self.isReduceMotionEnabled ? .easeInOut(duration: 0.25) : .spring(response: 0.4, dampingFraction: 0.8)) {
                     if self.viewModel.isDraftingObjective {
                         guard index < self.viewModel.candidateOrders.count else { return }
 
@@ -407,12 +421,18 @@ struct ObjectiveView: View {
     }
     
     private func scrollToBottom(proxy: ScrollViewProxy, animated: Bool = true) {
-        if animated {
+        if animated && !isReduceMotionEnabled {
             withAnimation(.easeOut(duration: 0.25)) {
                 proxy.scrollTo("CHAT_BOTTOM", anchor: .bottom)
             }
         } else {
-            proxy.scrollTo("CHAT_BOTTOM", anchor: .bottom)
+            DispatchQueue.main.async {
+                var transaction = Transaction()
+                transaction.disablesAnimations = true
+                withTransaction(transaction) {
+                    proxy.scrollTo("CHAT_BOTTOM", anchor: .bottom)
+                }
+            }
         }
     }
     

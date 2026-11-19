@@ -65,7 +65,21 @@ class AirlineCardViewModel {
     }
     
     // MARK: - Animasi (SAMA PERSIS DENGAN KODE LU)
-    func triggerFlipAnimation() {
+    func triggerFlipAnimation(reduceMotion: Bool = false) {
+        if reduceMotion {
+            rotationDegrees = 180
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                self.playFlipHaptic(duration: 0.35)
+                withAnimation(.easeInOut(duration: 0.35)) {
+                    self.isFlipped = true
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                    self.showButton = true
+                }
+            }
+            return
+        }
+
         // Mulai animasi flip setelah 1.0 detik
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             self.playFlipHaptic(duration: 0.7)

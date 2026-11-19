@@ -32,6 +32,7 @@ enum LuggageType: String, Codable, Equatable{
 
 // MARK: - ProgressBar
 struct ProgressBar: View {
+    @Environment(\.accessibilityReduceMotion) private var isReduceMotionEnabled
     let luggage: LuggageType
     let weight: Int
     let maxWeight: Int
@@ -137,7 +138,7 @@ struct ProgressBar: View {
             .frame(width: width * 0.72)
             .rotationEffect(.degrees(-8))
             .position(x: width * 0.53, y: height * 0.57)
-            .transition(.scale.combined(with: .opacity))
+            .transition(isReduceMotionEnabled ? .opacity : .scale.combined(with: .opacity))
     }
 }
 

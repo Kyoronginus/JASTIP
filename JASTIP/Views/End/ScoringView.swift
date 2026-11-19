@@ -10,6 +10,7 @@ import SwiftUI
 struct ScoringView: View {
     @Bindable var viewModel: GameSessionViewModel
     var onFinishGame: () -> Void = {}
+    var onDismissOverride: (() -> Void)? = nil
     @State private var hasPresentedFinalScore = false
     @Environment(\.dismiss) private var dismiss
     
@@ -303,8 +304,12 @@ struct ScoringView: View {
                     
                     // MARK: - Finish Action Button
                     Button("Close Details") {
+                        if let onDismissOverride {
+                            onDismissOverride()
+                        } else {
                             dismiss()
                         }
+                    }
                         .buttonStyle(PrimaryButtonStyle())
                         .padding(.top, 8)
                         .padding(.bottom, 24)

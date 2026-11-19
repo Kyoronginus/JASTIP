@@ -7,6 +7,14 @@
 
 import Foundation
 
+struct PieceVisualSpec {
+    /// Natural unrotated grid dimensions of the PNG asset (`1-1`...`5-9`)
+    let pngCols: Int
+    let pngRows: Int
+    /// Clockwise angle (degrees) to align the PNG's natural orientation with `baseCoordinates` at `0°`
+    let baseAngleDegrees: Double
+}
+
 struct PieceCatalog {
     static let allPieces: [PieceModel] = [
         // id = JASTIP[color]-[shape]
@@ -72,29 +80,30 @@ struct PieceCatalog {
         PieceModel(id: "JASTIP5-8", shape: .square, color: .purple, gridCount: 4, isAnomaly: false),
         
         // unique pieces
-        // lupa, ntar ditambah
-        // xx
-        //  xx
-        //   x
-        PieceModel(id: "JASTIP5-9", shape:.unique, color: .purple, gridCount: 3, isAnomaly: true),
-        
+        // xxx
+        // x x
+        // xxx
+        PieceModel(id: "JASTIP1-9", shape:.unique, color: .red, gridCount: 5, isAnomaly: true),
+
         // x x
         // xxx
         PieceModel(id: "JASTIP2-9", shape:.unique, color: .orange, gridCount: 3, isAnomaly: true),
-        
+
         //  x
+        //  x
+        // xxx
+        // xxx
+        PieceModel(id: "JASTIP3-9", shape:.unique, color: .green, gridCount: 5, isAnomaly: true),
+
+        //    x
         // xxxx
         // x
         PieceModel(id: "JASTIP4-9", shape:.unique, color: .blue, gridCount: 3, isAnomaly: true),
-        
+
+        // x
         // xx
-        // xxxx
-        // xx
-        PieceModel(id: "JASTIP3-9", shape:.unique, color: .green, gridCount: 5, isAnomaly: true),
-       //
-        // xxxx
-        //  x x
-        PieceModel(id: "JASTIP1-9", shape:.unique, color: .red, gridCount: 3, isAnomaly: true),
+        //  xx
+        PieceModel(id: "JASTIP5-9", shape:.unique, color: .purple, gridCount: 3, isAnomaly: true),
     ]
     
     static func findPiece(by id: String) -> PieceModel? {
@@ -102,6 +111,42 @@ struct PieceCatalog {
         }
         
         
+    static func visualSpec(for piece: PieceModel) -> PieceVisualSpec {
+        switch piece.shape {
+        case .single:
+            return PieceVisualSpec(pngCols: 1, pngRows: 1, baseAngleDegrees: 0)
+        case .domino:
+            return PieceVisualSpec(pngCols: 2, pngRows: 1, baseAngleDegrees: 0)
+        case .smallL:
+            return PieceVisualSpec(pngCols: 2, pngRows: 2, baseAngleDegrees: 0)
+        case .triominoI:
+            return PieceVisualSpec(pngCols: 3, pngRows: 1, baseAngleDegrees: 0)
+        case .tetrominoL:
+            return PieceVisualSpec(pngCols: 2, pngRows: 3, baseAngleDegrees: 0)
+        case .tetrominoT:
+            return PieceVisualSpec(pngCols: 3, pngRows: 2, baseAngleDegrees: 0)
+        case .tetrominoI:
+            return PieceVisualSpec(pngCols: 4, pngRows: 1, baseAngleDegrees: 0)
+        case .square:
+            return PieceVisualSpec(pngCols: 2, pngRows: 2, baseAngleDegrees: 0)
+        case .unique:
+            switch piece.id {
+            case "JASTIP1-9":
+                return PieceVisualSpec(pngCols: 3, pngRows: 3, baseAngleDegrees: 0)
+            case "JASTIP2-9":
+                return PieceVisualSpec(pngCols: 3, pngRows: 2, baseAngleDegrees: 0)
+            case "JASTIP3-9":
+                return PieceVisualSpec(pngCols: 3, pngRows: 4, baseAngleDegrees: 0)
+            case "JASTIP4-9":
+                return PieceVisualSpec(pngCols: 4, pngRows: 3, baseAngleDegrees: 0)
+            case "JASTIP5-9":
+                return PieceVisualSpec(pngCols: 3, pngRows: 3, baseAngleDegrees: 0)
+            default:
+                return PieceVisualSpec(pngCols: 1, pngRows: 1, baseAngleDegrees: 0)
+            }
+        }
+    }
+
     // MARK: - Shape Coordinates & Rotation
     static func baseCoordinates(for shape: PieceShape, pieceId: String? = nil) -> [GridCoordinate] {
         switch shape {
@@ -114,7 +159,7 @@ struct PieceCatalog {
         case .triominoI:
             return [GridCoordinate(x: 0, y: 0), GridCoordinate(x: 1, y: 0), GridCoordinate(x: 2, y: 0)]
         case .tetrominoL:
-            return [GridCoordinate(x: 0, y: 0), GridCoordinate(x: 1, y: 0), GridCoordinate(x: 2, y: 0), GridCoordinate(x: 0, y: 1)]
+            return [GridCoordinate(x: 0, y: 0), GridCoordinate(x: 0, y: 1), GridCoordinate(x: 0, y: 2), GridCoordinate(x: 1, y: 2)]
         case .tetrominoT:
             return [GridCoordinate(x: 0, y: 0), GridCoordinate(x: 1, y: 0), GridCoordinate(x: 2, y: 0), GridCoordinate(x: 1, y: 1)]
         case .tetrominoI:
@@ -133,9 +178,11 @@ struct PieceCatalog {
             return [GridCoordinate(x: 0, y: 0),
                     GridCoordinate(x: 1, y: 0),
                     GridCoordinate(x: 2, y: 0),
-                    GridCoordinate(x: 3, y: 0),
-                    GridCoordinate(x: 1, y: 1),
-                    GridCoordinate(x: 3, y: 1)]
+                    GridCoordinate(x: 2, y: 1),
+                    GridCoordinate(x: 2, y: 2),
+                    GridCoordinate(x: 1, y: 2),
+                    GridCoordinate(x: 0, y: 2),
+                    GridCoordinate(x: 0, y: 1)]
         case "JASTIP2-9":
             return [GridCoordinate(x: 0, y: 0),
                     GridCoordinate(x: 2, y: 0),
@@ -143,26 +190,26 @@ struct PieceCatalog {
                     GridCoordinate(x: 1, y: 1),
                     GridCoordinate(x: 2, y: 1)]
         case "JASTIP3-9":
-            return [GridCoordinate(x: 0, y: 0),
-                    GridCoordinate(x: 1, y: 0),
-                    GridCoordinate(x: 0, y: 1),
-                    GridCoordinate(x: 1, y: 1),
-                    GridCoordinate(x: 2, y: 1),
-                    GridCoordinate(x: 3, y: 1),
-                    GridCoordinate(x: 0, y: 2),
-                    GridCoordinate(x: 1, y: 2)]
-        case "JASTIP4-9":
             return [GridCoordinate(x: 1, y: 0),
-                    GridCoordinate(x: 0, y: 1),
+                    GridCoordinate(x: 1, y: 1),
+                    GridCoordinate(x: 0, y: 2),
+                    GridCoordinate(x: 1, y: 2),
+                    GridCoordinate(x: 2, y: 2),
+                    GridCoordinate(x: 0, y: 3),
+                    GridCoordinate(x: 1, y: 3),
+                    GridCoordinate(x: 2, y: 3)]
+        case "JASTIP4-9":
+            return [GridCoordinate(x: 0, y: 1),
+                    GridCoordinate(x: 0, y: 2),
                     GridCoordinate(x: 1, y: 1),
                     GridCoordinate(x: 2, y: 1),
                     GridCoordinate(x: 3, y: 1),
-                    GridCoordinate(x: 0, y: 2)]
+                    GridCoordinate(x: 3, y: 0)]
         case "JASTIP5-9":
             return [GridCoordinate(x: 0, y: 0),
-                    GridCoordinate(x: 1, y: 0),
+                    GridCoordinate(x: 0, y: 1),
                     GridCoordinate(x: 1, y: 1),
-                    GridCoordinate(x: 2, y: 1),
+                    GridCoordinate(x: 1, y: 2),
                     GridCoordinate(x: 2, y: 2)]
         default:
             return [GridCoordinate(x: 0, y: 0)]
