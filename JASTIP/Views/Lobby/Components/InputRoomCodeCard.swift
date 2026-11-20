@@ -24,7 +24,7 @@ struct InputRoomCodeCard: View {
                 .opacity(0.01)
                 .frame(width: 1, height: 1)
                 .onChange(of: code) { _, newValue in
-                    let alphabet = Set("ABCDEFGHJKLMNPQRSTUVWXYZ")
+                    let alphabet = Set("ABCDEFGHIJKLMNPQRSTUVWXYZ")
                     let filtered = newValue.uppercased().filter { alphabet.contains($0) }
                     code = String(filtered.prefix(codeLength))
                 }
