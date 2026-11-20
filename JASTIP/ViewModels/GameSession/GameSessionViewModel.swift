@@ -450,6 +450,7 @@ class GameSessionViewModel {
     
     /// Menambahkan barang baru hasil scan ke area staging
     func stageScannedPiece(_ piece: PieceModel, weight: Int, targetLuggage: LuggageType? = nil) {
+        guard !isPieceFromClosedStore(piece) else { return }
         captureGridSnapshotIfNeeded()
         let effectiveWeight = isZeroWeightHour ? 0 : weight
         stagingWeight = effectiveWeight

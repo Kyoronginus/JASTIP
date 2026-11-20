@@ -13,6 +13,18 @@ extension GameSessionViewModel {
     var isZeroWeightHour: Bool {
         activeHourEvent?.type == .zeroWeight
     }
+
+    var closedStoreColorsThisHour: Set<PieceColor> {
+        RandomEventCatalog.closedStoreVariant(for: activeHourEvent)?.closedColors ?? []
+    }
+
+    var closedStoresLabel: String? {
+        RandomEventCatalog.closedStoreVariant(for: activeHourEvent)?.stores
+    }
+
+    func isPieceFromClosedStore(_ piece: PieceModel) -> Bool {
+        closedStoreColorsThisHour.contains(piece.color)
+    }
     
     // MARK: - Business Logic Methods
     func nextHour() {

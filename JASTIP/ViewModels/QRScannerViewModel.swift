@@ -21,6 +21,7 @@ class QRScannerViewModel {
     var scannedCode: String? = nil
     var detectedPiece: PieceModel? = nil
     var confirmedWeight: Int? = nil
+    var closedStoreWarning: String? = nil
     
     var session: GameSessionViewModel
     var targetIsSuitcase: Bool
@@ -28,6 +29,7 @@ class QRScannerViewModel {
     var onScanned: ((PieceModel?, String, Int?, Bool) -> Void)? = nil
     var audioPlayer: AVAudioPlayer?
     private var hapticEngine: CHHapticEngine?
+    @ObservationIgnored private var warningClearTask: Task<Void, Never>? = nil
     
     var headerTitle: String {
         confirmedWeight != nil ? "PIECE CONFIRMED" : "QR DETECTED"
@@ -60,6 +62,8 @@ class QRScannerViewModel {
     }
     
     func stopScanning() {
+        warningClearTask?.cancel()
+        closedStoreWarning = nil
         motionManager.stopDeviceMotionUpdates()
         scanner.stopScanning()
     }
@@ -92,12 +96,31 @@ class QRScannerViewModel {
     func handleDetectedCode(_ code: String) {
         guard scannedCode == nil else { return }
         guard let piece = PieceCatalog.findPiece(by: code) else { return }
-        
+
+        if session.isPieceFromClosedStore(piece) {
+            triggerClosedStoreRejection(for: piece)
+            return
+        }
+
+        warningClearTask?.cancel()
+        closedStoreWarning = nil
         playBeep()
         playScanHaptic()
         self.scannedCode = code
         self.detectedPiece = piece
         self.confirmedWeight = session.weight(for: code)
+    }
+
+    private func triggerClosedStoreRejection(for piece: PieceModel) {
+        UINotificationFeedbackGenerator().notificationOccurred(.error)
+        warningClearTask?.cancel()
+        closedStoreWarning = "\(piece.color.categoryName) store is closed this day!"
+
+        warningClearTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 2_200_000_000)
+            guard !Task.isCancelled else { return }
+            self?.closedStoreWarning = nil
+        }
     }
     
     func confirmWeight() {

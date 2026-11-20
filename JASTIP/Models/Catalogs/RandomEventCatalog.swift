@@ -21,18 +21,26 @@ enum RandomEventCatalog {
     ]
     
     // 10 Kombinasi Asset Stores Closed
-    static let storesClosedVariants: [(stores: String, assetName: String)] = [
-        ("Boutique & Delicacy", "RandomEvent-BoutiqueDelicacy"),
-        ("Antique & Delicacy", "StoresClosed-AntiqueDelicacy"),
-        ("Antique & Wellness", "StoresClosed-AntiqueWellness"),
-        ("Boutique & Antique", "StoresClosed-Boutique"),
-        ("Delicacy & Toys", "StoresClosed-DelicacyToys"),
-        ("Delicacy & Wellness", "StoresClosed-DelicacyWellness"),
-        ("Toys & Antique", "StoresClosed-ToysAntique"),
-        ("Toys & Boutique", "StoresClosed-ToysBoutique"),
-        ("Wellness & Boutique", "StoresClosed-Wellness&Boutique"),
-        ("Wellness & Toys", "StoresClosed-WellnessToys")
+    static let storesClosedVariants: [(stores: String, closedColors: Set<PieceColor>, assetName: String)] = [
+        ("Boutique & Delicacy", [.blue, .orange], "RandomEvent-BoutiqueDelicacy"),
+        ("Antique & Delicacy", [.green, .orange], "StoresClosed-AntiqueDelicacy"),
+        ("Antique & Wellness", [.green, .purple], "StoresClosed-AntiqueWellness"),
+        ("Boutique & Antique", [.blue, .green], "StoresClosed-Boutique"),
+        ("Delicacy & Toys", [.orange, .red], "StoresClosed-DelicacyToys"),
+        ("Delicacy & Wellness", [.orange, .purple], "StoresClosed-DelicacyWellness"),
+        ("Toys & Antique", [.red, .green], "StoresClosed-ToysAntique"),
+        ("Toys & Boutique", [.red, .blue], "StoresClosed-ToysBoutique"),
+        ("Wellness & Boutique", [.purple, .blue], "StoresClosed-Wellness&Boutique"),
+        ("Wellness & Toys", [.purple, .red], "StoresClosed-WellnessToys")
     ]
+
+    static func closedStoreVariant(for event: RandomEventModel?) -> (stores: String, closedColors: Set<PieceColor>, assetName: String)? {
+        guard let event, event.type == .storesClosed,
+              let assetName = event.resolvedImageName else {
+            return nil
+        }
+        return storesClosedVariants.first { $0.assetName == assetName }
+    }
 
     // Generator event sesuai tipenya
     static func createEvent(for type: RandomEventType) -> RandomEventModel {
@@ -69,7 +77,8 @@ enum RandomEventCatalog {
             return RandomEventModel(type: .silentAirport, imageName: "SilentAirport") // silent no speaking
              
         case .storesClosed:
-            let selected = storesClosedVariants.randomElement() ?? ("Boutique & Antique", "StoresClosed-Boutique") // stores closed random, default Boutique & Antique
+            let selected = storesClosedVariants.randomElement()
+                ?? ("Boutique & Antique", [.blue, .green], "StoresClosed-Boutique")
             return RandomEventModel(type: .storesClosed, imageName: selected.assetName)
         }
     }

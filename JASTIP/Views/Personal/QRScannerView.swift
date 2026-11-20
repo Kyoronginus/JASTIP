@@ -106,16 +106,38 @@ struct QRScannerView: View {
                 Spacer()
                 
                 if !viewModel.isShowingPopup {
-                    VStack(spacing: 8) {
+                    VStack(spacing: 12) {
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.yellow, lineWidth: 3)
+                            .stroke(viewModel.closedStoreWarning == nil ? Color.yellow : Color("FragileRed"), lineWidth: 3)
                             .frame(width: 180, height: 180)
                             .background(Color.black.opacity(0.15))
-                        
-                        Text("Point camera at QR...")
-                            .font(.subheadline)
-                            .foregroundColor(.white)
+
+                        if let warning = viewModel.closedStoreWarning {
+                            Label(warning, systemImage: "exclamationmark.triangle.fill")
+                                .font(.spaceGrotesk(14, .bold))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 10)
+                                .background(Color("FragileRed"))
+                                .clipShape(Capsule())
+                                .transition(.opacity)
+                        } else {
+                            Text("Point camera at QR...")
+                                .font(.subheadline)
+                                .foregroundColor(.white)
+
+//                            if let closedStores = viewModel.session.closedStoresLabel {
+//                                Label("Closed today: \(closedStores)", systemImage: "storefront")
+//                                    .font(.spaceGrotesk(12, .semibold))
+//                                    .foregroundStyle(.white.opacity(0.9))
+//                                    .padding(.horizontal, 12)
+//                                    .padding(.vertical, 6)
+//                                    .background(Color.black.opacity(0.6))
+//                                    .clipShape(Capsule())
+//                            }
+                        }
                     }
+                    .animation(.easeInOut(duration: 0.2), value: viewModel.closedStoreWarning)
                 }
                 
                 Spacer()

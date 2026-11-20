@@ -34,32 +34,34 @@ struct InputRoomCodeCard: View {
                 .resizable()
                 .scaledToFit()
 
-            // Overlay Content (Enter Room Code + Box Putus-putus)
             VStack(alignment: .leading, spacing: 6) {
                 Text("Enter Room Code")
-                    .font(.shantellSans(18, .semibold))
+                    .font(.shantellSans(32, .semibold))
                     .foregroundColor(.black)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
 
-                // Inner Box Putus-putus
                 ZStack(alignment: .leading) {
                     HStack {
                         if code.isEmpty {
                             if isFocused {
                                 Text("|")
-                                    .font(.spaceGrotesk(28, .bold))
+                                    .font(.spaceGrotesk(32, .bold))
                                     .foregroundColor(.black)
                             }
                         } else {
                             Text(code)
-                                .font(.spaceGrotesk(38, .medium))
+                                .font(.spaceGrotesk(48, .medium))
                                 .tracking(6)
                                 .foregroundColor(.black)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.6)
                         }
                         Spacer()
                     }
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, 14)
                 }
-                .frame(height: 50)
+                .frame(height: 64)
                 .background(Color.white)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
                 .overlay(
@@ -69,9 +71,17 @@ struct InputRoomCodeCard: View {
                             style: StrokeStyle(lineWidth: 1.5, dash: [4, 3])
                         )
                 )
+                .overlay(alignment: .topTrailing) {
+                    Image("plane")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 48)
+                        .offset(x: 18, y: -20)
+                        .allowsHitTesting(false)
+                }
             }
             .padding(.leading, 24)
-            .padding(.trailing, 160) // Memberi ruang agar ikon pesawat tidak tertutup
+            .padding(.trailing, 105)
             .padding(.vertical, 16)
         }
         .contentShape(Rectangle())
@@ -87,7 +97,7 @@ struct InputRoomCodeCard: View {
 #Preview {
     ZStack {
         Color.gray.ignoresSafeArea()
-        InputRoomCodeCard(code: .constant("AJKW"))
+        InputRoomCodeCard(code: .constant("WWWW"))
             .padding()
     }
 }

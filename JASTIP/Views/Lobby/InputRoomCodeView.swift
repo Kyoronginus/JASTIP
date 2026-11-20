@@ -23,17 +23,32 @@ struct InputRoomCodeView: View {
         VStack {
             // Top Bar: Back Button
             HStack {
-                Button(action: {
+//                Button(action: {
+//                    onBack()
+//                }) {
+//                    Image(systemName: "chevron.left")
+//                        .font(.system(size: 16, weight: .bold))
+//                        .foregroundColor(.black)
+//                        .frame(width: 44, height: 44)
+//                        .background(Color.white)
+//                        .clipShape(RoundedRectangle(cornerRadius: 12))
+//                        .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+//                }
+                
+                Button {
                     onBack()
-                }) {
+                } label: {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.black)
-                        .frame(width: 44, height: 44)
-                        .background(Color.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
                 }
+                .buttonStyle(PrimaryButtonStyle(
+                    backgroundColor: .white,
+                    foregroundColor: Color(.black),
+                    font: .shantellSans(20, .regular),
+                    isFullWidth: false,
+                    paddingVertical: 16,
+                    paddingHorizontal: 20
+                ))
                 Spacer()
             }
             .padding(.horizontal, 24)
