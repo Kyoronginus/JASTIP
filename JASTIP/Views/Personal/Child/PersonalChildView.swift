@@ -134,11 +134,11 @@ struct PersonalChildView: View {
                         }
                         UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
                     },
-                    onDragItemChanged: { item, _, value in
+                    onDragItemChanged: { item, _, location in
                         draggingStagingItem = item
-                        dragLocation = value.location
+                        dragLocation = location
                         updateHover(
-                            at: value.location,
+                            at: location,
                             for: item.piece,
                             rotation: item.rotation,
                             ignoringPieceId: nil,
@@ -345,12 +345,12 @@ struct StagingSectionView: View {
     let items: [StagedItem]
     let draggingItemId: UUID?
     let onRotateItem: (StagedItem) -> Void
-    let onDragItemChanged: (StagedItem, GridCoordinate, DragGesture.Value) -> Void
-    let onDragItemEnded: (StagedItem, DragGesture.Value) -> Void
+    let onDragItemChanged: (StagedItem, GridCoordinate, CGPoint) -> Void
+    let onDragItemEnded: (StagedItem, CGPoint) -> Void
     var height: CGFloat = 120
 
     @State private var itemFrames: [UUID: CGRect] = [:]
-    
+
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 16)
@@ -399,14 +399,15 @@ struct StagingSectionView: View {
                                 }
                                 .opacity(draggingItemId == item.id ? 0.15 : 1.0)
                                 .gesture(
-                                    DragGesture(minimumDistance: 4, coordinateSpace: .named("LUGGAGE_CANVAS"))
-                                        .onChanged { value in
-                                            let grabbed = nearestCell(for: item, startLocation: value.startLocation)
-                                            onDragItemChanged(item, grabbed, value)
+                                    UpwardItemLiftGesture(
+                                        onChanged: { startLocation, currentLocation in
+                                            let grabbed = nearestCell(for: item, startLocation: startLocation)
+                                            onDragItemChanged(item, grabbed, currentLocation)
+                                        },
+                                        onEnded: { location in
+                                            onDragItemEnded(item, location)
                                         }
-                                        .onEnded { value in
-                                            onDragItemEnded(item, value)
-                                        }
+                                    )
                                 )
                                 .onTapGesture {
                                     onRotateItem(item)
@@ -415,6 +416,7 @@ struct StagingSectionView: View {
                         }
                         .padding(.horizontal, 16)
                     }
+                    .scrollDisabled(draggingItemId != nil)
                     
                     Text("Tap to rotate • Drag to place")
                         .font(.shantellSans(12, .regular))
@@ -442,6 +444,58 @@ struct StagingSectionView: View {
         return rotated.min { a, b in
             (abs(a.x - rawX) + abs(a.y - rawY)) < (abs(b.x - rawX) + abs(b.y - rawY))
         } ?? GridCoordinate(x: 0, y: 0)
+    }
+}
+
+private struct UpwardItemLiftGesture: UIGestureRecognizerRepresentable {
+    let onChanged: (_ startLocation: CGPoint, _ currentLocation: CGPoint) -> Void
+    let onEnded: (_ location: CGPoint) -> Void
+
+    func makeCoordinator(converter: CoordinateSpaceConverter) -> Coordinator {
+        Coordinator()
+    }
+
+    func makeUIGestureRecognizer(context: Context) -> UIPanGestureRecognizer {
+        let pan = UIPanGestureRecognizer()
+        pan.maximumNumberOfTouches = 1
+        pan.delegate = context.coordinator
+        return pan
+    }
+
+    func updateUIGestureRecognizer(_ recognizer: UIPanGestureRecognizer, context: Context) {}
+
+    func handleUIGestureRecognizerAction(_ recognizer: UIPanGestureRecognizer, context: Context) {
+        let canvasPoint = context.converter.location(in: .named("LUGGAGE_CANVAS"))
+
+        switch recognizer.state {
+        case .began:
+            context.coordinator.startCanvasPoint = canvasPoint
+            onChanged(canvasPoint, canvasPoint)
+        case .changed:
+            let startPoint = context.coordinator.startCanvasPoint ?? canvasPoint
+            onChanged(startPoint, canvasPoint)
+        case .ended, .cancelled, .failed:
+            context.coordinator.startCanvasPoint = nil
+            onEnded(canvasPoint)
+        default:
+            break
+        }
+    }
+
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        var startCanvasPoint: CGPoint?
+
+        func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+            guard let pan = gestureRecognizer as? UIPanGestureRecognizer else { return false }
+            let translation = pan.translation(in: pan.view)
+            let velocity = pan.velocity(in: pan.view)
+
+            // Mulai drag item hanya jika swipe awal dominan ke atas (y negatif).
+            // Untuk swipe kiri/kanan/bawah, return false agar ScrollView langsung menggeser carousel.
+            let isUpwardTranslation = translation.y < 0 && abs(translation.y) > abs(translation.x)
+            let isUpwardVelocity = velocity.y < 0 && abs(velocity.y) > abs(velocity.x)
+            return translation == .zero ? isUpwardVelocity : (isUpwardTranslation && velocity.y <= 0)
+        }
     }
 }
 

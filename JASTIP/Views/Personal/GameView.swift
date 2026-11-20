@@ -113,12 +113,12 @@ struct GameView: View {
                             }
                             UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
                         },
-                        onDragItemChanged: { item, cell, value in
+                        onDragItemChanged: { item, cell, location in
                             draggingStagingItem = item
                             grabbedCell = cell
-                            dragLocation = value.location
+                            dragLocation = location
                             updateHover(
-                                at: value.location,
+                                at: location,
                                 for: item.piece,
                                 rotation: item.rotation,
                                 ignoringPieceId: nil,
