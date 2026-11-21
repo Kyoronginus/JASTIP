@@ -7,83 +7,95 @@
 
 import SwiftUI
 import Observation
-import UIKit
-import CoreHaptics
+import AudioToolbox
 
 @Observable
-class AirlineCardViewModel {
+@MainActor
+final class AirlineCardViewModel {
+    private enum MessageSound {
+        static let sent: SystemSoundID = 1004
+    }
+
     // MARK: - Model & Callback
     let airlineCard: AirlineCardModel
     var onProceedToGame: () -> Void
-    
-    // MARK: - State Animasi 3D Flip
-    var isFlipped: Bool = false
-    var rotationDegrees: Double = 0
+
+    // MARK: - Sequential Chat Reveal State
+    var visibleBubbleCount: Int = 0
     var showButton: Bool = false
-    
-    @ObservationIgnored private var flipHapticEngine: CHHapticEngine?
-    @ObservationIgnored private var flipHapticPlayer: CHHapticPatternPlayer?
+    var isFadingOut: Bool = false
 
-    private func playFlipHaptic(duration: TimeInterval) {
-        guard CHHapticEngine.capabilitiesForHardware().supportsHaptics else { return }
+    @ObservationIgnored private var sequenceTask: Task<Void, Never>?
 
-        do {
-            let engine = try CHHapticEngine()
-            let event = CHHapticEvent(
-                eventType: .hapticContinuous,
-                parameters: [
-                    CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.45),
-                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.25)
-                ],
-                relativeTime: 0,
-                duration: duration
-            )
-            let pattern = try CHHapticPattern(events: [event], parameters: [])
-            let player = try engine.makePlayer(with: pattern)
-
-            try engine.start()
-            try player.start(atTime: 0)
-
-            flipHapticEngine = engine
-            flipHapticPlayer = player
-        } catch {
-            print("Could not play airline-card flip haptic: \(error)")
-        }
-    }
-    
     // MARK: - Hitung Total Ronde
     var totalRounds: Int {
         let clean = airlineCard.departureTime.replacingOccurrences(of: ".", with: ":")
         let hour = Int(clean.split(separator: ":").first ?? "15") ?? 15
         return max(hour - 8, 1)
     }
-    
+
     // MARK: - Initialization
     init(airlineCard: AirlineCardModel, onProceedToGame: @escaping () -> Void = {}) {
         self.airlineCard = airlineCard
         self.onProceedToGame = onProceedToGame
     }
-    
-    // MARK: - Animasi (SAMA PERSIS DENGAN KODE LU)
-    func triggerFlipAnimation() {
-        // Mulai animasi flip setelah 1.0 detik
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            self.playFlipHaptic(duration: 0.7)
-            withAnimation(.spring(response: 0.8, dampingFraction: 0.75)) {
-                self.rotationDegrees = 180
+
+    // MARK: - Sequential Bubble Animation
+    func startRevealSequence(reduceMotion: Bool = false) {
+        sequenceTask?.cancel()
+        guard visibleBubbleCount == 0, !isFadingOut else { return }
+
+        let bubbleDelaysNs: [UInt64] = reduceMotion
+            ? [250_000_000, 450_000_000, 500_000_000]
+            : [350_000_000, 750_000_000, 850_000_000]
+        let buttonDelayNs: UInt64 = reduceMotion ? 350_000_000 : 550_000_000
+
+        sequenceTask = Task { [weak self] in
+            guard let self else { return }
+
+            for (index, delayNs) in bubbleDelaysNs.enumerated() {
+                try? await Task.sleep(nanoseconds: delayNs)
+                guard !Task.isCancelled else { return }
+
+                let animation: Animation = reduceMotion
+                    ? .easeInOut(duration: 0.25)
+                    : .spring(response: 0.4, dampingFraction: 0.82)
+
+                withAnimation(animation) {
+                    self.visibleBubbleCount = index + 1
+                }
+                // AudioServicesPlaySystemSound(MessageSound.sent)
+                AudioManager.shared.play("send")
             }
-            // Ganti ke sisi depan tepat saat kartu vertikal (90 derajat)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                self.isFlipped = true
-            }
-            // Tampilkan tombol setelah flip selesai
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+
+            try? await Task.sleep(nanoseconds: buttonDelayNs)
+            guard !Task.isCancelled else { return }
+
+            withAnimation(.easeInOut(duration: 0.3)) {
                 self.showButton = true
             }
         }
     }
-    
-    func proceed() {
-        onProceedToGame()
+
+    func cancelRevealSequence() {
+        sequenceTask?.cancel()
+        sequenceTask = nil
+    }
+
+    func proceed(reduceMotion: Bool = false) {
+        guard !isFadingOut else { return }
+        sequenceTask?.cancel()
+
+        let fadeDuration = reduceMotion ? 0.25 : 0.35
+        withAnimation(.easeInOut(duration: fadeDuration)) {
+            isFadingOut = true
+        }
+
+        let transitionDelayNs = UInt64((fadeDuration + 0.05) * 1_000_000_000)
+        sequenceTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: transitionDelayNs)
+            guard !Task.isCancelled else { return }
+            self?.onProceedToGame()
+        }
     }
 }

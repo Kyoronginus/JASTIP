@@ -53,4 +53,9 @@ struct JastipOrderModel: Identifiable, Hashable, Codable {
     func itemStatuses(by pieces: [PieceModel]) -> [Bool] {
         JastipOrderCatalog.checkItemFulfillment(orderKey: self.orderKey, items: pieces)
     }
+
+    /// Piece yang memenuhi masing-masing slot order saat order selesai
+    func fulfilledPieces(from pieces: [PieceModel]) -> [PieceModel] {
+        JastipOrderCatalog.fulfilledPieces(orderKey: self.orderKey, items: pieces)
+    }
 }

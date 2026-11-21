@@ -8,51 +8,39 @@
 import SwiftUI
 import AudioToolbox
 
-// Model pencatat riwayat per sesi draft yang berhasil
-struct DraftRoundHistory: Identifiable {
-    let id = UUID().uuidString
-    let acceptedOrders: [JastipOrderModel]
-    let confirmationMessage: String
-}
-
 struct ObjectiveView: View {
     private enum MessageSound {
         static let received: SystemSoundID = 1003
         static let sent: SystemSoundID = 1004
     }
 
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var isReduceMotionEnabled
+
     // Terima viewModel dari MainTabView
-    var viewModel: GameSessionViewModel
+    @Bindable var viewModel: GameSessionViewModel
+    var onDismissOverride: (() -> Void)? = nil
     
     // 3 Order awal (Shared) membaca data yang sudah tersinkronisasi dari Firebase/ViewModel
     private var sharedOrders: [JastipOrderModel] {
         viewModel.sharedJastipOrders
     }
     
-    // Riwayat draft yang sudah pernah diselesaikan (bisa berkali-kali)
-    @State private var draftHistory: [DraftRoundHistory] = []
-    
-    // State Sesi Drafting yang Sedang Berjalan
-    private var isDrafting: Bool {
-        get { viewModel.isDraftingObjective }
-        nonmutating set { viewModel.isDraftingObjective = newValue }
-    }
-    @State private var candidateOrders: [JastipOrderModel] = []
-    @State private var visibleCandidateOrders: [JastipOrderModel] = []
-    @State private var selectedOrderIds: Set<String> = []
-    
     @State private var isConfirmingAddOrder: Bool = false
     private let selectionFeedback = UISelectionFeedbackGenerator()
     private let successFeedback = UINotificationFeedbackGenerator()
 
     private var actionBarPrompt: String {
-        viewModel.isMyTurn ? "anyone else need anything?" : "Wait for your turn"
+//        viewModel.isMyTurn ? "anyone else need anything?" : "Wait for your turn"
+        if !viewModel.isMyTurn { return "Wait for your turn" }
+        if viewModel.remainingTurnActionQuota <= 0 { return "You're too exhausted to move" }
+        return "anyone else need anything?"
     }
     
     // MARK: - Helper Formatting Teks Input Bar
     private var confirmationTemplateText: String {
-        let selectedNames = candidateOrders
-            .filter { selectedOrderIds.contains($0.id) }
+        let selectedNames = viewModel.candidateOrders
+            .filter { viewModel.selectedOrderIds.contains($0.id) }
             .map { $0.customerName }
         
         switch selectedNames.count {
@@ -72,11 +60,39 @@ struct ObjectiveView: View {
     var body: some View {
         VStack(spacing: 0) {
             // 1. Header Bar
-            VStack(spacing: 0){
-                Text("Jastip Order")
-                    .font(.spaceGrotesk(33.4, .bold))
-                
-                Image("HeaderLine")
+            ZStack() {
+                HStack {
+                    Button {
+                        if let onDismissOverride {
+                            onDismissOverride()
+                        } else {
+                            dismiss()
+                        }
+                    } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 14, weight: .bold))
+                    }
+                    .buttonStyle(PrimaryButtonStyle(
+                        backgroundColor: .white,
+                        foregroundColor: Color(.black),
+                        cornerRadius: 14,
+                        paddingVertical: 14,
+                        paddingHorizontal: 15
+                    ))
+
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, -10)
+
+                VStack(spacing: 0) {
+                    Text("Jastip Order")
+                        .font(.spaceGrotesk(33.4, .bold))
+                        .padding(.top, 10)
+                        .padding(.bottom, 10)
+
+                    Image("HeaderLine")
+                }
             }
             
             // 2. Scrollable Chat Content
@@ -90,7 +106,7 @@ struct ObjectiveView: View {
                         }
                         
                         // B. HISTORI SESI-SESI DRAFT YANG SUDAH SELESAI SEBELUMNYA
-                        ForEach(draftHistory) { round in
+                        ForEach(viewModel.personalDraftHistory) { round in
                             // Chat nanya
                             playerChatBubble(text: "Does anyone want to jastip other things too?")
                             
@@ -105,32 +121,36 @@ struct ObjectiveView: View {
                         }
                         
                         // C. SESI DRAFTING YANG SEDANG AKTIF
-                        if isDrafting {
+                        if viewModel.isDraftingObjective {
                             playerChatBubble(text: "Does anyone want to jastip other things too?")
                                 .id("activePlayerRequest")
                             
                             // 3 Kandidat masuk berturut-turut
-                            ForEach(visibleCandidateOrders) { order in
+                            ForEach(viewModel.visibleCandidateOrders) { order in
                                 JastipChatBubble(
                                     order: order,
                                     isSelectable: true,
-                                    isSelected: selectedOrderIds.contains(order.id),
+                                    isSelected: viewModel.selectedOrderIds.contains(order.id),
                                     onToggleSelect: {
                                         selectionFeedback.selectionChanged()
                                         withAnimation(.easeInOut(duration: 0.2)) {
-                                            if selectedOrderIds.contains(order.id) {
-                                                selectedOrderIds.remove(order.id)
+                                            if viewModel.selectedOrderIds.contains(order.id) {
+                                                viewModel.selectedOrderIds.remove(order.id)
                                             } else {
-                                                selectedOrderIds.insert(order.id)
+                                                viewModel.selectedOrderIds.insert(order.id)
                                             }
                                         }
                                     }
                                 )
                                 .id(order.id)
-                                .transition(.asymmetric(
-                                    insertion: .move(edge: .leading).combined(with: .opacity),
-                                    removal: .opacity
-                                ))
+                                .transition(
+                                    isReduceMotionEnabled
+                                        ? .opacity
+                                        : .asymmetric(
+                                            insertion: .move(edge: .leading).combined(with: .opacity),
+                                            removal: .opacity
+                                        )
+                                )
                             }
                         }
                         Color.clear
@@ -144,17 +164,17 @@ struct ObjectiveView: View {
                     scrollToBottom(proxy: proxy, animated: false)
                 }
                 // 2. Scroll setiap kali draft dimulai (chat player muncul)
-                .onChange(of: isDrafting) { _, isStarting in
+                .onChange(of: viewModel.isDraftingObjective) { _, isStarting in
                     if isStarting {
                         scrollToBottom(proxy: proxy)
                     }
                 }
                 // 3. Scroll setiap kali KARTU BARU MUNCUL satu per satu
-                .onChange(of: visibleCandidateOrders.count) { _, _ in
+                .onChange(of: viewModel.visibleCandidateOrders.count) { _, _ in
                     scrollToBottom(proxy: proxy)
                 }
                 // 4. Scroll setiap kali SESI DRAFT DI-ACCEPT (pesan konfirmasi muncul)
-                .onChange(of: draftHistory.count) { _, _ in
+                .onChange(of: viewModel.personalDraftHistory.count) { _, _ in
                     scrollToBottom(proxy: proxy)
                 }            }
             
@@ -191,13 +211,17 @@ struct ObjectiveView: View {
             .shadow(color: .black.opacity(0.04), radius: 4, x: 0, y: 2)
         }
         .padding(.horizontal, 16)
-        .transition(.move(edge: .trailing).combined(with: .opacity))
+        .transition(
+            isReduceMotionEnabled
+                ? .opacity
+                : .move(edge: .trailing).combined(with: .opacity)
+        )
     }
     
     // MARK: - Subview: Bottom Action Bar
     private var bottomActionBar: some View {
         HStack(spacing: 10) {
-            if !isDrafting {
+            if !viewModel.isDraftingObjective {
                 // TAMPILAN NORMAL (SELALU KEMBALI KE SINI SETELAH DRAFT SELESAI)
                 ZStack{
                     Image("tfback")
@@ -235,7 +259,7 @@ struct ObjectiveView: View {
                     }
                 } label: {
                     ZStack{
-                        if !viewModel.isMyTurn {
+                        if !viewModel.isMyTurn || !viewModel.canUseTurnAction{
                             Image("addorderbackdisabled")
                                 .resizable()
                                 .scaledToFit()
@@ -257,7 +281,7 @@ struct ObjectiveView: View {
                             .foregroundColor(.white)
                     }
                 }
-                .disabled(!viewModel.isMyTurn)
+                .disabled(!viewModel.canUseTurnAction || !viewModel.isMyTurn)
             } else {
                 // TAMPILAN MODE DRAFTING (Saat memilih kartu)
                 ZStack{
@@ -270,7 +294,7 @@ struct ObjectiveView: View {
                             .frame(width: 10)
                         Text(confirmationTemplateText)
                             .font(.system(size: 16, weight: .regular))
-                            .foregroundColor(selectedOrderIds.isEmpty ? Color("TextDisabled") : Color("TextActive"))
+                            .foregroundColor(viewModel.selectedOrderIds.isEmpty ? Color("TextDisabled") : Color("TextActive"))
                         Spacer()
                     }
                 }
@@ -281,7 +305,7 @@ struct ObjectiveView: View {
                     confirmSelectedDraftOrders()
                 } label: {
                     ZStack{
-                        if (selectedOrderIds.isEmpty){
+                        if (viewModel.selectedOrderIds.isEmpty){
                             Image("addorderbackdisabled")
                                 .resizable()
                                 .scaledToFit()
@@ -298,7 +322,7 @@ struct ObjectiveView: View {
                             .foregroundColor(.white)
                     }
                 }
-                .disabled(selectedOrderIds.isEmpty)
+                .disabled(viewModel.selectedOrderIds.isEmpty)
             }
         }
         .padding(.horizontal, 16)
@@ -311,11 +335,14 @@ struct ObjectiveView: View {
     /// Memulai alur request chat & memunculkan 3 kandidat dengan jeda 0.5s
     private func startDraftingFlow() {
         AudioServicesPlaySystemSound(MessageSound.sent)
+        AudioManager.shared.play("send")
         withAnimation {
-            isDrafting = true
-            selectedOrderIds.removeAll()
-            visibleCandidateOrders.removeAll()
+            viewModel.isDraftingObjective = true
+            viewModel.selectedOrderIds.removeAll()
+            viewModel.visibleCandidateOrders.removeAll()
         }
+        
+        viewModel.consumeTurnActionQuota()
 
         let playerName = viewModel.playerName.trimmingCharacters(in: .whitespacesAndNewlines)
         viewModel.showToast(
@@ -327,7 +354,7 @@ struct ObjectiveView: View {
         
         // Kumpulkan semua ID yang sudah pernah ada di shared atau di accepted history
         var existingIds = Set(sharedOrders.map { $0.id })
-        for round in draftHistory {
+        for round in viewModel.personalDraftHistory {
             for order in round.acceptedOrders {
                 existingIds.insert(order.id)
             }
@@ -335,7 +362,7 @@ struct ObjectiveView: View {
         
         // 👇 GANTI BAGIAN INI:
         let rawCandidates = JastipOrderCatalog.getDraftOrders(count: 3, excludingIds: existingIds)
-        candidateOrders = rawCandidates.map {
+        viewModel.candidateOrders = rawCandidates.map {
             var order = $0
             order.isPersonal = true
             return order
@@ -346,14 +373,17 @@ struct ObjectiveView: View {
         let initialPause: Double = 1.0
         
         // 2. Tiap kartu muncul dengan jeda initialPause + 0.5 detik antar kartu
-        for index in 0..<candidateOrders.count {
+        for index in 0..<viewModel.candidateOrders.count {
             let delay = initialPause + (0.5 * Double(index))
             
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                    if self.isDrafting {
-                        self.visibleCandidateOrders.append(self.candidateOrders[index])
-                        AudioServicesPlaySystemSound(MessageSound.received)
+                withAnimation(self.isReduceMotionEnabled ? .easeInOut(duration: 0.25) : .spring(response: 0.4, dampingFraction: 0.8)) {
+                    if self.viewModel.isDraftingObjective {
+                        guard index < self.viewModel.candidateOrders.count else { return }
+
+                        self.viewModel.visibleCandidateOrders.append(self.viewModel.candidateOrders[index])
+                        // AudioServicesPlaySystemSound(MessageSound.received)
+                        AudioManager.shared.play("received")
                     }
                 }
             }
@@ -364,40 +394,48 @@ struct ObjectiveView: View {
     private func confirmSelectedDraftOrders() {
         let templateMessage = confirmationTemplateText
         AudioServicesPlaySystemSound(MessageSound.sent)
+        AudioManager.shared.play("send")
         successFeedback.notificationOccurred(.success)
         
         // Ambil order yang dicentang & tandai sebagai Personal
-        let selected = candidateOrders.filter { selectedOrderIds.contains($0.id) }
+        let selected = viewModel.candidateOrders.filter { viewModel.selectedOrderIds.contains($0.id) }
         let personalOrders = selected.map {
             var order = $0
             order.isPersonal = true
             return order
         }
         
+        
         withAnimation(.easeInOut(duration: 0.3)) {
             // 1. Simpan ke histori chat
-            draftHistory.append(DraftRoundHistory(
+            viewModel.personalDraftHistory.append(DraftRoundHistory(
                 acceptedOrders: personalOrders,
                 confirmationMessage: templateMessage
             ))
             
             // 2. Reset state drafting -> Input bar otomatis kembali ke tombol "Request more order"
-            isDrafting = false
-            candidateOrders.removeAll()
-            visibleCandidateOrders.removeAll()
-            selectedOrderIds.removeAll()
+            viewModel.isDraftingObjective = false
+            viewModel.candidateOrders.removeAll()
+            viewModel.visibleCandidateOrders.removeAll()
+            viewModel.selectedOrderIds.removeAll()
         }
         
         viewModel.personalJastipOrders.append(contentsOf: personalOrders)
     }
     
     private func scrollToBottom(proxy: ScrollViewProxy, animated: Bool = true) {
-        if animated {
+        if animated && !isReduceMotionEnabled {
             withAnimation(.easeOut(duration: 0.25)) {
                 proxy.scrollTo("CHAT_BOTTOM", anchor: .bottom)
             }
         } else {
-            proxy.scrollTo("CHAT_BOTTOM", anchor: .bottom)
+            DispatchQueue.main.async {
+                var transaction = Transaction()
+                transaction.disablesAnimations = true
+                withTransaction(transaction) {
+                    proxy.scrollTo("CHAT_BOTTOM", anchor: .bottom)
+                }
+            }
         }
     }
     

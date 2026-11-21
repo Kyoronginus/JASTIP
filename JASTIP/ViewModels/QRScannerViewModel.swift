@@ -8,25 +8,31 @@
 import SwiftUI
 import AVFoundation
 import CoreHaptics
+import CoreMotion
 import UIKit
 
 @Observable
 class QRScannerViewModel {
     let scanner = QRScannerManager()
+    private let motionManager = CMMotionManager()
+    private var isChoosingInitialCamera = false
     
     var scannedCode: String? = nil
     var detectedPiece: PieceModel? = nil
     var confirmedWeight: Int? = nil
-    var rejectionMessage: String? = nil
+    var hasConfirmedDetectedItem = false
+    var closedStoreWarning: String? = nil
     
     var session: GameSessionViewModel
     var targetIsSuitcase: Bool
+    var allowsEitherLuggage: Bool
     var onScanned: ((PieceModel?, String, Int?, Bool) -> Void)? = nil
     var audioPlayer: AVAudioPlayer?
     private var hapticEngine: CHHapticEngine?
+    @ObservationIgnored private var warningClearTask: Task<Void, Never>? = nil
     
     var headerTitle: String {
-        confirmedWeight != nil ? "PIECE TERKONFIRMASI" : "QR TERDETEKSI"
+        confirmedWeight != nil ? "PIECE CONFIRMED" : "QR DETECTED"
     }
     
     var isShowingPopup: Bool {
@@ -36,48 +42,88 @@ class QRScannerViewModel {
     init(
         session: GameSessionViewModel,
         isSuitcase: Bool = true,
+        allowsEitherLuggage: Bool = false,
         onScanned: ((PieceModel?, String, Int?, Bool) -> Void)? = nil
     ) {
         self.session = session
         self.targetIsSuitcase = isSuitcase
+        self.allowsEitherLuggage = allowsEitherLuggage
         self.onScanned = onScanned
         setupAudioPlayer()
         setupHaptics()
     }
-    
+
     func startScanning() {
-        scanner.startScanning()
         scanner.onCodeDetected = { [weak self] code in
             self?.handleDetectedCode(code)
+        }
+
+        chooseInitialCameraAndStartScanning()
+    }
+
+    private func chooseInitialCameraAndStartScanning() {
+        guard motionManager.isDeviceMotionAvailable else {
+            scanner.startScanning()
+            return
+        }
+
+        isChoosingInitialCamera = true
+        motionManager.deviceMotionUpdateInterval = 0.1
+        motionManager.startDeviceMotionUpdates(to: .main) { [weak self] motion, _ in
+            guard let self, self.isChoosingInitialCamera else { return }
+
+            self.isChoosingInitialCamera = false
+            self.motionManager.stopDeviceMotionUpdates()
+
+            guard let motion else {
+                self.scanner.startScanning()
+                return
+            }
+
+            let isPhoneLyingDown = abs(motion.gravity.z) >= 0.92
+            let position: AVCaptureDevice.Position = isPhoneLyingDown ? .front : .back
+
+            self.scanner.setCameraPosition(position)
+            self.scanner.startScanning()
         }
     }
     
     func stopScanning() {
+        warningClearTask?.cancel()
+        closedStoreWarning = nil
+        isChoosingInitialCamera = false
+        motionManager.stopDeviceMotionUpdates()
         scanner.stopScanning()
     }
     
     func handleDetectedCode(_ code: String) {
         guard scannedCode == nil else { return }
         guard let piece = PieceCatalog.findPiece(by: code) else { return }
-        
-        // Cek apakah kepingan muat di koper target (Suitcase atau Carry-On)
-        let targetGrid = targetIsSuitcase ? session.suitcaseGrid : session.carryOnGrid
-        let canFit = LuggagePlacementEngine.canFit(piece: piece, in: targetGrid)
-        
-        guard canFit else {
-            UINotificationFeedbackGenerator().notificationOccurred(.error)
-            self.scannedCode = code
-            self.detectedPiece = piece
-            self.rejectionMessage = "Barang ini tidak muat pada susunan \(targetIsSuitcase ? "Suitcase" : "Carry-On") saat ini."
+
+        if session.isPieceFromClosedStore(piece) {
+            triggerClosedStoreRejection(for: piece)
             return
         }
-        
+
+        warningClearTask?.cancel()
+        closedStoreWarning = nil
         playBeep()
         playScanHaptic()
-        self.rejectionMessage = nil
         self.scannedCode = code
         self.detectedPiece = piece
         self.confirmedWeight = session.weight(for: code)
+    }
+
+    private func triggerClosedStoreRejection(for piece: PieceModel) {
+        UINotificationFeedbackGenerator().notificationOccurred(.error)
+        warningClearTask?.cancel()
+        closedStoreWarning = "\(piece.color.categoryName) store is closed this day!"
+
+        warningClearTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 2_200_000_000)
+            guard !Task.isCancelled else { return }
+            self?.closedStoreWarning = nil
+        }
     }
     
     func confirmWeight() {
@@ -89,8 +135,13 @@ class QRScannerViewModel {
         self.scannedCode = nil
         self.detectedPiece = nil
         self.confirmedWeight = nil
-        self.rejectionMessage = nil
+        self.hasConfirmedDetectedItem = false
         scanner.startScanning()
+    }
+
+    func confirmDetectedItem() {
+        guard detectedPiece != nil, confirmedWeight != nil else { return }
+        hasConfirmedDetectedItem = true
     }
     
     func finishScan(isSuitcase: Bool) {
@@ -116,6 +167,7 @@ class QRScannerViewModel {
     
     // preload audio ke buffer hardware)
     private func setupAudioPlayer() {
+        AudioManager.configureAudioSession()
         guard let data = NSDataAsset(name: "cashier-beep")?.data else { return }
         audioPlayer = try? AVAudioPlayer(data: data)
         audioPlayer?.currentTime = 0.27 // Langsung arahkan ke titik suara mulai
@@ -164,6 +216,7 @@ class QRScannerViewModel {
     }
 
     func playBeep() {
+        AudioManager.configureAudioSession()
         audioPlayer?.currentTime = 0.27 // Reset ke titik suara mulai, bukan ke bagian hening
         audioPlayer?.play()
     }

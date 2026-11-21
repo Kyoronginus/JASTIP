@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct FinalScoreView: View {
+    @Environment(\.accessibilityReduceMotion) private var isReduceMotionEnabled
     var viewModel: GameSessionViewModel? = nil
     var standings: [PlayerStandingModel] = []
     var onBackToHome: () -> Void = {}
@@ -16,10 +17,24 @@ struct FinalScoreView: View {
     @State private var isWinnerVisible: Bool = false
     @State private var isBackToHomeVisible: Bool = false
     @State private var animationTask: Task<Void, Never>? = nil
+    @State private var hasStartedReveal = false
+    @State private var isShowingDetails = false
     
     private let rowImpact = UIImpactFeedbackGenerator(style: .light)
     private let winnerFeedback = UINotificationFeedbackGenerator()
     
+    private var areScoresReady: Bool {
+        viewModel?.areAllPlayersSubmitted ?? true
+    }
+
+    private func startRevealWhenReady() {
+        guard areScoresReady, !hasStartedReveal else { return }
+
+        viewModel?.captureFinalStandingsIfReady()
+        hasStartedReveal = true
+        startRevealSequence()
+    }
+
     private var activeStandings: [PlayerStandingModel] {
         if let vm = viewModel {
             return vm.finalStandings
@@ -33,6 +48,11 @@ struct FinalScoreView: View {
     
     private var winnerName: String {
         displayedStandings.first?.name.lowercased() ?? "-"
+    }
+
+    private func currencyText(for points: Int) -> String {
+        let amount = points * 10
+        return amount < 0 ? "-$\(abs(amount))" : "$\(amount)"
     }
     
     private let receiptTextColor = Color(red: 58/255, green: 58/255, blue: 60/255)
@@ -98,21 +118,21 @@ struct FinalScoreView: View {
                                         .lineLimit(1)
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                     
-                                    Text("$\(player.income)")
+                                    Text(currencyText(for: player.income))
                                         .font(.system(size: 15, weight: .regular))
                                         .frame(width: 66, alignment: .center)
                                     
-                                    Text(player.penalty > 0 ? "-$\(player.penalty)" : "-")
+                                    Text(player.penalty > 0 ? "-\(currencyText(for: player.penalty))" : "-")
                                         .font(.system(size: 15, weight: .regular))
                                         .frame(width: 66, alignment: .center)
                                     
-                                    Text("$\(player.total)")
+                                    Text(currencyText(for: player.total))
                                         .font(.system(size: 15, weight: .bold))
                                         .frame(width: 54, alignment: .trailing)
                                 }
                                 .foregroundStyle(receiptTextColor)
                                 .opacity(isRevealed ? 1 : 0)
-                                .offset(y: isRevealed ? 0 : 6)
+                                .offset(y: isReduceMotionEnabled ? 0 : (isRevealed ? 0 : 6))
                             }
                         }
                         .frame(minHeight: 140, alignment: .top)
@@ -139,7 +159,8 @@ struct FinalScoreView: View {
                                         .rotationEffect(.degrees(-8))
                                         .offset(y: 8)
                                         .opacity(isWinnerVisible ? 1 : 0)
-                                        .scaleEffect(isWinnerVisible ? 1 : 0.6)                                )
+                                        .scaleEffect(isReduceMotionEnabled ? 1 : (isWinnerVisible ? 1 : 0.6))
+                                )
                                 .frame(height: 70)
                                 .padding(.bottom, 16)
                         }
@@ -163,27 +184,84 @@ struct FinalScoreView: View {
                         .buttonStyle(
                             PrimaryButtonStyle(
                                 backgroundColor: Color("TaxiYellow"),
-                                borderColor: Color("NavyBlack"),
                                 foregroundColor: Color("NavyBlack"),
                                 font: .shantellSans(20, .bold),
                                 cornerRadius: 15,
-                                borderWidth: 1.5,
                                 yShadowOffset: 4,
                                 xShadowOffset: 2,
                                 isFullWidth: true,
                                 paddingVertical: 16
                             )
                         )
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        // .transition(.move(edge: .bottom).combined(with: .opacity))
+                        
+                        Button("See Details") {
+                            if isReduceMotionEnabled {
+                                withAnimation(.easeInOut(duration: 0.25)) {
+                                    isShowingDetails = true
+                                }
+                            } else {
+                                isShowingDetails = true
+                            }
+                        }
+                        .buttonStyle(
+                            PrimaryButtonStyle(
+                                backgroundColor: Color("TaxiYellow150"),
+                                foregroundColor: Color("NavyBlack"),
+                                font: .shantellSans(20, .bold),
+                                cornerRadius: 15,
+                                yShadowOffset: 4,
+                                xShadowOffset: 2,
+                                isFullWidth: true,
+                                paddingVertical: 16
+                            )
+                        )
                     }
                 }
-                .frame(height: 64)
+                .frame(height: 80)
                 .padding(.horizontal, 30)
-                .padding(.bottom, 28)
+                .padding(.bottom, 70)
+
+                if !areScoresReady {
+                    ZStack {
+                        Color("finalscoreBackground")
+                            .ignoresSafeArea()
+
+                        ProgressView("Collecting final scores…")
+                            .tint(.white)
+                            .foregroundStyle(.white)
+                    }
+                }
+            }
+            if isReduceMotionEnabled && isShowingDetails, let viewModel {
+                ScoringView(
+                    viewModel: viewModel,
+                    onDismissOverride: {
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            isShowingDetails = false
+                        }
+                    }
+                )
+                .transition(.opacity)
+                .zIndex(50)
+            }
+        }
+        .animation(isReduceMotionEnabled ? .easeInOut(duration: 0.25) : nil, value: isShowingDetails)
+        .sheet(isPresented: Binding(
+            get: { !isReduceMotionEnabled && isShowingDetails },
+            set: { isShowingDetails = $0 }
+        )) {
+            if let viewModel {
+                ScoringView(viewModel: viewModel)
+                    .presentationDetents([.large])
+                    .presentationDragIndicator(.visible)
             }
         }
         .onAppear {
             startRevealSequence()
+        }
+        .onChange(of: areScoresReady) { _, _ in
+            startRevealWhenReady()
         }
         .onDisappear {
             animationTask?.cancel()
@@ -191,7 +269,7 @@ struct FinalScoreView: View {
         .onChange(of: activeStandings) { _, newStandings in
             // Jika data pemain lain baru masuk setelah animasi selesai atau sedang jalan:
             if isWinnerVisible {
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                withAnimation(isReduceMotionEnabled ? .easeInOut(duration: 0.25) : .spring(response: 0.35, dampingFraction: 0.8)) {
                     revealedRowCount = min(5, newStandings.count)
                 }
             }
@@ -220,7 +298,7 @@ struct FinalScoreView: View {
             if totalRows > 0 {
                 for index in 1...totalRows {
                     guard !Task.isCancelled else { return }
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                    withAnimation(isReduceMotionEnabled ? .easeInOut(duration: 0.25) : .spring(response: 0.35, dampingFraction: 0.8)) {
                         revealedRowCount = index
                     }
                     rowImpact.impactOccurred()
@@ -229,14 +307,14 @@ struct FinalScoreView: View {
             }
             
             guard !Task.isCancelled else { return }
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.65)) {
+            withAnimation(isReduceMotionEnabled ? .easeInOut(duration: 0.25) : .spring(response: 0.4, dampingFraction: 0.65)) {
                 isWinnerVisible = true
             }
             winnerFeedback.notificationOccurred(.success)
             
             try? await Task.sleep(nanoseconds: 400_000_000)
             guard !Task.isCancelled else { return }
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            withAnimation(isReduceMotionEnabled ? .easeInOut(duration: 0.25) : .spring(response: 0.35, dampingFraction: 0.8)) {
                 isBackToHomeVisible = true
             }
         }
@@ -244,7 +322,7 @@ struct FinalScoreView: View {
     
     private func skipAnimation() {
         animationTask?.cancel()
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+        withAnimation(isReduceMotionEnabled ? .easeInOut(duration: 0.2) : .spring(response: 0.3, dampingFraction: 0.8)) {
             revealedRowCount = displayedStandings.count
             isWinnerVisible = true
             isBackToHomeVisible = true

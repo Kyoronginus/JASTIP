@@ -11,7 +11,7 @@ struct PrimaryButtonStyle: ButtonStyle {
     // Warna default mengambil dari Design System
     var backgroundColor: Color = Color("TaxiYellow")
     var borderColor: Color = Color(.black)
-    var shadowColor: Color? = nil
+    var shadowColor: Color = Color("TaxiYellow850")
     var foregroundColor: Color = .black
     var font: Font? = nil
     var cornerRadius: CGFloat = 15
@@ -25,9 +25,9 @@ struct PrimaryButtonStyle: ButtonStyle {
     var paddingVertical: CGFloat = 16
     var paddingHorizontal: CGFloat = 33
 
-    private var resolvedShadowColor: Color {
-        shadowColor ?? borderColor
-    }
+//    private var resolvedShadowColor: Color {
+//        shadowColor ?? borderColor
+//    }
 
     // Membaca state apakah tombol sedang di-disable atau aktif
     @Environment(\.isEnabled) private var isEnabled
@@ -60,7 +60,7 @@ struct PrimaryButtonStyle: ButtonStyle {
             Group {
                 if isEnabled {
                     RoundedRectangle(cornerRadius: cornerRadius)
-                        .fill(resolvedShadowColor)
+                        .fill(shadowColor)
                         .offset(y: yShadowOffset)
                         .offset(x: xShadowOffset)
                 }

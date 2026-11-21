@@ -33,6 +33,9 @@ class VideoPreviewUIView: UIView {
         layer as! AVCaptureVideoPreviewLayer
     }
     
+    private var rotationCoordinator: AVCaptureDevice.RotationCoordinator?
+    private var coordinatedDeviceID: String?
+
     override func layoutSubviews() {
         super.layoutSubviews()
         videoPreviewLayer.frame = bounds
@@ -49,9 +52,12 @@ class VideoPreviewUIView: UIView {
         
         // Update rotation angle for the current active device
         if let device = (videoPreviewLayer.session?.inputs.first as? AVCaptureDeviceInput)?.device {
-            let coordinator = AVCaptureDevice.RotationCoordinator(device: device, previewLayer: videoPreviewLayer)
-            let angle = coordinator.videoRotationAngleForHorizonLevelPreview
-            if connection.isVideoRotationAngleSupported(angle) {
+            if coordinatedDeviceID != device.uniqueID || rotationCoordinator == nil {
+                rotationCoordinator = AVCaptureDevice.RotationCoordinator(device: device, previewLayer: videoPreviewLayer)
+                coordinatedDeviceID = device.uniqueID
+            }
+            if let angle = rotationCoordinator?.videoRotationAngleForHorizonLevelPreview,
+               connection.isVideoRotationAngleSupported(angle) {
                 connection.videoRotationAngle = angle
             }
         }

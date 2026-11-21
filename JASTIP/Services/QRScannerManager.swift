@@ -15,89 +15,161 @@ class QRScannerManager: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
     
     let session = AVCaptureSession()
     
-    private let videoOutput = AVCaptureVideoDataOutput()
-    private var isProcessing = false
-    private var lastScanTime = Date.distantPast
+    @ObservationIgnored private let sessionQueue = DispatchQueue(label: "camera.session.queue", qos: .userInitiated)
+    @ObservationIgnored private let videoProcessingQueue = DispatchQueue(label: "camera.frame.processing", qos: .userInitiated)
+    @ObservationIgnored private let videoOutput = AVCaptureVideoDataOutput()
+    @ObservationIgnored private var isProcessing = false
+    @ObservationIgnored private var lastScanTime = Date.distantPast
     
-    private var currentInput: AVCaptureDeviceInput?
+    @ObservationIgnored private var currentInput: AVCaptureDeviceInput?
+    @ObservationIgnored private var frontInput: AVCaptureDeviceInput?
+    @ObservationIgnored private var backInput: AVCaptureDeviceInput?
     var currentPosition: AVCaptureDevice.Position = .front
+    private(set) var isSwitchingCamera = false
 
     
     override init() {
         super.init()
-        setupCamera()
+        sessionQueue.async { [weak self] in
+            self?.setupCamera()
+        }
     }
     
     private func setupCamera() {
         session.beginConfiguration()
-        session.sessionPreset = .hd1920x1080
-        
-        guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front),
-              let input = try? AVCaptureDeviceInput(device: device),
-              session.canAddInput(input) else {
-            session.commitConfiguration()
-            return
+        session.automaticallyConfiguresApplicationAudioSession = false
+        if session.canSetSessionPreset(.hd1920x1080) {
+            session.sessionPreset = .hd1920x1080
+        } else if session.canSetSessionPreset(.hd1280x720) {
+            session.sessionPreset = .hd1280x720
         }
         
-        self.currentInput = input
-        session.addInput(input)
+        if let initialInput = cachedInput(for: .front), session.canAddInput(initialInput) {
+            self.currentInput = initialInput
+            session.addInput(initialInput)
+            configureFocus(for: initialInput.device)
+        }
+        
+        // Pre-warm opposite camera input off the main thread for faster flips.
+        _ = cachedInput(for: .back)
         
         if session.canAddOutput(videoOutput) {
-            videoOutput.setSampleBufferDelegate(self, queue: DispatchQueue(label: "camera.frame.processing"))
+            videoOutput.setSampleBufferDelegate(self, queue: videoProcessingQueue)
             videoOutput.alwaysDiscardsLateVideoFrames = true
             session.addOutput(videoOutput)
+        }
+        
+        if let connection = videoOutput.connection(with: .video), connection.isVideoMirroringSupported {
+            connection.automaticallyAdjustsVideoMirroring = false
+            // Keep Vision buffer un-mirrored; preview layer handles selfie mirroring separately.
+            connection.isVideoMirrored = false
         }
         
         session.commitConfiguration()
     }
     
-    func flipCamera() {
-        session.beginConfiguration()
-        defer { session.commitConfiguration() }
-        
-        // Lepas input lama
-        if let currentInput = currentInput {
-            session.removeInput(currentInput)
-        }
-        
-        // Tentukan posisi baru
-        let newPosition: AVCaptureDevice.Position = (currentPosition == .front) ? .back : .front
-        
-
-//        .automaticallyAdjustsVideoMirroring = true
-
-        
-        guard let newDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: newPosition),
-              let newInput = try? AVCaptureDeviceInput(device: newDevice),
-              session.canAddInput(newInput) else {
-            // Jika gagal, pasang kembali input lama
-            if let currentInput = currentInput {
-                session.addInput(currentInput)
+    private func cachedInput(for position: AVCaptureDevice.Position) -> AVCaptureDeviceInput? {
+        switch position {
+        case .front:
+            if let frontInput { return frontInput }
+            guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front),
+                  let input = try? AVCaptureDeviceInput(device: device) else {
+                return nil
             }
-            return
+            frontInput = input
+            return input
+        case .back:
+            if let backInput { return backInput }
+            guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back),
+                  let input = try? AVCaptureDeviceInput(device: device) else {
+                return nil
+            }
+            backInput = input
+            return input
+        default:
+            return nil
         }
-        
-        session.addInput(newInput)
-        self.currentInput = newInput
-        self.currentPosition = newPosition
-        
-        if let connection = videoOutput.connection(with: .video), connection.isVideoMirroringSupported {
-            connection.automaticallyAdjustsVideoMirroring = false
-            connection.isVideoMirrored = (newPosition == .front)
+    }
+    
+    func flipCamera() {
+        guard !isSwitchingCamera else { return }
+        let newPosition: AVCaptureDevice.Position = (currentPosition == .front) ? .back : .front
+        setCameraPosition(newPosition)
+    }
+
+    func setCameraPosition(_ position: AVCaptureDevice.Position) {
+        guard position != currentPosition, !isSwitchingCamera else { return }
+        isSwitchingCamera = true
+
+        sessionQueue.async { [weak self] in
+            guard let self else { return }
+            defer {
+                DispatchQueue.main.async {
+                    self.isSwitchingCamera = false
+                }
+            }
+
+            guard let newInput = self.cachedInput(for: position) else { return }
+
+            self.session.beginConfiguration()
+            let previousInput = self.currentInput
+            if let previousInput {
+                self.session.removeInput(previousInput)
+            }
+
+            guard self.session.canAddInput(newInput) else {
+                if let previousInput, self.session.canAddInput(previousInput) {
+                    self.session.addInput(previousInput)
+                }
+                self.session.commitConfiguration()
+                return
+            }
+
+            self.session.addInput(newInput)
+            self.currentInput = newInput
+            self.configureFocus(for: newInput.device)
+
+            if let connection = self.videoOutput.connection(with: .video), connection.isVideoMirroringSupported {
+                connection.automaticallyAdjustsVideoMirroring = false
+                // Keep Vision buffer un-mirrored on both cameras so QR decoding works reliably.
+                connection.isVideoMirrored = false
+            }
+
+            self.session.commitConfiguration()
+
+            DispatchQueue.main.async {
+                self.currentPosition = position
+            }
+        }
+    }
+
+    private func configureFocus(for device: AVCaptureDevice) {
+        do {
+            try device.lockForConfiguration()
+            defer { device.unlockForConfiguration() }
+
+            if device.isFocusModeSupported(.continuousAutoFocus) {
+                device.focusMode = .continuousAutoFocus
+            }
+            if device.isAutoFocusRangeRestrictionSupported {
+                device.autoFocusRangeRestriction = .near
+            }
+        } catch {
+            // Device focus configuration is optional; scanning still proceeds with defaults.
         }
     }
     
     func startScanning() {
-        if !session.isRunning {
-            DispatchQueue.global(qos: .userInitiated).async {
-                self.session.startRunning()
-            }
+        sessionQueue.async { [weak self] in
+            guard let self, !self.session.isRunning else { return }
+            self.session.startRunning()
         }
     }
     
     func stopScanning() {
-        if session.isRunning {
-            session.stopRunning()
+        sessionQueue.async { [weak self] in
+            guard let self, self.session.isRunning else { return }
+            self.session.stopRunning()
         }
     }
     

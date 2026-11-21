@@ -14,6 +14,7 @@ enum StartStep {
 }
 
 struct StartView: View {
+    @Environment(\.accessibilityReduceMotion) private var isReduceMotionEnabled
     @Bindable var viewModel: GameSessionViewModel
     @State private var joinCode = ""
     @State private var step: StartStep = .home
@@ -23,7 +24,7 @@ struct StartView: View {
     }
     
     var body: some View {
-        Group {
+        ZStack {
             if let lobby = viewModel.lobbyService.lobby {
                 LobbyView(
                     lobby: lobby,
@@ -42,8 +43,15 @@ struct StartView: View {
                     },
                     onReorderPlayers: { playerIDs in
                         Task { await viewModel.lobbyService.reorderPlayers(playerIDs) }
+                    },
+                    onKickPlayer: { playerID in
+                        Task { await viewModel.lobbyService.kickPlayer(playerID) }
+                    },
+                    onTransferHost: { playerID in
+                        Task { await viewModel.lobbyService.transferHost(to: playerID) }
                     }
                 )
+                .transition(.opacity)
             } else {
                 ZStack {
                     switch step {
@@ -65,6 +73,7 @@ struct StartView: View {
                     case .inputCode:
                         InputRoomCodeView(
                             code: $joinCode,
+                            isLoading: viewModel.lobbyService.isLoading,
                             onBack: {
                                 withAnimation(.easeInOut(duration: 0.15)) {
                                     step = .home
@@ -72,8 +81,12 @@ struct StartView: View {
                                 }
                             },
                             onSubmit: {
-                                withAnimation(.easeInOut(duration: 0.15)) {
-                                    step = .inputName(isHost: false)
+                                Task {
+                                    if await viewModel.lobbyService.validateLobbyCode(joinCode) {
+                                        withAnimation(.easeInOut(duration: 0.15)) {
+                                            step = .inputName(isHost: false)
+                                        }
+                                    }
                                 }
                             }
                         )
@@ -109,8 +122,10 @@ struct StartView: View {
                         .transition(.opacity)
                     }
                 }
+                .transition(.opacity)
             }
         }
+        .animation(isReduceMotionEnabled ? .easeInOut(duration: 0.25) : .easeInOut(duration: 0.2), value: viewModel.lobbyService.lobby != nil)
         .appBackground()
         .onChange(of: viewModel.lobbyService.lobby == nil) { _, isLobbyNil in
             // Jika sebelumnya di dalam lobby dan host menutup room, kembalikan ke home

@@ -13,6 +13,18 @@ extension GameSessionViewModel {
     var isZeroWeightHour: Bool {
         activeHourEvent?.type == .zeroWeight
     }
+
+    var closedStoreColorsThisHour: Set<PieceColor> {
+        RandomEventCatalog.closedStoreVariant(for: activeHourEvent)?.closedColors ?? []
+    }
+
+    var closedStoresLabel: String? {
+        RandomEventCatalog.closedStoreVariant(for: activeHourEvent)?.stores
+    }
+
+    func isPieceFromClosedStore(_ piece: PieceModel) -> Bool {
+        closedStoreColorsThisHour.contains(piece.color)
+    }
     
     // MARK: - Business Logic Methods
     func nextHour() {
@@ -53,7 +65,11 @@ extension GameSessionViewModel {
     // MARK: - Random Event Generation
     func rollForRandomEvent() -> RandomEventModel? {
         let roll = Int.random(in: 1...100)
-        guard roll <= 40 else { return nil }
+        let eventChance = min(80, 45 + consecutiveEventMisses * 7)
+        guard roll <= eventChance else {
+            consecutiveEventMisses += 1
+            return nil
+        }
 
         let nonConsecutiveEvents: Set<RandomEventType> = [
             .zeroWeight,
@@ -71,6 +87,10 @@ extension GameSessionViewModel {
                     return false
                 }
             }
+
+            if type == .flightDelay, currentHour < boardingHour - 1 {
+                return false
+            }
             
             if type == .relativeCanceled, sharedJastipOrders.isEmpty {
                 return false
@@ -84,9 +104,11 @@ extension GameSessionViewModel {
         }
 
         guard let event = RandomEventCatalog.getRandomEvent(from: availableTypes) else {
+            consecutiveEventMisses += 1
             return nil
         }
 
+        consecutiveEventMisses = 0
         if event.type == .flightDelay || event.type == .relativeCanceled {
             triggeredUniqueEvents.insert(event.type)
         }

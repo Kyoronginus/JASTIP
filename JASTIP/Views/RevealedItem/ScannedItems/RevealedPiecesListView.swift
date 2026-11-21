@@ -13,7 +13,7 @@ struct RevealedPiecesListView: View {
     
     var body: some View {
         VStack(spacing: 12) {
-            Text("BOBOT TERBUKA")
+            Text("REVEALED WEIGHTS")
                 .font(.caption.bold())
                 .tracking(2)
                 .foregroundStyle(.secondary)
@@ -22,7 +22,7 @@ struct RevealedPiecesListView: View {
             Divider()
             
             if pieces.isEmpty {
-                Text("Belum ada piece yang discan")
+                Text("No pieces have been scanned yet")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .frame(height: 80)
@@ -49,7 +49,7 @@ struct RevealedPiecesListView: View {
                 .frame(maxHeight: 140)
             }
             
-            Button("TUTUP", action: onDismiss)
+            Button("CLOSE", action: onDismiss)
                 .buttonStyle(PrimaryButtonStyle(
                     backgroundColor: .primary,
                     foregroundColor: Color(uiColor: .systemBackground)

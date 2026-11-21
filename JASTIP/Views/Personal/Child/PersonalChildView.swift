@@ -108,7 +108,7 @@ struct PersonalChildView: View {
                             UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
                         }
                     },
-                    onDragPieceChanged: { placed, value in
+                    onDragPieceChanged: { placed, _, value in
                         draggingPlacedPiece = placed
                         dragLocation = value.location
                         updateHover(
@@ -134,11 +134,11 @@ struct PersonalChildView: View {
                         }
                         UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
                     },
-                    onDragItemChanged: { item, value in
+                    onDragItemChanged: { item, _, location in
                         draggingStagingItem = item
-                        dragLocation = value.location
+                        dragLocation = location
                         updateHover(
-                            at: value.location,
+                            at: location,
                             for: item.piece,
                             rotation: item.rotation,
                             ignoringPieceId: nil,
@@ -341,13 +341,16 @@ struct PersonalChildView: View {
 }
 
 // MARK: - Subview: Area Staging Kepingan ("Drag items here to reorganize")
-private struct StagingSectionView: View {
+struct StagingSectionView: View {
     let items: [StagedItem]
     let draggingItemId: UUID?
     let onRotateItem: (StagedItem) -> Void
-    let onDragItemChanged: (StagedItem, DragGesture.Value) -> Void
-    let onDragItemEnded: (StagedItem, DragGesture.Value) -> Void
-    
+    let onDragItemChanged: (StagedItem, GridCoordinate, CGPoint) -> Void
+    let onDragItemEnded: (StagedItem, CGPoint) -> Void
+    var height: CGFloat = 120
+
+    @State private var itemFrames: [UUID: CGRect] = [:]
+
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 16)
@@ -359,7 +362,7 @@ private struct StagingSectionView: View {
                 )
             
             if items.isEmpty {
-                Text("Drag items here to reorganize")
+                Text("Drag items here to rearrange")
                     .font(.shantellSans(14, .regular))
                     .foregroundStyle(.white)
                     .multilineTextAlignment(.center)
@@ -369,31 +372,51 @@ private struct StagingSectionView: View {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 20) {
                             ForEach(items) { item in
-                                PieceShapeView(
-                                    piece: item.piece,
-                                    rotation: item.rotation,
-                                    blockSize: 28,
-                                    spacing: 2,
-                                    cornerRadius: 5
-                                )
-                                .padding(8)
+                                VStack(spacing: 2) {
+                                    PieceShapeView(
+                                        piece: item.piece,
+                                        rotation: item.rotation,
+                                        blockSize: 28,
+                                        spacing: 2,
+                                        cornerRadius: 5
+                                    )
+                                    .background(
+                                        GeometryReader { geo in
+                                            Color.clear
+                                                .onAppear {
+                                                    itemFrames[item.id] = geo.frame(in: .named("LUGGAGE_CANVAS"))
+                                                }
+                                                .onChange(of: geo.frame(in: .named("LUGGAGE_CANVAS"))) { _, newFrame in
+                                                    itemFrames[item.id] = newFrame
+                                                }
+                                        }
+                                    )
+                                    .padding(8)
+
+                                    Text("\(item.weight) kg")
+                                        .font(.shantellSans(13, .bold))
+                                        .foregroundStyle(.black)
+                                }
                                 .opacity(draggingItemId == item.id ? 0.15 : 1.0)
                                 .gesture(
-                                    DragGesture(minimumDistance: 4, coordinateSpace: .named("LUGGAGE_CANVAS"))
-                                        .onChanged { value in
-                                            onDragItemChanged(item, value)
+                                    UpwardItemLiftGesture(
+                                        onChanged: { startLocation, currentLocation in
+                                            let grabbed = nearestCell(for: item, startLocation: startLocation)
+                                            onDragItemChanged(item, grabbed, currentLocation)
+                                        },
+                                        onEnded: { location in
+                                            onDragItemEnded(item, location)
                                         }
-                                        .onEnded { value in
-                                            onDragItemEnded(item, value)
-                                        }
+                                    )
                                 )
-                                .onTapGesture() {
+                                .onTapGesture {
                                     onRotateItem(item)
                                 }
                             }
                         }
                         .padding(.horizontal, 16)
                     }
+                    .scrollDisabled(draggingItemId != nil)
                     
                     Text("Tap to rotate • Drag to place")
                         .font(.shantellSans(12, .regular))
@@ -404,21 +427,106 @@ private struct StagingSectionView: View {
                 }
             }
         }
-        .frame(height: 120)
+        .frame(height: height)
+    }
+
+    private func nearestCell(for item: StagedItem, startLocation: CGPoint) -> GridCoordinate {
+        let base = PieceCatalog.baseCoordinates(for: item.piece.shape, pieceId: item.piece.id)
+        let rotated = LuggagePlacementEngine.rotate(coordinates: base, by: item.rotation)
+        guard let frame = itemFrames[item.id] else {
+            return rotated.first ?? GridCoordinate(x: 0, y: 0)
+        }
+
+        let step: CGFloat = 28 + 2
+        let rawX = Int(floor((startLocation.x - frame.minX) / step))
+        let rawY = Int(floor((startLocation.y - frame.minY) / step))
+
+        return rotated.min { a, b in
+            (abs(a.x - rawX) + abs(a.y - rawY)) < (abs(b.x - rawX) + abs(b.y - rawY))
+        } ?? GridCoordinate(x: 0, y: 0)
     }
 }
 
-// MARK: - Subview: Bentuk Kepingan (Digunakan untuk Staging Kecil & Drag Ukuran Grid)
+private struct UpwardItemLiftGesture: UIGestureRecognizerRepresentable {
+    let onChanged: (_ startLocation: CGPoint, _ currentLocation: CGPoint) -> Void
+    let onEnded: (_ location: CGPoint) -> Void
+
+    func makeCoordinator(converter: CoordinateSpaceConverter) -> Coordinator {
+        Coordinator()
+    }
+
+    func makeUIGestureRecognizer(context: Context) -> UIPanGestureRecognizer {
+        let pan = UIPanGestureRecognizer()
+        pan.maximumNumberOfTouches = 1
+        pan.delegate = context.coordinator
+        return pan
+    }
+
+    func updateUIGestureRecognizer(_ recognizer: UIPanGestureRecognizer, context: Context) {}
+
+    func handleUIGestureRecognizerAction(_ recognizer: UIPanGestureRecognizer, context: Context) {
+        let canvasPoint = context.converter.location(in: .named("LUGGAGE_CANVAS"))
+
+        switch recognizer.state {
+        case .began:
+            context.coordinator.startCanvasPoint = canvasPoint
+            onChanged(canvasPoint, canvasPoint)
+        case .changed:
+            let startPoint = context.coordinator.startCanvasPoint ?? canvasPoint
+            onChanged(startPoint, canvasPoint)
+        case .ended, .cancelled, .failed:
+            context.coordinator.startCanvasPoint = nil
+            onEnded(canvasPoint)
+        default:
+            break
+        }
+    }
+
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        var startCanvasPoint: CGPoint?
+
+        func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+            guard let pan = gestureRecognizer as? UIPanGestureRecognizer else { return false }
+            let translation = pan.translation(in: pan.view)
+            let velocity = pan.velocity(in: pan.view)
+
+            // Mulai drag item hanya jika swipe awal dominan ke atas (y negatif).
+            // Untuk swipe kiri/kanan/bawah, return false agar ScrollView langsung menggeser carousel.
+            let isUpwardTranslation = translation.y < 0 && abs(translation.y) > abs(translation.x)
+            let isUpwardVelocity = velocity.y < 0 && abs(velocity.y) > abs(velocity.x)
+            return translation == .zero ? isUpwardVelocity : (isUpwardTranslation && velocity.y <= 0)
+        }
+    }
+}
+
+// MARK: - Subview: Bentuk Kepingan (Digunakan untuk Staging, Drag, dan Isi Koper)
 struct PieceShapeView: View {
     let piece: PieceModel
     let rotation: LuggageRotation
     var blockSize: CGFloat = 28
     var spacing: CGFloat = 2
     var cornerRadius: CGFloat = 5
+
+    @State private var displayedAngle: Double
+
+    init(
+        piece: PieceModel,
+        rotation: LuggageRotation,
+        blockSize: CGFloat = 28,
+        spacing: CGFloat = 2,
+        cornerRadius: CGFloat = 5
+    ) {
+        self.piece = piece
+        self.rotation = rotation
+        self.blockSize = blockSize
+        self.spacing = spacing
+        self.cornerRadius = cornerRadius
+        _displayedAngle = State(initialValue: Double(rotation.rawValue))
+    }
     
-    private var rotatedCoordinates: Set<GridCoordinate> {
+    private var rotatedCoordinates: [GridCoordinate] {
         let base = PieceCatalog.baseCoordinates(for: piece.shape, pieceId: piece.id)
-        return Set(LuggagePlacementEngine.rotate(coordinates: base, by: rotation))
+        return LuggagePlacementEngine.rotate(coordinates: base, by: rotation)
     }
     
     private var columnsCount: Int {
@@ -428,39 +536,27 @@ struct PieceShapeView: View {
     private var rowsCount: Int {
         (rotatedCoordinates.map(\.y).max() ?? 0) + 1
     }
-    
-    var body: some View {
-        VStack(spacing: spacing) {
-            ForEach(0..<rowsCount, id: \.self) { y in
-                HStack(spacing: spacing) {
-                    ForEach(0..<columnsCount, id: \.self) { x in
-                        PieceBlockCellView(
-                            isFilled: rotatedCoordinates.contains(GridCoordinate(x: x, y: y)),
-                            color: piece.color.displayColor,
-                            size: blockSize,
-                            cornerRadius: cornerRadius
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
 
-private struct PieceBlockCellView: View {
-    let isFilled: Bool
-    let color: Color
-    let size: CGFloat
-    let cornerRadius: CGFloat
+    private func dimension(cells: Int) -> CGFloat {
+        CGFloat(cells) * blockSize + CGFloat(max(0, cells - 1)) * spacing
+    }
     
     var body: some View {
-        RoundedRectangle(cornerRadius: cornerRadius)
-            .fill(isFilled ? color.opacity(0.92) : Color.clear)
-            .overlay(
-                RoundedRectangle(cornerRadius: cornerRadius)
-                    .stroke(isFilled ? Color.white.opacity(0.45) : Color.clear, lineWidth: 1.5)
-            )
-            .frame(width: size, height: size)
+        let spec = PieceCatalog.visualSpec(for: piece)
+        let pngWidth = dimension(cells: spec.pngCols)
+        let pngHeight = dimension(cells: spec.pngRows)
+        let rotatedWidth = dimension(cells: columnsCount)
+        let rotatedHeight = dimension(cells: rowsCount)
+
+        Image(piece.assetName)
+            .resizable()
+            .frame(width: pngWidth, height: pngHeight)
+            .rotationEffect(.degrees(spec.baseAngleDegrees + displayedAngle))
+            .frame(width: rotatedWidth, height: rotatedHeight)
+            .onChange(of: rotation) { oldRotation, newRotation in
+                let delta = (newRotation.rawValue - oldRotation.rawValue + 360) % 360
+                displayedAngle += Double(delta)
+            }
     }
 }
 

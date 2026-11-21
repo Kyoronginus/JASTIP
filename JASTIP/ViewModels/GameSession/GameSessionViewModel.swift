@@ -8,6 +8,13 @@
 import SwiftUI
 import Observation
 
+// Model pencatat riwayat per sesi draft yang berhasil
+struct DraftRoundHistory: Identifiable {
+    let id = UUID().uuidString
+    let acceptedOrders: [JastipOrderModel]
+    let confirmationMessage: String
+}
+
 struct StagedItem: Identifiable, Equatable {
     let id: UUID
     let piece: PieceModel
@@ -15,6 +22,7 @@ struct StagedItem: Identifiable, Equatable {
     var rotation: LuggageRotation = .deg0
     let lockedLuggage: LuggageType?
     let isAlreadyCountedInWeight: Bool
+    var weightLuggage: LuggageType? = nil
 }
 
 enum RoundAnimationPhase: Equatable {
@@ -34,11 +42,17 @@ class GameSessionViewModel {
     var hasSeenStoryboard: Bool = false
     var sharedJastipOrders: [JastipOrderModel] = JastipOrderCatalog.getRandomSharedOrders(count: 3)
     var personalJastipOrders: [JastipOrderModel] = []   // hasil drafting, lokal per device
+    var personalDraftHistory: [DraftRoundHistory] = []
+
+    var candidateOrders: [JastipOrderModel] = []
+    var visibleCandidateOrders: [JastipOrderModel] = []
+    var selectedOrderIds: Set<String> = []
     
     // MARK: - Turn & Round System
     var turnOrder: [TurnPlayer] = []
     var currentTurnIndex: Int = 0
     var daysToGo: Int = 7
+    var actionsUsedThisTurn: Int = 0
     var roundAnimationPhase: RoundAnimationPhase = .none
     
     func triggerRoundTransitionAnimation(from oldDay: Int, to newDay: Int) {
@@ -104,6 +118,7 @@ class GameSessionViewModel {
     var suitWeight: Int = 0
     var carryWeight: Int = 0
     var pieceWeights: [String: Int] = [:]
+    private var placedPieceWeightContributions: [UUID: Int] = [:]
     var revealedPieces: [RevealedPiece] = []
     
     // MARK: - Luggage Grids (3x5 Suitcase & 2x2 Carry-On)
@@ -126,7 +141,7 @@ class GameSessionViewModel {
                     StagedItem(
                         id: UUID(),
                         piece: newPiece,
-                        weight: stagingWeight ?? weight(for: newPiece.id),
+                        weight: stagingWeight ?? (isZeroWeightHour ? 0 : weight(for: newPiece.id)),
                         rotation: .deg0,
                         lockedLuggage: nil,
                         isAlreadyCountedInWeight: false
@@ -142,7 +157,12 @@ class GameSessionViewModel {
     var playerName: String = UIDevice.current.name
     var isBoarded: Bool = false
     var isScoreSubmitted: Bool = false
-    var droppedBlockKg: Int = 0
+    var droppedBlockKg: Int {
+        guard isGameOver else { return 0 }
+        return stagedItems.reduce(0) { total, item in
+            total + item.weight
+        }
+    }
     var remotePlayers: [String: PlayerSyncPayload] = [:]
     var finalStandingsSnapshot: [PlayerStandingModel]? = nil
     
@@ -151,6 +171,7 @@ class GameSessionViewModel {
     var activeHourEvent: RandomEventModel? = nil
     var triggeredUniqueEvents: Set<RandomEventType> = []
     var lastRoundEventType: RandomEventType?
+    var consecutiveEventMisses: Int = 0
     
     // MARK: - Firebase Lobby
     var lobbyService = FirebaseLobbyService()
@@ -161,12 +182,40 @@ class GameSessionViewModel {
         isMyTurn && !isDraftingObjective
     }
     
+    // MARK: - Turn Action
+    
+    var maxTurnActionQuota: Int {
+        switch activeHourEvent?.type {
+        case .energyBoost:
+            return 3
+        case .customsIssue, .evacuation:
+            return 1
+        default:
+            return 2
+        }
+    }
+    
+    var remainingTurnActionQuota: Int {
+        maxTurnActionQuota - actionsUsedThisTurn
+    }
+    
+    var canUseTurnAction: Bool {
+        isMyTurn && remainingTurnActionQuota > 0 && currentEvent == nil && !isBoarded && !isGameOver
+    }
+    
+    
+    func consumeTurnActionQuota() {
+        actionsUsedThisTurn += 1
+    }
+
+    
     // MARK: - Initialization
     init(airlineCard: AirlineCardModel = AirlineCardCatalog.getRandomCard()) {
         self.airlineCard = airlineCard
         generateRandomizedWeights()
         lobbyService.onGameStarted = { [weak self] card, weights in
             guard let self else { return }
+            UserDefaults.standard.set(false, forKey: "hasSeenJastipOrdersHint")
             self.airlineCard = card
             self.pieceWeights = weights
             self.isGameStarted = true
@@ -186,9 +235,7 @@ class GameSessionViewModel {
             guard let self = self else { return }
             // Cegah re-trigger animasi jika ID toast-nya sama
             if self.activeToast?.id != toast.id {
-                withAnimation {
-                    self.activeToast = toast
-                }
+                self.activeToast = toast
             }
         }
         lobbyService.onScannedPiecesChanged = { [weak self] scans in
@@ -220,9 +267,7 @@ class GameSessionViewModel {
             senderID: broadcast ? lobbyService.currentPlayerID : nil
         )
         if displayLocally {
-            withAnimation {
-                self.activeToast = toast
-            }
+            self.activeToast = toast
         }
         
         // Kirim ke semua device lain via Firebase
@@ -249,19 +294,25 @@ class GameSessionViewModel {
         hasSeenStoryboard = false
         triggeredUniqueEvents.removeAll()
         lastRoundEventType = nil
+        consecutiveEventMisses = 0
         suitWeight = 0
         carryWeight = 0
-        droppedBlockKg = 0
+        placedPieceWeightContributions.removeAll()
+        actionsUsedThisTurn = 0
         suitcaseGrid = .suitcase
         carryOnGrid = .carryOn
         stagedItems.removeAll()
         stagingWeight = nil
         snapshotSuitcaseGrid = nil
         snapshotCarryOnGrid = nil
+        self.candidateOrders.removeAll()
+        self.visibleCandidateOrders.removeAll()
+        self.selectedOrderIds.removeAll()
         generateRandomizedWeights()
         self.airlineCard = AirlineCardCatalog.getRandomCard()
         self.sharedJastipOrders = JastipOrderCatalog.getRandomSharedOrders(count: 3)
         self.personalJastipOrders.removeAll()
+        self.personalDraftHistory.removeAll()
         self.isDraftingObjective = false
         self.turnOrder.removeAll()
         self.currentTurnIndex = 0
@@ -347,7 +398,12 @@ class GameSessionViewModel {
     }
     
     // Fungsi untuk mencatat item sekaligus memilih tempat (Suitcase / Carry-On)
-    func recordItemPlacement(piece: PieceModel, weight: Int, isSuitcase: Bool) {
+    func recordItemPlacement(
+        piece: PieceModel,
+        weight: Int,
+        isSuitcase: Bool,
+        effectiveWeight: Int? = nil
+    ) {
         guard !isBoarded && !isGameOver else { return }
         
         let revealed = RevealedPiece(piece: piece, weight: weight, scannedBy: currentPlayerStatus.name)
@@ -365,11 +421,11 @@ class GameSessionViewModel {
         }
         
         // 3. Tambahin bobot HANYA ke tracker HP ini sendiri (berat suitcase/carry-on gak digabung ke HP lain)
-        let effectiveWeight = isZeroWeightHour ? 0 : weight
+        let appliedWeight = effectiveWeight ?? (isZeroWeightHour ? 0 : weight)
         if isSuitcase {
-            suitWeight += effectiveWeight
+            suitWeight += appliedWeight
         } else {
-            carryWeight += effectiveWeight
+            carryWeight += appliedWeight
         }
         
         broadcastMyStatus()
@@ -394,16 +450,18 @@ class GameSessionViewModel {
     }
     
     /// Menambahkan barang baru hasil scan ke area staging
-    func stageScannedPiece(_ piece: PieceModel, weight: Int, targetLuggage: LuggageType) {
+    func stageScannedPiece(_ piece: PieceModel, weight: Int, targetLuggage: LuggageType? = nil) {
+        guard !isPieceFromClosedStore(piece) else { return }
         captureGridSnapshotIfNeeded()
-        stagingWeight = weight
+        let effectiveWeight = isZeroWeightHour ? 0 : weight
+        stagingWeight = effectiveWeight
         // Hapus barang scan lama yang belum ditaruh jika ada, pertahankan barang yang sedang ditata ulang
-        stagedItems.removeAll { !$0.isAlreadyCountedInWeight }
+        consumeTurnActionQuota()
         stagedItems.append(
             StagedItem(
                 id: UUID(),
                 piece: piece,
-                weight: weight,
+                weight: effectiveWeight,
                 rotation: .deg0,
                 lockedLuggage: targetLuggage,
                 isAlreadyCountedInWeight: false
@@ -420,16 +478,27 @@ class GameSessionViewModel {
             carryOnGrid.placedPieces.removeAll { $0.id == placedPiece.id }
         }
         
+        let contribution = placedPieceWeightContributions[placedPiece.id]
+            ?? weight(for: placedPiece.piece.id)
+
+        if placedPiece.assignedLuggage == .suitcase {
+            suitWeight = max(0, suitWeight - contribution)
+        } else {
+            carryWeight = max(0, carryWeight - contribution)
+        }
+
         let item = StagedItem(
             id: placedPiece.id,
             piece: placedPiece.piece,
-            weight: weight(for: placedPiece.piece.id),
+            weight: contribution,
             rotation: placedPiece.rotation,
-            lockedLuggage: placedPiece.assignedLuggage,
-            isAlreadyCountedInWeight: true
+            lockedLuggage: nil,
+            isAlreadyCountedInWeight: true,
+            weightLuggage: placedPiece.assignedLuggage
         )
         if !stagedItems.contains(where: { $0.id == item.id }) {
             stagedItems.append(item)
+            broadcastMyStatus()
         }
     }
     
@@ -480,7 +549,26 @@ class GameSessionViewModel {
         
         // Hanya tambahkan bobot jika barang ini baru di-scan (belum dihitung sebelumnya)
         if !item.isAlreadyCountedInWeight {
-            recordItemPlacement(piece: item.piece, weight: item.weight, isSuitcase: luggage == .suitcase)
+            let catalogWeight = self.weight(for: item.piece.id)
+            recordItemPlacement(
+                piece: item.piece,
+                weight: catalogWeight,
+                isSuitcase: luggage == .suitcase,
+                effectiveWeight: item.weight
+            )
+            placedPieceWeightContributions[placed.id] = item.weight
+        } else {
+            let contribution = placedPieceWeightContributions[item.id]
+                ?? weight(for: item.piece.id)
+
+            if luggage == .suitcase {
+                suitWeight += contribution
+            } else {
+                carryWeight += contribution
+            }
+
+            placedPieceWeightContributions[item.id] = contribution
+            broadcastMyStatus()
         }
         
         stagedItems.remove(at: index)
@@ -576,6 +664,76 @@ class GameSessionViewModel {
         
         return true
     }
+
+    /// Memindahkan kepingan yang sudah terpasang ke koper lain dan memindahkan bobotnya.
+    @discardableResult
+    func transferPlacedPiece(
+        _ placedPiece: PlacedPiece,
+        to luggage: LuggageType,
+        at newOrigin: GridCoordinate,
+        rotation: LuggageRotation? = nil
+    ) -> Bool {
+        guard luggage != placedPiece.assignedLuggage else {
+            return movePlacedPiece(placedPiece, to: newOrigin, rotation: rotation)
+        }
+
+        let targetRotation = rotation ?? placedPiece.rotation
+        let targetGrid = luggage == .suitcase ? suitcaseGrid : carryOnGrid
+        guard LuggagePlacementEngine.canPlace(
+            piece: placedPiece.piece,
+            at: newOrigin,
+            rotation: targetRotation,
+            in: targetGrid
+        ) else {
+            return false
+        }
+
+        let contribution = placedPieceWeightContributions[placedPiece.id]
+            ?? weight(for: placedPiece.piece.id)
+
+        if placedPiece.assignedLuggage == .suitcase {
+            guard let index = suitcaseGrid.placedPieces.firstIndex(where: { $0.id == placedPiece.id }) else {
+                return false
+            }
+            suitcaseGrid.placedPieces.remove(at: index)
+            suitWeight = max(0, suitWeight - contribution)
+            carryOnGrid.placedPieces.append(
+                PlacedPiece(
+                    id: placedPiece.id,
+                    piece: placedPiece.piece,
+                    origin: newOrigin,
+                    rotation: targetRotation,
+                    assignedLuggage: luggage
+                )
+            )
+            carryWeight += contribution
+        } else {
+            guard let index = carryOnGrid.placedPieces.firstIndex(where: { $0.id == placedPiece.id }) else {
+                return false
+            }
+            carryOnGrid.placedPieces.remove(at: index)
+            carryWeight = max(0, carryWeight - contribution)
+            suitcaseGrid.placedPieces.append(
+                PlacedPiece(
+                    id: placedPiece.id,
+                    piece: placedPiece.piece,
+                    origin: newOrigin,
+                    rotation: targetRotation,
+                    assignedLuggage: luggage
+                )
+            )
+            suitWeight += contribution
+        }
+
+        if stagedItems.isEmpty {
+            snapshotSuitcaseGrid = suitcaseGrid
+            snapshotCarryOnGrid = carryOnGrid
+            snapshotSuitWeight = suitWeight
+            snapshotCarryWeight = carryWeight
+        }
+        broadcastMyStatus()
+        return true
+    }
     
     /// Memutar kepingan di dalam koper (melompati sudut yang mentok & wall-kick)
     @discardableResult
@@ -596,6 +754,11 @@ class GameSessionViewModel {
     /// Cek apakah suatu order sudah terpenuhi oleh barang di koper
     func isOrderFulfilled(_ order: JastipOrderModel) -> Bool {
         order.isFulfilled(by: allLuggagePieces)
+    }
+
+    /// Daftar piece dari koper yang memenuhi slot pada order tertentu
+    func fulfilledPieces(for order: JastipOrderModel) -> [PieceModel] {
+        order.fulfilledPieces(from: allLuggagePieces)
     }
     
     // MARK: - Automated Scoring Helpers
@@ -634,11 +797,26 @@ class GameSessionViewModel {
         }
     }
     
+    var incompletePersonalJastipOrders: [JastipOrderModel] {
+        personalJastipOrders.filter { order in
+            !order.isFulfilled(by: allLuggagePieces)
+        }
+    }
+
+
     /// Total poin dari order jastip yang selesai
     var totalCompletedJastipPoints: Int {
         completedJastipOrders.reduce(0) { $0 + $1.points }
     }
     
+    var totalIncompletePersonalPenalty: Int { // atau tipe data dari points
+        var total = 0
+        for item in incompletePersonalJastipOrders {
+            total += item.points
+        }
+        return total
+    }
+
     /// Total overweight penalty (-1 pt / kg)
     var totalOverweightPenalty: Int {
         let suitcaseOver = max(0, suitWeight - displayedAirlineCard.maxCapacityKg)
@@ -657,7 +835,7 @@ class GameSessionViewModel {
     
     /// Total penalti (Dropped block + Overweight)
     var calculatedPenalty: Int {
-        droppedBlockKg + totalOverweightPenalty
+        droppedBlockKg + totalOverweightPenalty + totalIncompletePersonalPenalty
     }
     
     /// Daftar klasemen akhir seluruh pemain (diurutkan dari Total tertinggi)

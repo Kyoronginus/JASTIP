@@ -16,12 +16,15 @@ private struct LobbyPlayerFramePreferenceKey: PreferenceKey {
 }
 
 struct LobbyView: View {
+    @Environment(\.accessibilityReduceMotion) private var isReduceMotionEnabled
     var lobby: GameLobby
     var roomCode: String? = nil
     var isLoading: Bool = false
     var onStartGame: () -> Void = {}
     var onLeaveLobby: () -> Void = {}
     var onReorderPlayers: ([String]) -> Void = { _ in }
+    var onKickPlayer: (String) -> Void = { _ in }
+    var onTransferHost: (String) -> Void = { _ in }
     
     @State private var showLeaveConfirmation = false
     @State private var draggingPlayerID: String?
@@ -41,16 +44,11 @@ struct LobbyView: View {
                 Button {
                     showLeaveConfirmation = true
                 } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 14, weight: .bold))
-//                            Text(lobby.isHost ? "Close Lobby" : "Leave")
-////                                .font(.plusJakarta(13, .bold))
-                    }
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 14, weight: .bold))
                 }
                 .buttonStyle(PrimaryButtonStyle(
                     backgroundColor: .white,
-//                        borderColor: Color("TaxiYellow"),
                     foregroundColor: Color(.black),
                     cornerRadius: 14,
                     paddingVertical: 14,
@@ -81,7 +79,7 @@ struct LobbyView: View {
                                 }
                             }
                             .offset(y: draggingPlayerID == player.id ? dragOffset : 0)
-                            .scaleEffect(draggingPlayerID == player.id ? 1.03 : 1)
+                            .scaleEffect((draggingPlayerID == player.id && !isReduceMotionEnabled) ? 1.03 : 1)
                             .zIndex(draggingPlayerID == player.id ? 1 : 0)
                     }
                 }
@@ -135,9 +133,9 @@ struct LobbyView: View {
             name: player.name,
             index: index,
             isHost: player.id == lobby.hostUID,
-            showHostActions: lobby.isHost,
-            onKick: {},
-            onAddHost: {}
+            showHostActions: lobby.isHost && player.id != lobby.hostUID,
+            onKick: { onKickPlayer(player.id) },
+            onAddHost: { onTransferHost(player.id) }
         )
 
         if lobby.isHost && lobby.status == "waiting" && !isLoading {

@@ -9,6 +9,7 @@ import SwiftUI
 import AudioToolbox
 
 struct ToastModifier: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var isReduceMotionEnabled
     @Binding var toast: ToastOptions?
     @State private var workItem: DispatchWorkItem?
 
@@ -18,18 +19,19 @@ struct ToastModifier: ViewModifier {
             .overlay(alignment: .top) {
                 if let toast = toast {
                     toastView(for: toast)
-                        // Muncul turun dari atas dengan transisi halus
-                        .transition(.move(edge: .top).combined(with: .opacity))
+                        // Muncul turun dari atas dengan transisi halus (atau dissolve saat Reduce Motion)
+                        .transition(isReduceMotionEnabled ? .opacity : .move(edge: .top).combined(with: .opacity))
                         .padding(.top, 150) // Jarak manis dari Safe Area / Top Bar
                         .zIndex(999)
                 }
             }
-            .animation(.spring(response: 0.38, dampingFraction: 0.72), value: toast != nil)
+            .animation(isReduceMotionEnabled ? .easeInOut(duration: 0.22) : .spring(response: 0.38, dampingFraction: 0.72), value: toast != nil)
             .onChange(of: toast?.id) { _, toastID in
                 if toastID != nil {
                     scheduleDismissal()
                     if toast?.playsNotificationSound == true {
-                        AudioServicesPlaySystemSound(1003)
+                        // AudioServicesPlaySystemSound(1003)
+                        AudioManager.shared.play("send")
                     }
                 }
             }
@@ -105,7 +107,7 @@ extension View {
                     
                     Button("Trigger Error Toast") {
                         sampleToast = ToastOptions(
-                            message: "Koper sudah melebihi kapasitas!",
+                            message: "Suitcase has exceeded capacity!",
                             type: .error
                         )
                     }
@@ -114,7 +116,7 @@ extension View {
                     
                     Button("Trigger Info Toast") {
                         sampleToast = ToastOptions(
-                            message: "Giliran pemain berikutnya telah dimulai.",
+                            message: "The next player's turn has started.",
                             type: .info
                         )
                     }
