@@ -215,6 +215,7 @@ class GameSessionViewModel {
         generateRandomizedWeights()
         lobbyService.onGameStarted = { [weak self] card, weights in
             guard let self else { return }
+            UserDefaults.standard.set(false, forKey: "hasSeenJastipOrdersHint")
             self.airlineCard = card
             self.pieceWeights = weights
             self.isGameStarted = true

@@ -43,6 +43,7 @@ struct GameView: View {
     }
     
     @State private var isShowingScanner = false
+    @State private var isShowingEndTurnConfirmation = false
     var isInspectingActiveEvent: Bool = false
     var onTapActiveEvent: () -> Void = {}
     @State private var draggingStagingItem: StagedItem? = nil
@@ -56,6 +57,7 @@ struct GameView: View {
     @State private var lastHapticCoord: GridCoordinate? = nil
     @State private var grabbedCell = GridCoordinate(x: 0, y: 0)
     @State private var cellSize: CGFloat = 46
+    @AppStorage("hasSeenJastipOrdersHint") private var hasSeenJastipOrdersHint = false
 
     private let cellSpacing: CGFloat = 2
     private let cellCornerRadius: CGFloat = 3
@@ -142,7 +144,10 @@ struct GameView: View {
                         HStack {
                             Spacer()
 
-                            Button(action: onOpenObjective) {
+                            Button {
+                                hasSeenJastipOrdersHint = true
+                                onOpenObjective()
+                            } label: {
                                 Image(systemName: "bubble.left.fill")
                                     .frame(width: 22, height: 22)
                             }
@@ -158,6 +163,32 @@ struct GameView: View {
                                 )
                             )
                             .accessibilityLabel("Open chat orders")
+                            .overlay(alignment: .topTrailing) {
+                                if !hasSeenJastipOrdersHint {
+                                    VStack(alignment: .trailing, spacing: -2) {
+                                        Text("Click here to see your Jastip orders")
+                                            .font(.plusJakarta(12, .semibold))
+                                            .multilineTextAlignment(.center)
+                                            .lineLimit(nil)
+                                            .frame(width: 205)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                            .padding(.horizontal, 12)
+                                            .padding(.vertical, 9)
+                                            .background(
+                                                Color.black.opacity(0.72),
+                                                in: RoundedRectangle(cornerRadius: 12)
+                                            )
+
+                                        Image(systemName: "arrowtriangle.down.fill")
+                                            .font(.system(size: 12))
+                                            .padding(.trailing, 15)
+                                    }
+                                    .foregroundStyle(.white)
+                                    .frame(width: 229, alignment: .trailing)
+                                    .offset(y: -68)
+                                    .allowsHitTesting(false)
+                                }
+                            }
                         }
                     }
                     .padding(.horizontal, 24)
@@ -230,6 +261,34 @@ struct GameView: View {
                 }
             }
         }
+        .sheet(isPresented: $isShowingEndTurnConfirmation) {
+            VStack(spacing: 20) {
+                Text("Are you sure you want to end your turn?")
+                    .font(.spaceGrotesk(20, .bold))
+                    .multilineTextAlignment(.center)
+
+                HStack(spacing: 12) {
+                    Button("No") {
+                        isShowingEndTurnConfirmation = false
+                    }
+                    .buttonStyle(PrimaryButtonStyle())
+
+                    Button("Yes") {
+                        isShowingEndTurnConfirmation = false
+
+                        if let onEndTurn {
+                            onEndTurn()
+                        } else {
+                            viewModel.endCurrentTurn()
+                        }
+                    }
+                    .buttonStyle(PrimaryButtonStyle())
+                }
+            }
+            .padding(24)
+            .presentationDetents([.height(220)])
+            .presentationDragIndicator(.visible)
+        }
     }
 
     // MARK: - Subview: Top Header (Turn Info, End Turn Button, & Calendar)
@@ -249,11 +308,7 @@ struct GameView: View {
                     
                     // 2. TOMBOL END TURN (Hanya aktif jika giliran HP ini)
                     Button {
-                        if let onEndTurn {
-                            onEndTurn()
-                        } else {
-                            viewModel.endCurrentTurn()
-                        }
+                        isShowingEndTurnConfirmation = true
                     } label: {
                         Text(!viewModel.isMyTurn ? "Waiting..." : (viewModel.isDraftingObjective ? "Drafting..." : "End Turn"))
                             .font(.shantellSans(14, .bold))
