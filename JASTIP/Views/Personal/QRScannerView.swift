@@ -144,20 +144,37 @@ struct QRScannerView: View {
             }
             
             // 3. Popup Konfirmasi (Tampil di tengah saat QR terdeteksi)
-            if let piece = viewModel.detectedPiece, let _ = viewModel.confirmedWeight {
+            if let piece = viewModel.detectedPiece, viewModel.scannedCode != nil {
                 Color.black.opacity(0.4)
                     .ignoresSafeArea()
                 
                 VStack(spacing: 12) {
-                    
                     Image(piece.assetName)
                         .resizable()
                         .scaledToFit()
                         .frame(width: 90, height: 90)
                         .padding(20)
                     
-                    // Tombol & Teks Pilihan
-                    if let weight = viewModel.confirmedWeight {
+                    if !viewModel.hasConfirmedDetectedItem {
+                        VStack(spacing: 12) {
+                            Text("Is this the item that you want to scan?")
+                                .font(.spaceGrotesk(20, .bold))
+                                .multilineTextAlignment(.center)
+                                .foregroundStyle(.primary)
+
+                            HStack(spacing: 12) {
+                                Button("No") {
+                                    viewModel.resetScan()
+                                }
+                                .buttonStyle(PrimaryButtonStyle())
+
+                                Button("Yes") {
+                                    viewModel.confirmDetectedItem()
+                                }
+                                .buttonStyle(PrimaryButtonStyle())
+                            }
+                        }
+                    } else if let weight = viewModel.confirmedWeight {
                         VStack(spacing: 12) {
                             if viewModel.session.isZeroWeightHour {
                                 VStack {
@@ -173,7 +190,7 @@ struct QRScannerView: View {
                                     .font(.spaceGrotesk(32, .bold))
                                     .foregroundColor(.primary)
                             }
-                            
+
                             Text(allowsEitherLuggage ? "Adding to Staging Area" : (isSuitcase ? "Adding to Suitcase" : "Adding to Carry-On"))
                                 .font(.subheadline.bold())
                                 .foregroundColor(.secondary)

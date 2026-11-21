@@ -15,12 +15,12 @@ import UIKit
 class QRScannerViewModel {
     let scanner = QRScannerManager()
     private let motionManager = CMMotionManager()
-    private var isDeviceFlat = true
-    private var hasReceivedInitialMotion = false
+    private var isChoosingInitialCamera = false
     
     var scannedCode: String? = nil
     var detectedPiece: PieceModel? = nil
     var confirmedWeight: Int? = nil
+    var hasConfirmedDetectedItem = false
     var closedStoreWarning: String? = nil
     
     var session: GameSessionViewModel
@@ -52,45 +52,48 @@ class QRScannerViewModel {
         setupAudioPlayer()
         setupHaptics()
     }
-    
+
     func startScanning() {
-        startCameraPositionMonitoring()
-        scanner.startScanning()
         scanner.onCodeDetected = { [weak self] code in
             self?.handleDetectedCode(code)
+        }
+
+        chooseInitialCameraAndStartScanning()
+    }
+
+    private func chooseInitialCameraAndStartScanning() {
+        guard motionManager.isDeviceMotionAvailable else {
+            scanner.startScanning()
+            return
+        }
+
+        isChoosingInitialCamera = true
+        motionManager.deviceMotionUpdateInterval = 0.1
+        motionManager.startDeviceMotionUpdates(to: .main) { [weak self] motion, _ in
+            guard let self, self.isChoosingInitialCamera else { return }
+
+            self.isChoosingInitialCamera = false
+            self.motionManager.stopDeviceMotionUpdates()
+
+            guard let motion else {
+                self.scanner.startScanning()
+                return
+            }
+
+            let isPhoneLyingDown = abs(motion.gravity.z) >= 0.92
+            let position: AVCaptureDevice.Position = isPhoneLyingDown ? .front : .back
+
+            self.scanner.setCameraPosition(position)
+            self.scanner.startScanning()
         }
     }
     
     func stopScanning() {
         warningClearTask?.cancel()
         closedStoreWarning = nil
+        isChoosingInitialCamera = false
         motionManager.stopDeviceMotionUpdates()
         scanner.stopScanning()
-    }
-
-    private func startCameraPositionMonitoring() {
-        guard motionManager.isDeviceMotionAvailable else { return }
-
-        motionManager.deviceMotionUpdateInterval = 0.25
-        motionManager.startDeviceMotionUpdates(to: .main) { [weak self] motion, _ in
-            guard let self, let motion else { return }
-
-            let verticalGravity = abs(motion.gravity.z)
-            let shouldUseFrontCamera: Bool
-            if self.hasReceivedInitialMotion {
-                shouldUseFrontCamera = self.isDeviceFlat
-                    ? verticalGravity >= 0.82
-                    : verticalGravity >= 0.92
-            } else {
-                shouldUseFrontCamera = verticalGravity >= 0.92
-                self.hasReceivedInitialMotion = true
-            }
-
-            guard shouldUseFrontCamera != self.isDeviceFlat else { return }
-
-            self.isDeviceFlat = shouldUseFrontCamera
-            self.scanner.setCameraPosition(shouldUseFrontCamera ? .front : .back)
-        }
     }
     
     func handleDetectedCode(_ code: String) {
@@ -132,7 +135,13 @@ class QRScannerViewModel {
         self.scannedCode = nil
         self.detectedPiece = nil
         self.confirmedWeight = nil
+        self.hasConfirmedDetectedItem = false
         scanner.startScanning()
+    }
+
+    func confirmDetectedItem() {
+        guard detectedPiece != nil, confirmedWeight != nil else { return }
+        hasConfirmedDetectedItem = true
     }
     
     func finishScan(isSuitcase: Bool) {
